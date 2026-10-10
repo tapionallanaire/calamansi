@@ -36,10 +36,9 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
       - name: Install Android toolchain
         run: |
-          sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'cmake;3.30.3' 'ndk;27.3.13750724'
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-35' 'build-tools;35.0.0' 'cmake;3.30.3' 'ndk;27.3.13750724'
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y ccache ninja-build
           printf 'sdk.dir=%s\ncmake.dir=%s\n' "$ANDROID_HOME" "$ANDROID_HOME/cmake/3.30.3" > src/android/local.properties
