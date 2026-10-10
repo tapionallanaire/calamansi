@@ -34,3 +34,9 @@ class SettingSection(val name: String) {
         }
     }
 }
+
+internal fun gameOverrides(
+    globalValues: Map<Pair<String?, String?>, String>,
+    settings: Iterable<AbstractSetting>
+): List<AbstractSetting> =
+    settings.filter { it.valueAsString != globalValues[it.section to it.key] }

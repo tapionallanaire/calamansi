@@ -16,4 +16,9 @@
         android:icon="@drawable/ic_more"
         android:title="@string/home_options" />
 
+    <item
+        android:id="@+id/appsFragment"
+        android:icon="@drawable/ic_apps"
+        android:title="@string/home_apps" />
+
 </menu>

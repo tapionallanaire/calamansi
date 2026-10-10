@@ -37,8 +37,7 @@ class SettingsFragment :
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val menuTag = requireArguments().getString(ARGUMENT_MENU_TAG)
-        val gameId = requireArguments().getString(ARGUMENT_GAME_ID)
-        fragmentPresenter.onCreate(menuTag!!, gameId!!)
+        fragmentPresenter.onCreate(menuTag!!)
     }
 
     override fun onCreateView(

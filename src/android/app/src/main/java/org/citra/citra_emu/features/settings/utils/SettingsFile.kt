@@ -21,6 +21,7 @@ import org.citra.citra_emu.features.settings.model.IntListSetting
 import org.citra.citra_emu.features.settings.model.IntSetting
 import org.citra.citra_emu.features.settings.model.ScaledFloatSetting
 import org.citra.citra_emu.features.settings.model.SettingSection
+import org.citra.citra_emu.features.settings.model.Settings
 import org.citra.citra_emu.features.settings.model.Settings.SettingsSectionMap
 import org.citra.citra_emu.features.settings.model.StringSetting
 import org.citra.citra_emu.features.settings.ui.SettingsActivityView
@@ -65,6 +66,11 @@ object SettingsFile {
                     current = sectionFromLine(line!!, isCustomGame)
                     sections[current.name] = current
                 } else if (current != null) {
+                    if (isCustomGame && (current.name == Settings.SECTION_CONTROLS ||
+                            current.name == Settings.SECTION_NETWORK)
+                    ) {
+                        continue
+                    }
                     val setting = settingFromLine(line!!)
                     if (setting != null) {
                         current.putSetting(setting)
@@ -105,7 +111,10 @@ object SettingsFile {
     fun readCustomGameSettings(
         gameId: String,
         view: SettingsActivityView?
-    ): HashMap<String, SettingSection?> = readFile(getCustomGameSettingsFile(gameId), true, view)
+    ): HashMap<String, SettingSection?> {
+        val ini = getCustomGameSettingsFile(gameId) ?: return SettingsSectionMap()
+        return readFile(ini, true, view)
+    }
 
     /**
      * Saves a Settings HashMap to a given .ini file on disk. If unsuccessful, outputs an error
@@ -162,6 +171,73 @@ object SettingsFile {
         }
     }
 
+    fun saveCustomGameSettings(
+        gameId: String,
+        sections: TreeMap<String, SettingSection?>,
+        view: SettingsActivityView
+    ) {
+        try {
+            val ini = getCustomGameSettingsFile(gameId, true)!!
+            val resolver = CitraApplication.appContext.contentResolver
+            val writer = resolver.openInputStream(ini.uri)!!.use { Wini(it) }
+            // Remove known values before writing the sparse overrides; preserve unknown keys.
+            val knownSettings = BooleanSetting.values().toList() + IntSetting.values() +
+                FloatSetting.values() + ScaledFloatSetting.values() + StringSetting.values() +
+                IntListSetting.values()
+            for (setting in knownSettings) {
+                writer[setting.section]?.remove(setting.key)
+            }
+            for (section in sections.values) {
+                writeSection(writer, section!!)
+            }
+            resolver.openOutputStream(ini.uri, "wt")!!.use { writer.store(it) }
+            view.showToastMessage(CitraApplication.appContext.getString(R.string.ini_saved), false)
+        } catch (e: Exception) {
+            Log.error("[SettingsFile] Error saving game settings for $gameId: ${e.message}")
+            view.showToastMessage(
+                CitraApplication.appContext.getString(R.string.error_saving, gameId, e.message),
+                true
+            )
+        }
+    }
+
+    fun saveCustomGameSetting(gameId: String, setting: AbstractSetting, useGlobal: Boolean) {
+        try {
+            val ini = getCustomGameSettingsFile(gameId, !useGlobal) ?: return
+            val resolver = CitraApplication.appContext.contentResolver
+            val writer = resolver.openInputStream(ini.uri)!!.use { Wini(it) }
+            if (useGlobal) {
+                writer[setting.section]?.remove(setting.key)
+            } else {
+                writer.put(setting.section, setting.key, setting.valueAsString)
+            }
+            resolver.openOutputStream(ini.uri, "wt")!!.use { writer.store(it) }
+        } catch (e: Exception) {
+            Log.error("[SettingsFile] Error saving game setting for $gameId: ${e.message}")
+        }
+    }
+
+    fun deleteCustomGameSettings(gameId: String, view: SettingsActivityView): Boolean {
+        try {
+            val ini = getCustomGameSettingsFile(gameId) ?: return true
+            if (!ini.delete()) {
+                throw IOException("Could not delete ${ini.uri}")
+            }
+            CitraApplication.documentsTree.setRoot(Uri.parse(userDirectory))
+            return true
+        } catch (e: Exception) {
+            view.showToastMessage(
+                CitraApplication.appContext.getString(R.string.error_saving, gameId, e.message),
+                true
+            )
+            return false
+        }
+    }
+
+    fun applySettingValue(key: String, value: String) {
+        settingFromLine("$key=$value")
+    }
+
     private fun mapSectionNameFromIni(generalSectionName: String): String? =
         if (sectionsMap.getForward(generalSectionName) != null) {
             sectionsMap.getForward(generalSectionName)
@@ -182,10 +258,24 @@ object SettingsFile {
         return configDirectory!!.findFile("$fileName.ini")!!
     }
 
-    private fun getCustomGameSettingsFile(gameId: String): DocumentFile {
-        val root = DocumentFile.fromTreeUri(CitraApplication.appContext, Uri.parse(userDirectory))
-        val configDirectory = root!!.findFile("GameSettings")
-        return configDirectory!!.findFile("$gameId.ini")!!
+    private fun getCustomGameSettingsFile(
+        gameId: String,
+        create: Boolean = false
+    ): DocumentFile? {
+        require(gameId.matches(Regex("[0-9A-Fa-f]{16}")))
+        val root = DocumentFile.fromTreeUri(CitraApplication.appContext, Uri.parse(userDirectory))!!
+        val directory = root.findFile("GameSettings")
+            ?: if (create) root.createDirectory("GameSettings") else null
+        val filename = "${gameId.uppercase()}.ini"
+        val existing = directory?.findFile(filename)
+        if (existing != null || !create) {
+            return existing
+        }
+        val ini = directory?.createFile("application/octet-stream", filename)
+            ?: throw IOException("Could not create GameSettings/$filename")
+        // DocumentFile changes bypass the tree used by native IO; discard cached listings.
+        CitraApplication.documentsTree.setRoot(Uri.parse(userDirectory))
+        return ini
     }
 
     private fun sectionFromLine(line: String, isCustomGame: Boolean): SettingSection {
@@ -204,19 +294,30 @@ object SettingsFile {
      * @return A typed Setting containing the key/value contained in the line.
      */
     private fun settingFromLine(line: String): AbstractSetting? {
-        val splitLine = line.split("=".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-        if (splitLine.size != 2) {
+        val splitLine = line.split("=", limit = 2)
+        if (splitLine.size != 2 || line.trimStart().startsWith("#") ||
+            line.trimStart().startsWith(";")
+        ) {
             return null
         }
-        val key = splitLine[0].trim { it <= ' ' }
-        val value = splitLine[1].trim { it <= ' ' }
+        val key = splitLine[0].trim()
+        val value = splitLine[1].trim()
+        val stringSetting = StringSetting.from(key)
+        if (stringSetting != null) {
+            if (value.isEmpty() && stringSetting.defaultValue.isNotEmpty()) {
+                return null
+            }
+            stringSetting.string = value
+            return stringSetting
+        }
         if (value.isEmpty()) {
+            IntListSetting.from(key)?.let { it.list = emptyList(); return it }
             return null
         }
 
         val booleanSetting = BooleanSetting.from(key)
         if (booleanSetting != null) {
-            booleanSetting.boolean = value.toBoolean()
+            booleanSetting.boolean = value.lowercase() in listOf("true", "1", "yes", "on")
             return booleanSetting
         }
 
@@ -242,15 +343,11 @@ object SettingsFile {
             return floatSetting
         }
 
-        val stringSetting = StringSetting.from(key)
-        if (stringSetting != null) {
-            stringSetting.string = value
-            return stringSetting
-        }
 
         val intListSetting = IntListSetting.from(key)
         if (intListSetting != null) {
-            intListSetting.list = value.split(", ").map { it.toInt() }
+            intListSetting.list = value.split(",").map { it.trim().toInt() }
+            return intListSetting
         }
 
         return null

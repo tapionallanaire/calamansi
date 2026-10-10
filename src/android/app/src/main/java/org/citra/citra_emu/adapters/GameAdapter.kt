@@ -5,6 +5,7 @@
 package org.citra.citra_emu.adapters
 
 import android.content.Context
+import android.app.Dialog
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.ShortcutInfo
@@ -15,7 +16,6 @@ import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Icon
 import android.net.Uri
 import android.os.SystemClock
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -28,10 +28,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.edit
 import androidx.core.graphics.scale
 import androidx.core.net.toUri
+import androidx.core.view.ViewCompat
 import androidx.documentfile.provider.DocumentFile
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.findNavController
+import androidx.navigation.NavController
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.AsyncDifferConfig
 import androidx.recyclerview.widget.DiffUtil
@@ -40,19 +41,20 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.button.MaterialButton
-import com.google.android.material.color.MaterialColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.citra.citra_emu.CitraApplication
-import org.citra.citra_emu.HomeNavigationDirections
 import org.citra.citra_emu.NativeLibrary
 import org.citra.citra_emu.R
 import org.citra.citra_emu.adapters.GameAdapter.GameViewHolder
+import org.citra.citra_emu.activities.EmulationActivity
 import org.citra.citra_emu.databinding.CardGameBinding
 import org.citra.citra_emu.databinding.DialogShortcutBinding
 import org.citra.citra_emu.features.cheats.ui.CheatsFragmentDirections
+import org.citra.citra_emu.features.settings.ui.SettingsActivity
+import org.citra.citra_emu.features.settings.utils.SettingsFile
 import org.citra.citra_emu.fragments.IndeterminateProgressDialogFragment
 import org.citra.citra_emu.model.Game
 import org.citra.citra_emu.utils.BuildUtil
@@ -65,15 +67,34 @@ class GameAdapter(
     private val activity: AppCompatActivity,
     private val inflater: LayoutInflater,
     private val openImageLauncher: ActivityResultLauncher<String>?,
+    private val navController: NavController,
     private val onRequestCompressOrDecompress: (
         (inputPath: String, suggestedName: String, shouldCompress: Boolean) -> Unit
-    )? = null
+    )? = null,
+    private val onHomeTileClick: ((Game) -> Unit)? = null,
+    private val onHomeTileFocus: ((Game) -> Unit)? = null,
+    private val onBeforeNavigate: (() -> Unit)? = null,
+    private val onBeforeModal: (() -> Unit)? = null
 ) : ListAdapter<Game, GameViewHolder>(AsyncDifferConfig.Builder(DiffCallback()).build()),
     View.OnClickListener,
     View.OnLongClickListener {
     private var lastClickTime = 0L
+    private var selectedHomePath: String? = null
+    private var activeHomePath: String? = null
     private var imagePath: String? = null
     private var dialogShortcutBinding: DialogShortcutBinding? = null
+    private var propertiesDialog: Dialog? = null
+    private var nestedPropertiesDialog: Dialog? = null
+
+    fun hasPropertiesWindow(): Boolean =
+        propertiesDialog?.isShowing == true || nestedPropertiesDialog?.isShowing == true
+
+    fun dismissProperties() {
+        nestedPropertiesDialog?.dismiss()
+        propertiesDialog?.dismiss()
+        nestedPropertiesDialog = null
+        propertiesDialog = null
+    }
 
     private val preferences: SharedPreferences
         get() = PreferenceManager.getDefaultSharedPreferences(CitraApplication.appContext)
@@ -92,6 +113,15 @@ class GameAdapter(
         val binding = CardGameBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         binding.cardGame.setOnClickListener(this)
         binding.cardGame.setOnLongClickListener(this)
+        if (onHomeTileClick != null) {
+            binding.textGameTitle.visibility = View.GONE
+            binding.root.addOnLayoutChangeListener { view, left, _, right, _, _, _, _, _ ->
+                val size = right - left
+                if (size > 0 && view.layoutParams.height != size) {
+                    view.layoutParams = view.layoutParams.apply { height = size }
+                }
+            }
+        }
 
         // Use that view to create a ViewHolder.
         return GameViewHolder(binding)
@@ -101,64 +131,107 @@ class GameAdapter(
         holder.bind(currentList[position])
     }
 
-    override fun getItemCount(): Int = currentList.size
-
-    /**
-     * Launches the game that was clicked on.
-     *
-     * @param view The card representing the game the user wants to play.
-     */
-    override fun onClick(view: View) {
-        // Double-click prevention, using threshold of 1000 ms
-        if (SystemClock.elapsedRealtime() - lastClickTime < 1000) {
-            return
+    override fun onBindViewHolder(holder: GameViewHolder, position: Int, payloads: MutableList<Any>) {
+        if (payloads.isNotEmpty() && payloads.all { it == "home_selection" }) {
+            holder.updateStatus()
+        } else {
+            super.onBindViewHolder(holder, position, payloads)
         }
-        lastClickTime = SystemClock.elapsedRealtime()
-
-        val holder = view.tag as GameViewHolder
-        gameExists(holder)
-
-        val preferences =
-            PreferenceManager.getDefaultSharedPreferences(CitraApplication.appContext)
-        preferences.edit()
-            .putLong(
-                holder.game.keyLastPlayedTime,
-                System.currentTimeMillis()
-            )
-            .apply()
-
-        val action = HomeNavigationDirections.actionGlobalEmulationActivity(holder.game)
-        view.findNavController().navigate(action)
     }
 
-    /**
-     * Opens the about game dialog for the game that was clicked on.
-     *
-     * @param view The view representing the game the user wants to play.
-     */
-    override fun onLongClick(view: View): Boolean {
-        val context = view.context
-        val holder = view.tag as GameViewHolder
-        gameExists(holder)
+    fun setSelectedHomePath(path: String?) {
+        if (path == selectedHomePath) return
+        val previous = selectedHomePath
+        selectedHomePath = path
+        notifyTileStatus(previous, path)
+    }
 
-        if (!holder.game.valid) {
-            MaterialAlertDialogBuilder(context)
+    fun setActiveHomePath(path: String?) {
+        if (path == activeHomePath) return
+        val previous = activeHomePath
+        activeHomePath = path
+        notifyTileStatus(previous, path)
+    }
+
+    private fun notifyTileStatus(previous: String?, path: String?) {
+        currentList.forEachIndexed { index, game ->
+            if (game.path == previous || game.path == path) {
+                notifyItemChanged(index, "home_selection")
+            }
+        }
+    }
+
+    override fun getItemCount(): Int = currentList.size
+
+    /** HOME selects first; other library consumers retain direct activation. */
+    override fun onClick(view: View) {
+        val game = (view.tag as GameViewHolder).game
+        val select = onHomeTileClick
+        if (select != null) {
+            select(game)
+            view.requestFocusFromTouch()
+        } else {
+            launchGame(game)
+        }
+    }
+
+    fun launchGame(game: Game) {
+        val active = EmulationActivity.activeGame
+        if (active?.path == game.path) {
+            onBeforeNavigate?.invoke()
+            EmulationActivity.resumeGame(activity)
+            return
+        }
+        if (active != null) {
+            onBeforeModal?.invoke()
+            propertiesDialog = MaterialAlertDialogBuilder(activity)
+                .setTitle(R.string.emulation_close_game)
+                .setMessage(activity.getString(R.string.home_switch_game, active.title, game.title))
+                .setPositiveButton(android.R.string.ok) { _, _ -> startGame(game) }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
+            return
+        }
+        startGame(game)
+    }
+
+    private fun startGame(game: Game) {
+        if (!gameExists(game)) return
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastClickTime < 1000) return
+        lastClickTime = now
+        preferences.edit().putLong(game.keyLastPlayedTime, System.currentTimeMillis()).apply()
+        onBeforeNavigate?.invoke()
+        EmulationActivity.launchGame(navController, game)
+    }
+
+    override fun onLongClick(view: View): Boolean {
+        val game = (view.tag as GameViewHolder).game
+        onHomeTileFocus?.invoke(game)
+        showGameProperties(game)
+        return true
+    }
+
+    fun showGameProperties(game: Game) {
+        if (!gameExists(game)) return
+        onBeforeModal?.invoke()
+        if (!game.valid) {
+            propertiesDialog = MaterialAlertDialogBuilder(activity)
                 .setTitle(R.string.properties)
                 .setMessage(R.string.properties_not_loaded)
                 .setPositiveButton(android.R.string.ok, null)
                 .show()
         } else {
-            showAboutGameDialog(context, holder.game, holder, view)
+            showAboutGameDialog(activity, game)
         }
-        return true
     }
 
     // Triggers a library refresh if the user clicks on stale data
-    private fun gameExists(holder: GameViewHolder): Boolean {
-        if (holder.game.isInstalled) {
+    private fun gameExists(game: Game): Boolean {
+        if (game.isInstalled) {
             return true
         }
-        val path = holder.game.path
+        val path = game.path
         val pathUri = path.toUri()
         var gameExists: Boolean
         if (BuildUtil.isGooglePlayBuild || FileUtil.isNativePath(path)) {
@@ -192,58 +265,39 @@ class GameAdapter(
 
         init {
             binding.cardGame.tag = this
+            binding.cardGame.setOnFocusChangeListener { _, focused ->
+                if (focused && ::game.isInitialized) onHomeTileFocus?.invoke(game)
+            }
         }
 
         fun bind(game: Game) {
             this.game = game
-
-            binding.imageGameScreen.scaleType = ImageView.ScaleType.CENTER_CROP
-            GameIconUtils.loadGameIcon(activity, game, binding.imageGameScreen)
-
-            binding.textCompany.visibility = if (game.company.isEmpty()) {
-                View.GONE
-            } else {
-                View.VISIBLE
-            }
-            binding.textGameRegion.visibility = if (game.regions.isEmpty()) {
-                View.GONE
-            } else {
-                View.VISIBLE
-            }
-
-            binding.textGameTitle.text = if (game.fileType == "unknown") {
+            binding.imageGameScreen.scaleType = ImageView.ScaleType.FIT_CENTER
+            GameIconUtils.loadGameIcon(game, binding.imageGameScreen)
+            val title = if (game.fileType == "unknown") {
                 CitraApplication.appContext.getString(R.string.invalid_rom)
             } else {
                 game.title
             }
-            binding.textCompany.text = game.company
-            binding.textGameRegion.text = translateRegions(game.regions)
+            binding.textGameTitle.text = title
+            binding.cardGame.contentDescription = title
+            updateStatus()
             binding.imageCartridge.visibility =
-                if (preferences.getString("insertedCartridge", "") != game.path) {
-                    View.GONE
-                } else {
+                if (preferences.getString("insertedCartridge", "") == game.path) {
                     View.VISIBLE
+                } else {
+                    View.GONE
                 }
+        }
 
-            binding.cardContents.setBackgroundColor(
-                MaterialColors.getColor(
-                    binding.cardContents,
-                    R.attr.colorSurface
-                )
-            )
-
-            binding.textGameTitle.postDelayed(
-                {
-                    binding.textGameTitle.ellipsize = TextUtils.TruncateAt.MARQUEE
-                    binding.textGameTitle.isSelected = true
-
-                    binding.textCompany.ellipsize = TextUtils.TruncateAt.MARQUEE
-                    binding.textCompany.isSelected = true
-
-                    binding.textGameRegion.ellipsize = TextUtils.TruncateAt.MARQUEE
-                    binding.textGameRegion.isSelected = true
-                },
-                3000
+        fun updateStatus() {
+            binding.cardGame.isSelected = game.path == selectedHomePath
+            binding.cardGame.isFocusedByDefault = onHomeTileClick != null && binding.cardGame.isSelected
+            val active = game.path == activeHomePath
+            binding.homeActiveBadge.visibility = if (active) View.VISIBLE else View.GONE
+            ViewCompat.setStateDescription(
+                binding.cardGame,
+                if (active) activity.getString(R.string.home_active_game) else null
             )
         }
     }
@@ -439,7 +493,7 @@ class GameAdapter(
         popup.show()
     }
 
-    private fun translateRegions(regionsString: String): String {
+    fun translateRegions(regionsString: String): String {
         val regions = regionsString.split("|")
 
         var final = ""
@@ -484,15 +538,11 @@ class GameAdapter(
         return final
     }
 
-    private fun showAboutGameDialog(
-        context: Context,
-        game: Game,
-        holder: GameViewHolder,
-        view: View
-    ) {
+    private fun showAboutGameDialog(context: Context, game: Game) {
         val bottomSheetView = inflater.inflate(R.layout.dialog_about_game, null)
 
         val bottomSheetDialog = BottomSheetDialog(context)
+        propertiesDialog = bottomSheetDialog
         bottomSheetDialog.setContentView(bottomSheetView)
 
         val insertable = game.isInsertable
@@ -529,11 +579,24 @@ class GameAdapter(
             notifyItemRangeChanged(0, currentList.size)
         }
 
-        GameIconUtils.loadGameIcon(activity, game, bottomSheetView.findViewById(R.id.game_icon))
+        bottomSheetView.findViewById<MaterialButton>(R.id.game_settings).apply {
+            isEnabled = game.titleId != 0L
+            setOnClickListener {
+                onBeforeNavigate?.invoke()
+                bottomSheetDialog.dismiss()
+                SettingsActivity.launch(
+                    activity,
+                    SettingsFile.FILE_NAME_CONFIG,
+                    String.format("%016X", game.titleId)
+                )
+            }
+        }
+
+        GameIconUtils.loadGameIcon(game, bottomSheetView.findViewById(R.id.game_icon))
 
         bottomSheetView.findViewById<MaterialButton>(R.id.about_game_play).setOnClickListener {
-            val action = HomeNavigationDirections.actionGlobalEmulationActivity(holder.game)
-            view.findNavController().navigate(action)
+            launchGame(game)
+            bottomSheetDialog.dismiss()
         }
 
         bottomSheetView.findViewById<TextView>(R.id.about_game_playtime).text =
@@ -571,7 +634,7 @@ class GameAdapter(
             dialogShortcutBinding = DialogShortcutBinding.inflate(activity.layoutInflater)
 
             dialogShortcutBinding!!.shortcutNameInput.setText(game.title)
-            GameIconUtils.loadGameIcon(activity, game, dialogShortcutBinding!!.shortcutIcon)
+            GameIconUtils.loadGameIcon(game, dialogShortcutBinding!!.shortcutIcon)
 
             dialogShortcutBinding!!.shortcutIcon.setOnClickListener {
                 openImageLauncher?.launch("image/*")
@@ -587,7 +650,7 @@ class GameAdapter(
                 refreshShortcutDialogIcon()
             }
 
-            MaterialAlertDialogBuilder(context)
+            nestedPropertiesDialog = MaterialAlertDialogBuilder(context)
                 .setTitle(R.string.create_shortcut)
                 .setView(dialogShortcutBinding!!.root)
                 .setPositiveButton(android.R.string.ok) { _, _ ->
@@ -629,8 +692,8 @@ class GameAdapter(
         }
 
         bottomSheetView.findViewById<MaterialButton>(R.id.cheats).setOnClickListener {
-            val action = CheatsFragmentDirections.actionGlobalCheatsFragment(holder.game.titleId)
-            view.findNavController().navigate(action)
+            val action = CheatsFragmentDirections.actionGlobalCheatsFragment(game.titleId)
+            navController.navigate(action)
             bottomSheetDialog.dismiss()
         }
 
@@ -650,12 +713,12 @@ class GameAdapter(
             compressDecompressButton.setOnClickListener {
                 val shouldCompress = !game.isCompressed
                 val recommendedExt = NativeLibrary.getRecommendedExtension(
-                    holder.game.path,
+                    game.path,
                     shouldCompress
                 )
-                val baseName = holder.game.filename.substringBeforeLast('.')
+                val baseName = game.filename.substringBeforeLast('.')
                 onRequestCompressOrDecompress?.invoke(
-                    holder.game.path,
+                    game.path,
                     "$baseName.$recommendedExt",
                     shouldCompress
                 )
@@ -731,6 +794,7 @@ class GameAdapter(
             }
 
             dialog.show()
+            nestedPropertiesDialog = dialog
         }
 
         val bottomSheetBehavior = bottomSheetDialog.getBehavior()

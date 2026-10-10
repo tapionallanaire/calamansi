@@ -2,9 +2,9 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
-        android:id="@+id/homeSettingsFragment"
-        android:icon="@drawable/ic_more"
-        android:title="@string/home_options" />
+        android:id="@+id/gamesFragment"
+        android:icon="@drawable/selector_controller"
+        android:title="@string/home_games" />
 
     <item
         android:id="@+id/searchFragment"
@@ -12,8 +12,13 @@
         android:title="@string/home_search" />
 
     <item
-        android:id="@+id/gamesFragment"
-        android:icon="@drawable/selector_controller"
-        android:title="@string/home_games" />
+        android:id="@+id/homeSettingsFragment"
+        android:icon="@drawable/ic_more"
+        android:title="@string/home_options" />
+
+    <item
+        android:id="@+id/appsFragment"
+        android:icon="@drawable/ic_apps"
+        android:title="@string/home_apps" />
 
 </menu>

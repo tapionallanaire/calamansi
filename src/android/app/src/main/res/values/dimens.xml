@@ -16,4 +16,6 @@
     <dimen name="spacing_fab">24dp</dimen>
 
     <dimen name="dialog_margin">20dp</dimen>
+    <dimen name="home_tile_width">104dp</dimen>
+    <dimen name="app_tile_width">156dp</dimen>
 </resources>

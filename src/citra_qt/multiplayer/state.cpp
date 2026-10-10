@@ -44,7 +44,7 @@ MultiplayerState::MultiplayerState(Core::System& system_, QWidget* parent,
         announce_multiplayer_session = std::make_shared<Network::AnnounceMultiplayerSession>(
             validation.GetNickname()->validate(username, pos) == QValidator::State::Acceptable
                 ? username.toStdString()
-                : "Azahar");
+                : "Calamansi");
     }
     announce_multiplayer_session->BindErrorCallback(
         [this](const Common::WebResult& result) { emit AnnounceFailed(result); });
@@ -300,7 +300,7 @@ void MultiplayerState::UpdateCredentials() {
     announce_multiplayer_session->UpdateCredentials(
         validation.GetNickname()->validate(username, pos) == QValidator::State::Acceptable
             ? username.toStdString()
-            : "Azahar");
+            : "Calamansi");
 }
 
 void MultiplayerState::UpdateGameList(QStandardItemModel* game_list) {

@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-10T08:49:20+00:00",
+  "title": "Design System: Calamansi Classic HOME",
+  "extensions": {
+    "platform": "android",
+    "source": "Native XML Views; DESIGN.md tokens use dp. No browser component preview is claimed.",
+    "colorMeta": {
+      "home-silver": { "role": "neutral", "displayName": "Embossed Silver" },
+      "home-action-green": { "role": "primary", "displayName": "Readable Deep Green" },
+      "home-mint": { "role": "secondary", "displayName": "Selection Mint" }
+    },
+    "shadows": [
+      { "name": "cartridge", "value": "Android elevation 2dp", "purpose": "Shallow square game tiles." },
+      { "name": "preview", "value": "Android elevation 3dp", "purpose": "Selected icon preview." }
+    ],
+    "nativeComponents": [
+      { "name": "Cartridge", "kind": "card", "source": "src/android/app/src/main/res/layout/card_game.xml", "description": "Real icon, accessible full title, native ripple and mint corner focus; HOME is square and icon-only." },
+      { "name": "Preview", "kind": "custom", "source": "src/android/app/src/main/res/layout/view_home_preview.xml", "description": "Real selected-game icon, title and wrapping metadata." },
+      { "name": "Utility strip", "kind": "nav", "source": "src/android/app/src/main/res/layout/view_home_library.xml", "description": "Games, Search, Options and All Apps change the upper page with one persistent lower library." },
+      { "name": "Selected-game shelf", "kind": "button", "source": "src/android/app/src/main/res/layout/view_home_library.xml", "description": "Full title, Properties and Open; empty libraries disable launch." },
+      { "name": "Active-session shelf", "kind": "custom", "source": "src/android/app/src/main/res/layout/view_home_library.xml", "description": "Paused-game identity, directly resumable icon and title-specific configuration gear." },
+      { "name": "Android app tile", "kind": "card", "source": "src/android/app/src/main/res/layout/card_app.xml", "description": "Real installed launcher icon and wrapping name; normal Android launch intent." },
+      { "name": "Status strip", "kind": "custom", "source": "src/android/app/src/main/res/layout/view_home_status.xml", "description": "Native clock and non-animated blue battery segments, reflecting real capacity on resume." }
+    ],
+    "assets": [
+      { "path": "src/android/app/src/main/res/drawable-mdpi/home_embossed_pattern.png", "origin": "Authored geometric raster", "provenance": "Embedded impeccable:provenance PNG iTXt record contains the complete generation recipe." }
+    ]
+  },
+  "components": [],
+  "narrative": {
+    "northStar": "A real handheld HOME library",
+    "keyCharacteristics": [
+      "Permanently silver-white Games, Search, All Apps and Options with a persistent lower game library.",
+      "Square icon-only cartridges with full-title accessibility labels.",
+      "Static embossed texture, shallow native elevation and immediate mint selection.",
+      "Existing Android navigation, dialogs, system Back and controller affordances."
+    ],
+    "dos": [
+      "Do use actual game icons, metadata and existing native actions.",
+      "Do preserve visible focus, system Back, scalable text and native touch targets.",
+      "Do keep HOME and emulation presentation ownership separate."
+    ],
+    "donts": [
+      "Don't restore tall Material cards as the HOME visual direction.",
+      "Don't fabricate Nintendo utilities, banners or cover art.",
+      "Don't add continuous visual work or change renderer settings for the HOME theme."
+    ]
+  }
+}

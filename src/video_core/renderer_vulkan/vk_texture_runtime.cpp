@@ -1021,6 +1021,17 @@ void Surface::UploadCustom(const VideoCore::Material* material, u32 level) {
     };
 
     upload(Type::Base, color);
+    if (res_scale != 1) {
+        const VideoCore::TextureBlit blit = {
+            .src_level = level,
+            .dst_level = level,
+            .src_rect = rect,
+            .dst_rect = rect,
+        };
+        // HD materials already have their final size; populate the image sampled by the renderer.
+        runtime.renderpass_cache.EndRendering();
+        BlitScale(blit, true);
+    }
     if (auto* texture = material->textures[u32(MapType::Normal)]) {
         upload(Type::Custom, texture);
     }

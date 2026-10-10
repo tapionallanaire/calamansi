@@ -36,6 +36,7 @@
 #include "common/settings.h"
 #include "common/string_util.h"
 #include "core/core.h"
+#include "core/movie.h"
 #include "core/frontend/applets/default_applets.h"
 #include "core/frontend/camera/factory.h"
 #include "core/hle/service/am/am.h"
@@ -246,6 +247,16 @@ static Core::System::ResultStatus RunCitra(const std::string& filepath) {
         }
     });
 
+    // Resolve title overrides before creating the backend-specific Android window.
+    u64 program_id{};
+    FileUtil::SetCurrentRomPath(filepath);
+    auto app_loader = Loader::GetLoader(filepath);
+    if (app_loader) {
+        app_loader->ReadProgramId(program_id);
+        system.RegisterAppLoaderEarly(app_loader);
+    }
+    Config{program_id ? fmt::format("{:016X}", program_id) : std::string{}};
+
     const auto graphics_api = Settings::GetWorkingGraphicsAPI();
     EGLContext* shared_context;
     switch (graphics_api) {
@@ -285,16 +296,6 @@ static Core::System::ResultStatus RunCitra(const std::string& filepath) {
         break;
     }
 
-    // Forces a config reload on game boot, if the user changed settings in the UI
-    Config{};
-    // Replace with game-specific settings
-    u64 program_id{};
-    FileUtil::SetCurrentRomPath(filepath);
-    auto app_loader = Loader::GetLoader(filepath);
-    if (app_loader) {
-        app_loader->ReadProgramId(program_id);
-        system.RegisterAppLoaderEarly(app_loader);
-    }
     system.ApplySettings();
     Settings::LogSettings();
 
@@ -885,7 +886,7 @@ jlong Java_org_citra_citra_1emu_NativeLibrary_getRunningTitleId([[maybe_unused]]
     return static_cast<jlong>(title_id);
 }
 
-jboolean Java_org_citra_citra_1emu_NativeLibrary_onGamePadEvent([[maybe_unused]] JNIEnv* env,
+jboolean Java_org_citra_citra_1emu_NativeLibrary_onGamePadEventNative([[maybe_unused]] JNIEnv* env,
                                                                 [[maybe_unused]] jobject obj,
                                                                 [[maybe_unused]] jstring j_device,
                                                                 jint j_button, jint action) {
@@ -1008,14 +1009,13 @@ void Java_org_citra_citra_1emu_NativeLibrary_logUserDirectory(JNIEnv* env,
 
 void Java_org_citra_citra_1emu_NativeLibrary_reloadSettings([[maybe_unused]] JNIEnv* env,
                                                             [[maybe_unused]] jobject obj) {
-    Config{};
     Core::System& system{Core::System::GetInstance()};
 
-    // Replace with game-specific settings
+    u64 program_id{};
     if (system.IsPoweredOn()) {
-        u64 program_id{};
         system.GetAppLoader().ReadProgramId(program_id);
     }
+    Config{program_id ? fmt::format("{:016X}", program_id) : std::string{}};
 
     if (multiplayer) {
         multiplayer->UpdateCredentials();

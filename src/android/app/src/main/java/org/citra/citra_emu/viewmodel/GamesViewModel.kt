@@ -6,6 +6,7 @@ package org.citra.citra_emu.viewmodel
 
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
@@ -19,9 +20,10 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import org.citra.citra_emu.CitraApplication
 import org.citra.citra_emu.model.Game
+import org.citra.citra_emu.model.resolveHomeSelection
 import org.citra.citra_emu.utils.GameHelper
 
-class GamesViewModel : ViewModel() {
+class GamesViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel() {
     val games get() = _games.asStateFlow()
     private val _games = MutableStateFlow(emptyList<Game>())
 
@@ -39,6 +41,19 @@ class GamesViewModel : ViewModel() {
 
     val searchFocused get() = _searchFocused.asStateFlow()
     private val _searchFocused = MutableStateFlow(false)
+
+    private val _selectedHomeGame = MutableStateFlow<Game?>(null)
+    val selectedHomeGame = _selectedHomeGame.asStateFlow()
+
+    fun selectHomeGame(game: Game?) {
+        savedStateHandle["home_selected_path"] = game?.path
+        _selectedHomeGame.value = game
+    }
+
+    fun reconcileHomeGames(visible: List<Game>) {
+        if (visible.isEmpty() && _isReloading.value) return
+        selectHomeGame(resolveHomeSelection(visible, savedStateHandle["home_selected_path"]))
+    }
 
     init {
         // Retrieve list of cached games

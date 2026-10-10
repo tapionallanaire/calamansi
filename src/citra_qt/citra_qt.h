@@ -305,7 +305,7 @@ private slots:
 #endif
     void OnCoreError(Core::System::ResultStatus, std::string);
     bool ShowExceptionDialog(Core::System::ResultStatus result, const std::string& details);
-    /// Called whenever a user selects Help->About Azahar
+    /// Called whenever a user selects Help->About Calamansi
     void OnMenuAboutCitra();
 
     void OnLanguageChanged(const QString& locale);

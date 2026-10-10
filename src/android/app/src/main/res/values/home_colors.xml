@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="home_silver">#EFF2F4</color>
+    <color name="home_silver_deep">#DFE5E9</color>
+    <color name="home_tile_highlight">#FFFFFF</color>
+    <color name="home_tile_base">#E7ECEF</color>
+    <color name="home_outline">#BEC8CF</color>
+    <color name="home_ink">#283B46</color>
+    <color name="home_secondary_ink">#526670</color>
+    <color name="home_mint">#5CD1A2</color>
+    <color name="home_action_green">#216C52</color>
+    <color name="home_action_container">#D1F2E3</color>
+    <color name="home_status_blue">#36B4DC</color>
+</resources>

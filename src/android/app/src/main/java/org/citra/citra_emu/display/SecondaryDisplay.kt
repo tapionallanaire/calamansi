@@ -8,7 +8,6 @@ import android.app.Presentation
 import android.content.Context
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
-import android.os.Build
 import android.os.Bundle
 import android.view.Display
 import android.view.MotionEvent
@@ -22,13 +21,14 @@ import org.citra.citra_emu.utils.Log
 
 class SecondaryDisplay(val context: Context) : DisplayManager.DisplayListener {
     private var pres: SecondaryDisplayPresentation? = null
+    private var active = false
     private val displayManager = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
     private val vd: VirtualDisplay
     var preferredDisplayId = -1
     var currentDisplayId = -1
 
     val availableDisplays: List<Display>
-        get() = getSecondaryDisplays()
+        get() = secondaryDisplayCandidates(context)
 
     init {
         vd = displayManager.createVirtualDisplay(
@@ -55,37 +55,21 @@ class SecondaryDisplay(val context: Context) : DisplayManager.DisplayListener {
         NativeLibrary.secondarySurfaceDestroyed()
     }
 
-    private fun getSecondaryDisplays(): List<Display> {
-        val dm = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
-        val currentDisplayId = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            context.display.displayId
-        } else {
-            @Suppress("DEPRECATION")
-            (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager)
-                .defaultDisplay.displayId
-        }
-        val displays = dm.displays
-        val presDisplays = dm.getDisplays(DisplayManager.DISPLAY_CATEGORY_PRESENTATION)
-        return displays.filter {
-            val isPresentable = presDisplays.any { pd -> pd.displayId == it.displayId }
-            val isNotDefaultOrPresentable =
-                (it != null && it.displayId != Display.DEFAULT_DISPLAY) || isPresentable
 
-            isNotDefaultOrPresentable &&
-                it.displayId != currentDisplayId &&
-                it.name != "HiddenDisplay" &&
-                it.state != Display.STATE_OFF &&
-                it.isValid
-        }
+    fun setActive(active: Boolean) {
+        this.active = active
+        if (active) updateDisplay() else releasePresentation()
     }
 
     fun updateDisplay() {
+        if (!active) return
         // return early if the parent context is dead or dying
         if (context is android.app.Activity && (context.isFinishing || context.isDestroyed)) {
             return
         }
+        val candidates = availableDisplays
 
-        val displayToUse = if (availableDisplays.isEmpty() ||
+        val displayToUse = if (candidates.isEmpty() ||
             // Theoretically, the NONE option is no longer selectable, but
             // I am leaving this in for backwards compatibility
             IntSetting.SECONDARY_DISPLAY_LAYOUT.int == SecondaryDisplayLayout.NONE.int ||
@@ -93,22 +77,10 @@ class SecondaryDisplay(val context: Context) : DisplayManager.DisplayListener {
         ) {
             currentDisplayId = -1
             vd.display
-        } else if (preferredDisplayId >= 0 &&
-            availableDisplays.any { it.displayId == preferredDisplayId }
-        ) {
-            currentDisplayId = preferredDisplayId
-            availableDisplays.first { it.displayId == preferredDisplayId }
         } else {
-            val dm = context.getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
-            val default = dm.displays.first { it.displayId == Display.DEFAULT_DISPLAY }
-            // prioritize displays that have a different name from the default display, as
-            // some devices such as the Odin 2 create a permanent virtual display with the same
-            // name as the default display that should be skipped in most cases
-            currentDisplayId = availableDisplays.firstOrNull {
-                it.name != default.name && !it.name.contains("Built", true)
-            }?.displayId
-                ?: availableDisplays[0].displayId
-            availableDisplays.first { it.displayId == currentDisplayId }
+            selectSecondaryDisplay(context, candidates, preferredDisplayId)!!.also {
+                currentDisplayId = it.displayId
+            }
         }
 
         // if our presentation is already on the right display, ignore
@@ -131,7 +103,7 @@ class SecondaryDisplay(val context: Context) : DisplayManager.DisplayListener {
         }
     }
 
-    fun releasePresentation() {
+    private fun releasePresentation() {
         try {
             pres?.dismiss()
         } catch (_: Exception) { }
@@ -139,6 +111,7 @@ class SecondaryDisplay(val context: Context) : DisplayManager.DisplayListener {
     }
 
     fun releaseVD() {
+        setActive(false)
         displayManager.unregisterDisplayListener(this)
         vd.release()
     }

@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:background="?attr/colorSurface"
     android:orientation="vertical">
 
     <com.google.android.material.bottomsheet.BottomSheetDragHandleView
@@ -127,6 +128,7 @@
                 android:contentDescription="@string/play"
                 android:focusedByDefault="true"
                 android:text="@string/play"
+                app:cornerRadius="8dp"
                 android:textAlignment="center"
                 app:icon="@drawable/ic_play" />
 
@@ -174,7 +176,7 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/cheats"
-                style="@style/Widget.Material3.Button.TonalButton.Icon"
+                style="@style/Widget.Azahar.Home.Action"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:contentDescription="@string/cheats"
@@ -182,14 +184,14 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/insert_cartridge_button"
-                style="@style/Widget.Material3.Button.TonalButton.Icon"
+                style="@style/Widget.Azahar.Home.Action"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/compress_decompress"
-                style="@style/Widget.Material3.Button.TonalButton.Icon"
+                style="@style/Widget.Azahar.Home.Action"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
@@ -212,11 +214,20 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/delete_cache"
-                style="@style/Widget.Material3.Button.TonalButton.Icon"
+                style="@style/Widget.Azahar.Home.Action"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:contentDescription="@string/delete_shader_cache"
                 android:text="@string/delete_shader_cache" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/game_settings"
+                style="@style/Widget.Azahar.Home.Action"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="@string/game_settings"
+                app:icon="@drawable/ic_settings" />
         </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>

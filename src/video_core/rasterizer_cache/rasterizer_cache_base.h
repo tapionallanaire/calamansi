@@ -138,6 +138,11 @@ public:
     /// Clear all cached resources tracked by this cache manager
     void ClearAll(bool flush);
 
+    /// True when the current draw composites a game post-processing buffer (bloom/blur made
+    /// from a downscaled copy of a render target) into a non post-processing target and the
+    /// user asked to skip those.
+    bool IsPostFxCompositeDraw() const;
+
 private:
     /// Iterate over all page indices in a range
     template <typename Func>
@@ -225,6 +230,7 @@ private:
     Common::SlotVector<Sampler> slot_samplers;
     Common::SlotVector<Framebuffer> slot_framebuffers;
     SurfaceMap dirty_regions;
+    SurfaceRegions post_fx_regions;
     PageMap cached_pages;
     u32 resolution_scale_factor;
     FramebufferParams fb_params;

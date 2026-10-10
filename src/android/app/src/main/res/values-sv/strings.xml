@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_disclaimer">Den här programvaran kör program för den bärbara spelkonsolen Nintendo 3DS. Inga spel ingår.\n\nInnan du kan börja emulera måste du välja en mapp där Azahars användardata ska lagras.\n\nVad är detta:\n<a href='https://github.com/azahar-emu/azahar/wiki/Android-User-Data-and-Storage'>Wiki – Citra Androids användardata och lagring</a></string>
-    <string name="app_notification_channel_description">Aviseringar för Azahar 3DS-emulator</string>
-    <string name="app_notification_running">Azahar är igång</string>
-    <string name="app_game_install_description">Näst måste du välja en applikationsmapp. Azahar kommer att visa alla 3DS ROM i den valda mappen i appen.\n\nCIA ROM, uppdateringar och DLC måste installeras separat genom att klicka på mappikonen och välja Installera CIA.</string>
+    <string name="app_disclaimer">Den här programvaran kör program för den bärbara spelkonsolen Nintendo 3DS. Inga spel ingår.\n\nInnan du kan börja emulera måste du välja en mapp där Calamansis användardata ska lagras.\n\nVad är detta:\n<a href='https://github.com/azahar-emu/azahar/wiki/Android-User-Data-and-Storage'>Wiki – Citra Androids användardata och lagring</a></string>
+    <string name="app_notification_channel_description">Aviseringar för Calamansi 3DS-emulator</string>
+    <string name="app_notification_running">Calamansi är igång</string>
+    <string name="app_game_install_description">Näst måste du välja en applikationsmapp. Calamansi kommer att visa alla 3DS ROM i den valda mappen i appen.\n\nCIA ROM, uppdateringar och DLC måste installeras separat genom att klicka på mappikonen och välja Installera CIA.</string>
 
     <!-- Home Strings -->
     <string name="grid_menu_core_settings">Inställningar</string>
@@ -15,7 +15,7 @@
     <string name="install_game_content">Installera CIA-fil</string>
     <string name="install_game_content_description">Installera program, uppdateringar eller DLC</string>
     <string name="share_log">Dela logg</string>
-    <string name="share_log_description">Dela Azahars loggfil för att felsöka problem</string>
+    <string name="share_log_description">Dela Calamansis loggfil för att felsöka problem</string>
     <string name="gpu_driver_manager">GPU-drivrutinshanterare</string>
     <string name="install_gpu_driver">Installera GPU-drivrutin</string>
     <string name="install_gpu_driver_description">Installera alternativa drivrutiner för potentiellt bättre prestanda eller noggrannhet</string>
@@ -24,12 +24,12 @@
     <string name="custom_driver_not_supported_description">Inläsning av anpassade drivrutiner stöds för närvarande inte för den här enheten.\nKontrollera det här alternativet igen i framtiden för att se om stöd har lagts till!</string>
     <string name="share_log_not_found">Ingen loggfil hittad</string>
     <string name="select_games_folder">Välj applikationsmapp</string>
-    <string name="select_games_folder_description">Låter Azahar fylla i programlistan</string>
+    <string name="select_games_folder_description">Låter Calamansi fylla i programlistan</string>
     <string name="about">Om</string>
     <string name="citra_description">En 3DS-emulator med öppen källkod</string>
     <string name="about_description">Byggversion, krediter och mer</string>
     <string name="games_dir_selected">Applikationskatalog vald</string>
-    <string name="select_citra_user_folder_home_description">Ändrar de filer som Azahar använder för att ladda applikationer</string>
+    <string name="select_citra_user_folder_home_description">Ändrar de filer som Calamansi använder för att ladda applikationer</string>
     <string name="theme_and_color_description">Modifiera utseendet på appen</string>
     <string name="install_cia_title">Installera CIA</string>
 
@@ -57,12 +57,12 @@
     <string name="copied_to_clipboard">Kopierat till urklipp</string>
     <string name="contributors">Bidragsgivare</string>
     <string name="contributors_description">Bidragsgivare som gjorde Azahar möjligt</string>
-    <string name="licenses_description">Projekt som används av Azahar för Android</string>
+    <string name="licenses_description">Projekt som används av Calamansi för Android</string>
     <string name="build">Byggd</string>
     <string name="licenses">Licenser</string>
     <!-- Setup strings -->
     <string name="welcome">Välkommen!</string>
-    <string name="welcome_description">Lär dig hur du ställer in &lt;b>Azahar&lt;/b> och börjar med emulering.</string>
+    <string name="welcome_description">Lär dig hur du ställer in &lt;b>Calamansi&lt;/b> och börjar med emulering.</string>
     <string name="get_started">Gå igång</string>
     <string name="step_complete">Färdigt! </string>
     <string name="games">Applikationer</string>
@@ -74,15 +74,15 @@
     <string name="notifications_description">Ge tillstånd för aviseringar med knappen nedan.</string>
     <string name="give_permission">Ge tillstånd</string>
     <string name="notification_warning">Hoppa över att ge tillstånd för avisering? </string>
-    <string name="notification_warning_description">Azahar kommer inte att kunna meddela dig viktig information.</string>
+    <string name="notification_warning_description">Calamansi kommer inte att kunna meddela dig viktig information.</string>
     <string name="filesystem_permission_warning">Saknar behörigheter</string>
-    <string name="filesystem_permission_warning_description">Azahar behöver behörighet för att hantera filer på den här enheten för att kunna lagra och hantera sina data. \n\nGe behörighet för ”Filsystem” innan du fortsätter.</string>
+    <string name="filesystem_permission_warning_description">Calamansi behöver behörighet för att hantera filer på den här enheten för att kunna lagra och hantera sina data. \n\nGe behörighet för ”Filsystem” innan du fortsätter.</string>
     <string name="camera_permission">Kamera</string>
     <string name="camera_permission_description">Ge kameratillståndet nedan för att emulera 3DS-kameran.</string>
     <string name="microphone_permission">Mikrofon</string>
     <string name="microphone_permission_description">Ge mikrofonbehörighet nedan för att emulera 3DS-mikrofonen.</string>
     <string name="filesystem_permission">Filsystem</string>
-    <string name="filesystem_permission_description">Bevilja filsystemsbehörighet nedan för att tillåta Azahar att lagra filer.</string>
+    <string name="filesystem_permission_description">Bevilja filsystemsbehörighet nedan för att tillåta Calamansi att lagra filer.</string>
     <string name="permission_denied">Tillstånd nekat</string>
     <string name="add_games_warning">Hoppa över att välja applikationsmapp?</string>
     <string name="add_games_warning_description">Programvara visas inte i listan Program om en mapp inte är markerad.</string>
@@ -95,18 +95,18 @@
     <string name="warning_cancel">Avbryt</string>
     <string name="select_citra_user_folder">Välj användarmapp</string>
     <string name="select_citra_user_folder_description"><![CDATA[Välj katalogen för dina <a href=\"https://github.com/azahar-emu/azahar/wiki/Android-User-Data-and-Storage\">användardata</a> med knappen nedan.]]></string>
-    <string name="select_which_user_directory_to_use">Du verkar ha användarkataloger inställda för både Lime3DS och Azahar. Detta beror troligen på att du uppgraderade till Azahar och när du blev ombedd att välja en annan användarkatalog än den som användes för Lime3DS. \n\nDetta kan ha lett till att du trodde att du förlorat sparade spel eller andra inställningar – vi ber om ursäkt om så är fallet. Vill du gå tillbaka till att använda din ursprungliga Lime3DS-användarkatalog och återställa inställningar och spara spel från Lime3DS, eller behålla din nuvarande Azahar-användarkatalog? Ingen av katalogerna kommer att raderas, oavsett vilket val du gör, och du kan fritt växla mellan dem med hjälp av alternativet Välj användarkatalog.</string>
-    <string name="keep_current_azahar_directory">Behåll aktuell Azahar-katalog</string>
+    <string name="select_which_user_directory_to_use">Du verkar ha användarkataloger inställda för både Lime3DS och Azahar. Detta beror troligen på att du uppgraderade till Azahar och när du blev ombedd att välja en annan användarkatalog än den som användes för Lime3DS. \n\nDetta kan ha lett till att du trodde att du förlorat sparade spel eller andra inställningar – vi ber om ursäkt om så är fallet. Vill du gå tillbaka till att använda din ursprungliga Lime3DS-användarkatalog och återställa inställningar och spara spel från Lime3DS, eller behålla din nuvarande Calamansi-användarkatalog? Ingen av katalogerna kommer att raderas, oavsett vilket val du gör, och du kan fritt växla mellan dem med hjälp av alternativet Välj användarkatalog.</string>
+    <string name="keep_current_azahar_directory">Behåll aktuell Calamansi-katalog</string>
     <string name="use_prior_lime3ds_directory">Använd tidigare Lime3DS-katalog</string>
     <string name="select">Välj</string>
     <string name="cannot_skip">Du kan inte hoppa över konfiguration av användarmappen</string>
-    <string name="cannot_skip_directory_description">Detta steg krävs för att Azahar ska fungera. Välj en katalog och sedan kan du fortsätta.</string>
+    <string name="cannot_skip_directory_description">Detta steg krävs för att Calamansi ska fungera. Välj en katalog och sedan kan du fortsätta.</string>
     <string name="selecting_user_directory_without_write_permissions">Du har förlorat skrivbehörigheten till katalogen för dina <a href="https://github.com/azahar-emu/azahar/wiki/Android-User-Data-and-Storage">användardata</a>, där sparfiler och annan information lagras. Det kan hända efter vissa app- eller Android-uppdateringar. Välj katalogen igen för att återfå behörigheten så att du kan fortsätta.</string>
     <string name="invalid_selection">Ogiltigt val</string>
     <string name="invalid_user_directory">Valet av användarkatalog var ogiltigt. Välj användarkatalogen igen och se till att du navigerar till den från roten av enhetens lagring.</string>
-    <string name="filesystem_permission_lost">Azahar har förlorat behörigheten att hantera filer på den här enheten. Detta kan inträffa efter vissa app- eller Android-uppdateringar. Bevilja denna behörighet på nästa skärm för att fortsätta använda appen.</string>
+    <string name="filesystem_permission_lost">Calamansi har förlorat behörigheten att hantera filer på den här enheten. Detta kan inträffa efter vissa app- eller Android-uppdateringar. Bevilja denna behörighet på nästa skärm för att fortsätta använda appen.</string>
     <string name="set_up_theme_settings">Temainställningar</string>
-    <string name="setup_theme_settings_description">Konfigurera dina temapreferenser för Azahar.</string>
+    <string name="setup_theme_settings_description">Konfigurera dina temapreferenser för Calamansi.</string>
     <string name="setup_set_theme">Ställ in tema</string>
 
     <!-- Search Strings -->
@@ -413,7 +413,7 @@
     <string name="setting_not_editable">Du kan inte redigera detta nu</string>
     <string name="setting_disabled">Inställning inaktiverad</string>
     <string name="setting_disabled_description_incompatible_setting">Den här inställningen är för närvarande inaktiverad eftersom en annan inställning inte har rätt värde.</string>
-    <string name="setting_disabled_description_angle">Renderaren kan inte ändras eftersom enheten använder ANGLE för OpenGL, vilket för närvarande inte är kompatibelt med Azahar. Vulkan kommer att användas.</string>
+    <string name="setting_disabled_description_angle">Renderaren kan inte ändras eftersom enheten använder ANGLE för OpenGL, vilket för närvarande inte är kompatibelt med Calamansi. Vulkan kommer att användas.</string>
     <string name="setting_not_editable_description">Det här alternativet kan inte ändras medan ett spel pågår.</string>
     <string name="auto_select">Autovälj</string>
     <string name="start">Starta</string>
@@ -451,7 +451,7 @@
     <string name="loader_error_applying_patches_description">Ett allmänt fel inträffade när en patch tillämpades på programmet. Läs loggen för mer information.</string>
     <string name="loader_error_patch_wrong_application">Det gick inte att tillämpa en patch eftersom den är avsedd för ett annat program. Kontrollera att du använder patchar för rätt program, region och version.</string>
     <string name="loader_error_encrypted">Ditt ROM är krypterat</string>
-    <string name="loader_error_encrypted_description"><![CDATA[Azahar stöder inte krypterade program. Läs vårt <a href=\"https://azahar-emu.org/blog/game-loading-changes/\">blogginlägg</a> för mer information.]]></string>
+    <string name="loader_error_encrypted_description"><![CDATA[Calamansi stöder inte krypterade program. Läs vårt <a href=\"https://azahar-emu.org/blog/game-loading-changes/\">blogginlägg</a> för mer information.]]></string>
     <string name="loader_error_file_not_found">ROM-filen finns inte</string>
     <string name="no_game_present">Inget startbart spel närvarande!</string>
     <string name="invalid_rom">Ogiltig ROM</string>
@@ -504,7 +504,7 @@
     <string name="emulation_switch_screen_layout">Liggande skärmlayout</string>
     <string name="emulation_switch_portrait_layout">Stående skärmlayout</string>
     <string name="emulation_secondary_display_enable">Aktivera sekundär skärm</string>
-    <string name="emulation_secondary_display_enable_description">Om detta är inaktiverat låter Azahar Android hantera anslutna skärmar. Om det är aktiverat och flera skärmar är anslutna kan du välja vilken Azahar ska använda i emuleringens snabbmeny.</string>
+    <string name="emulation_secondary_display_enable_description">Om detta är inaktiverat låter Calamansi Android hantera anslutna skärmar. Om det är aktiverat och flera skärmar är anslutna kan du välja vilken Calamansi ska använda i emuleringens snabbmeny.</string>
     <string name="emulation_switch_secondary_layout">Layout för sekundär skärm</string>
     <string name="emulation_secondary_display_management">Sekundär skärm</string>
     <string name="emulation_select_secondary_display">Välj skärm</string>
@@ -622,7 +622,7 @@
     <string name="unsupported_encrypted">Krypterad applikation som inte stöds</string>
     <string name="invalid_system_mode">Ogiltigt systemläge</string>
     <string name="invalid_system_mode_message">Nya 3DS-exklusiva applikationer kan inte läsas in utan att aktivera Ny 3DS-läget.</string>
-    <string name="savestate_build_mismatch_message"><![CDATA[Det gick inte att läsa in det sparade tillståndet eftersom det skapades med en annan Azahar-version:<br/><b>Azahar %1$s</b>.<br/><br/>Läs vårt blogginlägg <a href=\"https://azahar-emu.org/blog/understanding-save-states/\">om att förstå sparade tillstånd</a> för mer information.<br/><br/>För att återställa dina framsteg, nedgradera till <b>Azahar %1$s</b>, läs in detta sparade tillstånd och använd programmets inbyggda sparfunktion.]]></string>
+    <string name="savestate_build_mismatch_message"><![CDATA[Det gick inte att läsa in det sparade tillståndet eftersom det skapades med en annan Calamansi-version:<br/><b>Calamansi %1$s</b>.<br/><br/>Läs vårt blogginlägg <a href=\"https://azahar-emu.org/blog/understanding-save-states/\">om att förstå sparade tillstånd</a> för mer information.<br/><br/>För att återställa dina framsteg, nedgradera till <b>Calamansi %1$s</b>, läs in detta sparade tillstånd och använd programmets inbyggda sparfunktion.]]></string>
 
     <!-- Disk Shader Cache -->
     <string name="preparing_shaders">Förbereder shaders</string>
@@ -705,7 +705,7 @@
         <item quantity="one">Installerar %d fil. Se meddelande för mer information.</item>
         <item quantity="other">Installerar %d filer. Se meddelande för mer information.</item>
     </plurals>
-    <string name="cia_install_notification_channel_description">Azahar-meddelanden under CIA-installation</string>
+    <string name="cia_install_notification_channel_description">Calamansi-meddelanden under CIA-installation</string>
     <string name="cia_install_notification_title">Installation av CIA</string>
     <string name="cia_install_notification_installing">Installerar %1$s (%2$d/%3$d)</string>
     <string name="cia_install_notification_success_title">Har installerat CIA</string>
@@ -713,7 +713,7 @@
     <string name="cia_install_success">\"%s\" har installerats framgångsrikt</string>
     <string name="cia_install_error_aborted">Installationen av \"%s\" avbröts.\n Se loggen för mer information</string>
     <string name="cia_install_error_invalid">\"%s\" är inte en giltig CIA</string>
-    <string name="cia_install_error_encrypted">\"%s\" måste dekrypteras innan det kan användas med Azahar.\n En riktig 3DS krävs</string>
+    <string name="cia_install_error_encrypted">\"%s\" måste dekrypteras innan det kan användas med Calamansi.\n En riktig 3DS krävs</string>
     <string name="cia_install_error_unknown">Ett okänt fel inträffade under installationen av \"%s\".\n Se loggen för mer information</string>
 
     <string name="memory_byte">Byte</string>
@@ -1063,9 +1063,9 @@
     <string name="no_preference">Ingen preferens</string>
 
     <string name="update_available">Uppdatering tillgänglig</string>
-    <string name="update_available_description">En nyare version av Azahar finns tillgänglig (version %1$s).\nVill du hämta den?</string>
+    <string name="update_available_description">En nyare version av Azahar (upstream) finns tillgänglig (version %1$s).\nVill du hämta den?</string>
     <string name="check_for_updates">Sök efter uppdateringar</string>
-    <string name="check_for_updates_description">Visa en avisering i appen när en uppdatering finns tillgänglig för Azahar.</string>
+    <string name="check_for_updates_description">Visa en avisering i appen när en uppdatering finns tillgänglig för Azahar (upstream).</string>
     <string name="update_check_channel">Uppdateringskanal</string>
     <string name="update_check_channel_description">Vilken uppdateringskanal som ska användas vid kontroll av uppdateringar.</string>
     <string name="update_check_channel_stable">Stabil</string>

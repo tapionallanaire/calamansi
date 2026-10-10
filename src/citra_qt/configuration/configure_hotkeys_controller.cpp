@@ -48,7 +48,9 @@ void ConfigureControllerHotkeys::Populate(const HotkeyRegistry& registry) {
         QStandardItem* parent_item = new QStandardItem(group.first);
         parent_item->setEditable(false);
         for (const auto& hotkey : group.second) {
-            QStandardItem* action = new QStandardItem(hotkey.first);
+            QStandardItem* action = new QStandardItem(
+                hotkey.first == QStringLiteral("Exit Azahar") ? tr("Exit Calamansi") : hotkey.first);
+            action->setData(hotkey.first, Qt::UserRole);
             QStandardItem* controller_keyseq = new QStandardItem(hotkey.second.controller_keyseq);
             QStandardItem* readable_keyseq = new QStandardItem(
                 HotkeyRegistry::SequenceToString(hotkey.second.controller_keyseq));
@@ -93,6 +95,7 @@ void ConfigureControllerHotkeys::ApplyConfiguration(HotkeyRegistry& registry) {
         for (int key_column_id = 0; key_column_id < parent->rowCount(); key_column_id++) {
             const QStandardItem* action = parent->child(key_column_id, name_column);
             const QStandardItem* controller_keyseq = parent->child(key_column_id, hotkey_column);
+            const QString action_name_key = action->data(Qt::UserRole).toString();
             const QStringList sequences = controller_keyseq->text().split(QStringLiteral("||"));
             std::vector<Common::ParamPackage> params;
             std::transform(sequences.begin(), sequences.end(), std::back_inserter(params),
@@ -112,7 +115,7 @@ void ConfigureControllerHotkeys::ApplyConfiguration(HotkeyRegistry& registry) {
                 if (group != parent->text())
                     continue;
                 for (auto& [action_name, hotkey] : sub_actions) {
-                    if (action_name == action->text()) {
+                    if (action_name == action_name_key) {
                         if (controller_keyseq->text().isEmpty()) {
                             hotkey.controller_keyseq = QStringLiteral("");
                         } else {

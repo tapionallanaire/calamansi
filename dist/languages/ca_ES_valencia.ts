@@ -16,8 +16,8 @@
     <name>AboutDialog</name>
     <message>
         <location filename="../../src/citra_qt/aboutdialog.ui" line="14"/>
-        <source>About Azahar</source>
-        <translation>Sobre Azahar</translation>
+        <source>About Calamansi</source>
+        <translation>Sobre Calamansi</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/aboutdialog.ui" line="118"/>
@@ -738,8 +738,8 @@ Desitja ignorar l&apos;error i continuar?</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/configuration/configure_debug.ui" line="130"/>
-        <source>&lt;html&gt;&lt;body&gt;Immediately commits the debug log to file. Use this if Azahar crashes and the log output is being cut.&lt;br&gt;Enabling this feature will decrease performance, only use it for debugging purposes.&lt;/body&gt;&lt;/html&gt;</source>
-        <translation>&lt;html&gt;&lt;body&gt;Guarda immediatament el registre de depuració en un fitxer. Use-ho si Azahar falla i es talla l&apos;eixida del registre.&lt;br&gt;Habilitar esta funció reduirà el rendiment; usa-la només per a fins de depuració.&lt;/body&gt;&lt;/html&gt;</translation>
+        <source>&lt;html&gt;&lt;body&gt;Immediately commits the debug log to file. Use this if Calamansi crashes and the log output is being cut.&lt;br&gt;Enabling this feature will decrease performance, only use it for debugging purposes.&lt;/body&gt;&lt;/html&gt;</source>
+        <translation>&lt;html&gt;&lt;body&gt;Guarda immediatament el registre de depuració en un fitxer. Use-ho si Calamansi falla i es talla l&apos;eixida del registre.&lt;br&gt;Habilitar esta funció reduirà el rendiment; usa-la només per a fins de depuració.&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/configuration/configure_debug.ui" line="140"/>
@@ -878,16 +878,16 @@ Desitja ignorar l&apos;error i continuar?</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/configuration/configure_debug.cpp" line="87"/>
-        <source>Please relaunch Azahar for this setting to take effect.</source>
-        <translation>Per favor reinicia Azahar perquè esta opció prenga efecte.</translation>
+        <source>Please relaunch Calamansi for this setting to take effect.</source>
+        <translation>Per favor reinicia Calamansi perquè esta opció prenga efecte.</translation>
     </message>
 </context>
 <context>
     <name>ConfigureDialog</name>
     <message>
         <location filename="../../src/citra_qt/configuration/configure.ui" line="6"/>
-        <source>Azahar Configuration</source>
-        <translation>Configuració d&apos;Azahar</translation>
+        <source>Calamansi Configuration</source>
+        <translation>Configuració d&apos;Calamansi</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/configuration/configure_dialog.cpp" line="50"/>
@@ -1373,8 +1373,8 @@ Desitja ignorar l&apos;error i continuar?</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/configuration/configure_general.cpp" line="156"/>
-        <source>Are you sure you want to &lt;b&gt;reset your settings&lt;/b&gt; and close Azahar?</source>
-        <translation>Desitja de veritat&lt;b&gt;reiniciar la teua configuració&lt;/b&gt; y tancar Azahar?</translation>
+        <source>Are you sure you want to &lt;b&gt;reset your settings&lt;/b&gt; and close Calamansi?</source>
+        <translation>Desitja de veritat&lt;b&gt;reiniciar la teua configuració&lt;/b&gt; y tancar Calamansi?</translation>
     </message>
 </context>
 <context>
@@ -2945,8 +2945,8 @@ a les aplicacions instal·lades.</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/configuration/configure_system.ui" line="596"/>
-        <source>Your real console is linked to Azahar.</source>
-        <translation>La teua consola real està enllaçada a Azahar.</translation>
+        <source>Your real console is linked to Calamansi.</source>
+        <translation>La teua consola real està enllaçada a Calamansi.</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/configuration/configure_system.ui" line="612"/>
@@ -3700,8 +3700,8 @@ a les aplicacions instal·lades.</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/configuration/configure_system.cpp" line="612"/>
-        <source>This action will unlink your real console from Azahar, with the following consequences:&lt;br&gt;&lt;ul&gt;&lt;li&gt;Your OTP, SecureInfo and LocalFriendCodeSeed will be removed from Azahar.&lt;/li&gt;&lt;li&gt;Your friend list will reset and you will be logged out of your NNID/PNID account.&lt;/li&gt;&lt;li&gt;System files and eshop titles obtained through Azahar will become inaccessible until the same console is linked again (save data will not be lost).&lt;/li&gt;&lt;/ul&gt;&lt;br&gt;Continue?</source>
-        <translation>Esta acció desvincularà la teua consola real d&apos;Azahar, amb les següents conseqüències:&lt;ul&gt;&lt;li&gt;OTP, SecureInfo i LocalFriendCodeSeed seran eliminats de Azahar.&lt;/li&gt;&lt;li&gt;La teua llista d&apos;amics es restablirà i es tancarà la sessió del teu compte NNID/PNID.&lt;/li&gt;&lt;li&gt;Els fitxers del sistema i els títols de la eshop obtinguts a través d&apos;Azahar es tornaran inaccessibles fins que la mateixa consola es vincule novament mitjançant la ferramenta de configuració (les dades guardades no es perdran).&lt;/li&gt;&lt;/ul&gt;&lt;br&gt;Continuar?</translation>
+        <source>This action will unlink your real console from Calamansi, with the following consequences:&lt;br&gt;&lt;ul&gt;&lt;li&gt;Your OTP, SecureInfo and LocalFriendCodeSeed will be removed from Calamansi.&lt;/li&gt;&lt;li&gt;Your friend list will reset and you will be logged out of your NNID/PNID account.&lt;/li&gt;&lt;li&gt;System files and eshop titles obtained through Calamansi will become inaccessible until the same console is linked again (save data will not be lost).&lt;/li&gt;&lt;/ul&gt;&lt;br&gt;Continue?</source>
+        <translation>Esta acció desvincularà la teua consola real d&apos;Calamansi, amb les següents conseqüències:&lt;ul&gt;&lt;li&gt;OTP, SecureInfo i LocalFriendCodeSeed seran eliminats de Calamansi.&lt;/li&gt;&lt;li&gt;La teua llista d&apos;amics es restablirà i es tancarà la sessió del teu compte NNID/PNID.&lt;/li&gt;&lt;li&gt;Els fitxers del sistema i els títols de la eshop obtinguts a través d&apos;Calamansi es tornaran inaccessibles fins que la mateixa consola es vincule novament mitjançant la ferramenta de configuració (les dades guardades no es perdran).&lt;/li&gt;&lt;/ul&gt;&lt;br&gt;Continuar?</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/configuration/configure_system.cpp" line="640"/>
@@ -4149,13 +4149,13 @@ Per favor, comprove la instal·lació de FFmpeg usada per a la compilació.</tra
 
 When run this way, the app may be missing certain functionality such as camera emulation.
 
-It is recommended to instead run Azahar using the `open` command, e.g.:
+It is recommended to instead run Calamansi using the `open` command, e.g.:
 `open ./Azahar.app`</source>
         <translation>L&apos;executable `azahar` s&apos;ha executat directament en lloc del paquet Azahar.app.
 
 En executar-se d&apos;esta manera, és possible que l&apos;aplicació no tinga certes funcions, com l&apos;emulació de càmera.
 
-Es recomana executar Azahar amb el comando `*open`, per exemple: `*open ./Azahar.app`</translation>
+Es recomana executar Calamansi amb el comando `*open`, per exemple: `*open ./Azahar.app`</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/citra_qt.cpp" line="602"/>
@@ -4204,9 +4204,9 @@ Es recomana executar Azahar amb el comando `*open`, per exemple: `*open ./Azahar
     </message>
     <message>
         <location filename="../../src/citra_qt/citra_qt.cpp" line="1306"/>
-        <source>Azahar is running an application</source>
+        <source>Calamansi is running an application</source>
         <extracomment>TRANSLATORS: This string is shown to the user to explain why Citra needs to prevent the computer from sleeping</extracomment>
-        <translation>Azahar està executant una aplicació</translation>
+        <translation>Calamansi està executant una aplicació</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/citra_qt.cpp" line="1378"/>
@@ -4235,8 +4235,8 @@ Es recomana executar Azahar amb el comando `*open`, per exemple: `*open ./Azahar
     </message>
     <message>
         <location filename="../../src/citra_qt/citra_qt.cpp" line="1411"/>
-        <source>GBA Virtual Console is not supported by Azahar.</source>
-        <translation>Consola Virtual de GBA no està suportada per Azahar.</translation>
+        <source>GBA Virtual Console is not supported by Calamansi.</source>
+        <translation>Consola Virtual de GBA no està suportada per Calamansi.</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/citra_qt.cpp" line="1416"/>
@@ -4455,8 +4455,8 @@ Comprove el registre per a més detalls.</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/citra_qt.cpp" line="2317"/>
-        <source>&lt;p&gt;Azahar needs console unique data and firmware files from a real console to be able to use some of its features.&lt;br&gt;Such files and data can be set up with the &lt;a href=https://github.com/azahar-emu/ArticSetupTool&gt;Azahar Artic Setup Tool&lt;/a&gt;&lt;br&gt;Notes:&lt;ul&gt;&lt;li&gt;&lt;b&gt;This operation will install console unique data to Azahar, do not share your user or nand folders&lt;br&gt;after performing the setup process!&lt;/b&gt;&lt;/li&gt;&lt;li&gt;While doing the setup process, Azahar will link to the console running the setup tool. You can unlink the&lt;br&gt;console later from the System tab in the emulator configuration menu.&lt;/li&gt;&lt;li&gt;Do not go online with both Azahar and your 3DS console at the same time after setting up system files,&lt;br&gt;as it could cause issues.&lt;/li&gt;&lt;li&gt;Old 3DS setup is needed for the New 3DS setup to work (doing both setup modes is recommended).&lt;/li&gt;&lt;li&gt;Both setup modes will work regardless of the model of the console running the setup tool.&lt;/li&gt;&lt;/ul&gt;&lt;hr&gt;&lt;/p&gt;</source>
-        <translation>&lt;p&gt;Azahar necessita fitxers d&apos;una consola real per poder utilitzar algunes de les seues funcions.&lt;br&gt;Pots obtindre els fitxers amb la &lt;a href=https://github.com/azahar-emu/ArticSetupTool&gt;ferramenta de configuració Azahar&lt;/a&gt;&lt;br&gt;Notes:&lt;ul&gt;&lt;li&gt;&lt;b&gt;Aquesta operació instal·larà fitxers únics de la consola a Azahar, no compartisques les teues carpetes d&apos;usuari o nand&lt;br&gt;després de completar el procés de configuració!&lt;/b&gt;&lt;/li&gt;&lt;li&gt;Després de la configuració, Azahar s&apos;enllaçarà a la consola que ha executat la ferramenta de configuració. Pots desvincular la&lt;br&gt;consola més tard des de la pestanya &quot;Fitxers de sistema&quot; del menú d&apos;opcions de l&apos;emulador.&lt;/li&gt;&lt;li&gt;No et connectes en línia amb Azahar i la consola 3DS al mateix temps després de configurar els arxius del sistema,&lt;br&gt;ja que això podria causar problemes.&lt;/li&gt;&lt;li&gt;La configuració de Old 3DS és necessària perquè funcione la configuració de New 3DS (configurar els dos modes és recomanat).&lt;/li&gt;&lt;li&gt;Els dos modes de configuració funcionaran independentment del model de la consola que execute la ferramenta de configuració.&lt;/li&gt;&lt;/ul&gt;&lt;hr&gt;&lt;/p&gt;</translation>
+        <source>&lt;p&gt;Calamansi needs console unique data and firmware files from a real console to be able to use some of its features.&lt;br&gt;Such files and data can be set up with the &lt;a href=https://github.com/azahar-emu/ArticSetupTool&gt;Azahar Artic Setup Tool&lt;/a&gt;&lt;br&gt;Notes:&lt;ul&gt;&lt;li&gt;&lt;b&gt;This operation will install console unique data to Calamansi, do not share your user or nand folders&lt;br&gt;after performing the setup process!&lt;/b&gt;&lt;/li&gt;&lt;li&gt;While doing the setup process, Calamansi will link to the console running the setup tool. You can unlink the&lt;br&gt;console later from the System tab in the emulator configuration menu.&lt;/li&gt;&lt;li&gt;Do not go online with both Calamansi and your 3DS console at the same time after setting up system files,&lt;br&gt;as it could cause issues.&lt;/li&gt;&lt;li&gt;Old 3DS setup is needed for the New 3DS setup to work (doing both setup modes is recommended).&lt;/li&gt;&lt;li&gt;Both setup modes will work regardless of the model of the console running the setup tool.&lt;/li&gt;&lt;/ul&gt;&lt;hr&gt;&lt;/p&gt;</source>
+        <translation>&lt;p&gt;Calamansi necessita fitxers d&apos;una consola real per poder utilitzar algunes de les seues funcions.&lt;br&gt;Pots obtindre els fitxers amb la &lt;a href=https://github.com/azahar-emu/ArticSetupTool&gt;ferramenta de configuració Azahar&lt;/a&gt;&lt;br&gt;Notes:&lt;ul&gt;&lt;li&gt;&lt;b&gt;Aquesta operació instal·larà fitxers únics de la consola a Calamansi, no compartisques les teues carpetes d&apos;usuari o nand&lt;br&gt;després de completar el procés de configuració!&lt;/b&gt;&lt;/li&gt;&lt;li&gt;Després de la configuració, Calamansi s&apos;enllaçarà a la consola que ha executat la ferramenta de configuració. Pots desvincular la&lt;br&gt;consola més tard des de la pestanya &quot;Fitxers de sistema&quot; del menú d&apos;opcions de l&apos;emulador.&lt;/li&gt;&lt;li&gt;No et connectes en línia amb Calamansi i la consola 3DS al mateix temps després de configurar els arxius del sistema,&lt;br&gt;ja que això podria causar problemes.&lt;/li&gt;&lt;li&gt;La configuració de Old 3DS és necessària perquè funcione la configuració de New 3DS (configurar els dos modes és recomanat).&lt;/li&gt;&lt;li&gt;Els dos modes de configuració funcionaran independentment del model de la consola que execute la ferramenta de configuració.&lt;/li&gt;&lt;/ul&gt;&lt;hr&gt;&lt;/p&gt;</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/citra_qt.cpp" line="2336"/>
@@ -4727,12 +4727,12 @@ Usa&apos;ls sota el teu propi risc!</translation>
         <location filename="../../src/citra_qt/citra_qt.cpp" line="3253"/>
         <source>FFmpeg could not be loaded. Make sure you have a compatible version installed.
 
-To install FFmpeg to Azahar, press Open and select your FFmpeg directory.
+To install FFmpeg to Calamansi, press Open and select your FFmpeg directory.
 
 To view a guide on how to install FFmpeg, press Help.</source>
         <translation>No es va poder carregar FFmpeg. Assegure&apos;s de tindre una versió compatible instal·lada.
 
-Per a instal·lar FFmpeg en Azahar, polsa Obrir i tria el directori de FFmpeg.
+Per a instal·lar FFmpeg en Calamansi, polsa Obrir i tria el directori de FFmpeg.
 
 Per a veure una guia sobre com instal·lar FFmpeg, polsa Ajuda.</translation>
     </message>
@@ -4954,8 +4954,8 @@ Per a veure una guia sobre com instal·lar FFmpeg, polsa Ajuda.</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/citra_qt.cpp" line="3960"/>
-        <source>Could not load savestate because it was created on a different Azahar version:&lt;br/&gt;&lt;b&gt;Azahar %1&lt;/b&gt;.&lt;br/&gt;&lt;br/&gt;Please read our blog entry &lt;a href=&apos;https://azahar-emu.org/blog/understanding-save-states/&apos;&gt;understanding savestates&lt;/a&gt; for more information.&lt;br/&gt;&lt;br/&gt;To recover your progress, downgrade to &lt;b&gt;Azahar %1&lt;/b&gt;, load this savestate and use the application&apos;s built-in save functionality.</source>
-        <translation>No s&apos;ha pogut carregar l&apos;estat desat perquè es va crear amb una versió diferent d&apos;Azahar:&lt;br/&gt;&lt;b&gt;Azahar %1&lt;/b&gt;.&lt;br/&gt;&lt;br/&gt;Per favor llig el nostre blog &lt;a href=&apos;https://azahar-emu.org/blog/understanding-save-states/&apos;&gt;entenent estats desats&lt;/a&gt;per a més informació.&lt;br/&gt;&lt;br/&gt;Per a recuperar el teu progrés, torna a la versió &lt;b&gt;Azahar %1&lt;/b&gt;, carrega este estat desat i utilitza la funció de desat integrada de l&apos;aplicatiu emulat.</translation>
+        <source>Could not load savestate because it was created on a different Calamansi version:&lt;br/&gt;&lt;b&gt;Calamansi %1&lt;/b&gt;.&lt;br/&gt;&lt;br/&gt;Please read our blog entry &lt;a href=&apos;https://azahar-emu.org/blog/understanding-save-states/&apos;&gt;understanding savestates&lt;/a&gt; for more information.&lt;br/&gt;&lt;br/&gt;To recover your progress, downgrade to &lt;b&gt;Calamansi %1&lt;/b&gt;, load this savestate and use the application&apos;s built-in save functionality.</source>
+        <translation>No s&apos;ha pogut carregar l&apos;estat desat perquè es va crear amb una versió diferent d&apos;Calamansi:&lt;br/&gt;&lt;b&gt;Calamansi %1&lt;/b&gt;.&lt;br/&gt;&lt;br/&gt;Per favor llig el nostre blog &lt;a href=&apos;https://azahar-emu.org/blog/understanding-save-states/&apos;&gt;entenent estats desats&lt;/a&gt;per a més informació.&lt;br/&gt;&lt;br/&gt;Per a recuperar el teu progrés, torna a la versió &lt;b&gt;Calamansi %1&lt;/b&gt;, carrega este estat desat i utilitza la funció de desat integrada de l&apos;aplicatiu emulat.</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/citra_qt.cpp" line="3970"/>
@@ -5009,9 +5009,9 @@ Per a veure una guia sobre com instal·lar FFmpeg, polsa Ajuda.</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/citra_qt.cpp" line="4309"/>
-        <source>Update %1 for Azahar is available.
+        <source>Update %1 for Azahar (upstream) is available.
 Would you like to download it?</source>
-        <translation>L&apos;actualització %1 d&apos;Azahar ja està disponible.
+        <translation>L&apos;actualització %1 d&apos;Azahar (upstream) ja està disponible.
 Vols descarregar-la?</translation>
     </message>
     <message>
@@ -6193,8 +6193,8 @@ Missatge de depuració:</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/main.ui" line="81"/>
-        <source>Open Azahar Folder</source>
-        <translation>Obrir directori d&apos;Azahar</translation>
+        <source>Open Calamansi Folder</source>
+        <translation>Obrir directori d&apos;Calamansi</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/main.ui" line="104"/>
@@ -6308,8 +6308,8 @@ Missatge de depuració:</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/main.ui" line="353"/>
-        <source>About Azahar</source>
-        <translation>Sobre Azahar</translation>
+        <source>About Calamansi</source>
+        <translation>Sobre Calamansi</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/main.ui" line="364"/>
@@ -6473,8 +6473,8 @@ Missatge de depuració:</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/main.ui" line="585"/>
-        <source>Opens the Azahar Log folder</source>
-        <translation>Obrir directori de logs d&apos;Azahar</translation>
+        <source>Opens the Calamansi Log folder</source>
+        <translation>Obrir directori de logs d&apos;Calamansi</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/main.ui" line="593"/>
@@ -6902,8 +6902,8 @@ Missatge de depuració:</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/multiplayer/message.cpp" line="34"/>
-        <source>Creating a room failed. Please retry. Restarting Azahar might be necessary.</source>
-        <translation>No es va poder crear una sala. Per favor, torne a intentar-ho. Podria ser necessari reiniciar Azahar.</translation>
+        <source>Creating a room failed. Please retry. Restarting Calamansi might be necessary.</source>
+        <translation>No es va poder crear una sala. Per favor, torne a intentar-ho. Podria ser necessari reiniciar Calamansi.</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/multiplayer/message.cpp" line="36"/>
@@ -6912,8 +6912,8 @@ Missatge de depuració:</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/multiplayer/message.cpp" line="39"/>
-        <source>Version mismatch! Please update to the latest version of Azahar. If the problem persists, contact the room host and ask them to update the server.</source>
-        <translation>Discordança de versions! Per favor, actualitze a l&apos;última versió de Azahar. Si el problema contínua, parla amb l&apos;administrador de la sala i demana-li que actualitze el servidor.</translation>
+        <source>Version mismatch! Please update to the latest version of Calamansi. If the problem persists, contact the room host and ask them to update the server.</source>
+        <translation>Discordança de versions! Per favor, actualitze a l&apos;última versió de Calamansi. Si el problema contínua, parla amb l&apos;administrador de la sala i demana-li que actualitze el servidor.</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/multiplayer/message.cpp" line="41"/>
@@ -7360,9 +7360,9 @@ Pot ser que haja deixat la sala.</translation>
     <name>UserDataMigrator</name>
     <message>
         <location filename="../../src/citra_qt/user_data_migration.cpp" line="30"/>
-        <source>Would you like to migrate your data for use in Azahar?
+        <source>Would you like to migrate your data for use in Calamansi?
 (This may take a while; The old data will not be deleted)</source>
-        <translation>Vols migrar les teues dades per a usar-les en Azahar?
+        <translation>Vols migrar les teues dades per a usar-les en Calamansi?
 (Això podria demorar. Les dades originals no s&apos;esborraran)</translation>
     </message>
     <message>
@@ -7376,10 +7376,10 @@ Pot ser que haja deixat la sala.</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/user_data_migration.cpp" line="41"/>
-        <source>Azahar has detected user data for Citra and Lime3DS.
+        <source>Calamansi has detected user data for Citra and Lime3DS.
 
 </source>
-        <translation>Azahar ha detectat dades d&apos;usuari de Citra i Lime3DS
+        <translation>Calamansi ha detectat dades d&apos;usuari de Citra i Lime3DS
 
 </translation>
     </message>
@@ -7395,19 +7395,19 @@ Pot ser que haja deixat la sala.</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/user_data_migration.cpp" line="66"/>
-        <source>Azahar has detected user data for Citra.
+        <source>Calamansi has detected user data for Citra.
 
 </source>
-        <translation>Azahar ha detectat dades d&apos;usuari de Citra
+        <translation>Calamansi ha detectat dades d&apos;usuari de Citra
 
 </translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/user_data_migration.cpp" line="77"/>
-        <source>Azahar has detected user data for Lime3DS.
+        <source>Calamansi has detected user data for Lime3DS.
 
 </source>
-        <translation>Azahar ha detectat dades d&apos;usuari de Lime3DS
+        <translation>Calamansi ha detectat dades d&apos;usuari de Lime3DS
 
 </translation>
     </message>

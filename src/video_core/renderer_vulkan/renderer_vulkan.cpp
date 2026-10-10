@@ -299,8 +299,12 @@ void RendererVulkan::CompileShaders() {
         instance.IsImageArrayDynamicIndexSupported() ? "#define ARRAY_DYNAMIC_INDEX" : "";
     present_vertex_shader =
         Compile(HostShaders::VULKAN_PRESENT_VERT, vk::ShaderStageFlagBits::eVertex, device);
+    const auto& shader_name = Settings::values.pp_shader_name.GetValue();
+    const bool use_fxaa = shader_name == "FXAA (builtin)" || shader_name == "fxaa";
+    const std::string present_preamble =
+        std::string{preamble} + (use_fxaa ? "\n#define FXAA\n" : "");
     present_shaders[0] = Compile(HostShaders::VULKAN_PRESENT_FRAG,
-                                 vk::ShaderStageFlagBits::eFragment, device, preamble);
+                                 vk::ShaderStageFlagBits::eFragment, device, present_preamble);
     present_shaders[1] = Compile(HostShaders::VULKAN_PRESENT_ANAGLYPH_FRAG,
                                  vk::ShaderStageFlagBits::eFragment, device, preamble);
     present_shaders[2] = Compile(HostShaders::VULKAN_PRESENT_INTERLACED_FRAG,
@@ -796,6 +800,11 @@ void RendererVulkan::DrawSingleScreen(u32 screen_id, float x, float y, float w, 
     vertex_buffer.Commit(size);
 
     const u32 scale_factor = GetResolutionScaleFactor();
+    draw_info.texcoord_bounds =
+        Common::MakeVec(std::min(texcoords.bottom, texcoords.top),
+                        std::min(texcoords.left, texcoords.right),
+                        std::max(texcoords.bottom, texcoords.top),
+                        std::max(texcoords.left, texcoords.right));
     draw_info.i_resolution =
         Common::MakeVec(static_cast<f32>(screen_info.texture.width * scale_factor),
                         static_cast<f32>(screen_info.texture.height * scale_factor),
@@ -868,6 +877,11 @@ void RendererVulkan::DrawSingleScreenStereo(u32 screen_id_l, u32 screen_id_r, fl
     vertex_buffer.Commit(size);
 
     const u32 scale_factor = GetResolutionScaleFactor();
+    draw_info.texcoord_bounds =
+        Common::MakeVec(std::min(texcoords.bottom, texcoords.top),
+                        std::min(texcoords.left, texcoords.right),
+                        std::max(texcoords.bottom, texcoords.top),
+                        std::max(texcoords.left, texcoords.right));
     draw_info.i_resolution =
         Common::MakeVec(static_cast<f32>(screen_info_l.texture.width * scale_factor),
                         static_cast<f32>(screen_info_l.texture.height * scale_factor),

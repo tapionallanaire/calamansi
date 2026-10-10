@@ -11,7 +11,6 @@ import android.hardware.camera2.CameraAccessException
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
 import android.os.Build
-import android.text.TextUtils
 import androidx.preference.PreferenceManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.citra.citra_emu.BuildConfig
@@ -55,7 +54,6 @@ import org.citra.citra_emu.utils.ThemeUtil
 
 class SettingsFragmentPresenter(private val fragmentView: SettingsFragmentView) {
     private var menuTag: String? = null
-    private lateinit var gameId: String
     private var settingsList: ArrayList<SettingsItem>? = null
 
     private val settingsActivity get() = fragmentView.activityView as SettingsActivity
@@ -64,8 +62,7 @@ class SettingsFragmentPresenter(private val fragmentView: SettingsFragmentView) 
 
     private lateinit var preferences: SharedPreferences
 
-    fun onCreate(menuTag: String, gameId: String) {
-        this.gameId = gameId
+    fun onCreate(menuTag: String) {
         this.menuTag = menuTag
     }
 
@@ -87,9 +84,6 @@ class SettingsFragmentPresenter(private val fragmentView: SettingsFragmentView) 
     }
 
     fun loadSettingsList() {
-        if (!TextUtils.isEmpty(gameId)) {
-            settingsActivity.setToolbarTitle("Application Settings: $gameId")
-        }
         val sl = ArrayList<SettingsItem>()
         if (menuTag == null) {
             return
@@ -126,6 +120,18 @@ class SettingsFragmentPresenter(private val fragmentView: SettingsFragmentView) 
             else -> {
                 fragmentView.showToastMessage("Unimplemented menu", false)
                 return
+            }
+        }
+        if (settings.isPerGame) {
+            sl.removeAll { item ->
+                // Console identity and Android controller mappings are shared, not INI settings.
+                (item.setting != null && item.setting!!.key == null) ||
+                    item.setting == BooleanSetting.ANDROID_HIDE_IMAGES ||
+                    item.setting == BooleanSetting.CHECK_FOR_UPDATES ||
+                    item.setting?.section == Settings.SECTION_NETWORK ||
+                    (menuTag != SettingsFile.FILE_NAME_CONFIG && item is RunnableSetting) ||
+                    (item is SubmenuSetting && (item.menuKey == Settings.SECTION_CONTROLS ||
+                        item.menuKey == Settings.SECTION_NETWORK))
             }
         }
         settingsList = sl
@@ -227,15 +233,26 @@ class SettingsFragmentPresenter(private val fragmentView: SettingsFragmentView) 
 
             add(
                 RunnableSetting(
-                    R.string.reset_to_default,
-                    0,
+                    if (settings.isPerGame) R.string.use_global_settings else R.string.reset_to_default,
+                    if (settings.isPerGame) R.string.game_settings_description else 0,
                     false,
                     R.drawable.ic_restore,
                     {
-                        ResetSettingsDialogFragment().show(
-                            settingsActivity.supportFragmentManager,
-                            ResetSettingsDialogFragment.TAG
-                        )
+                        if (settings.isPerGame) {
+                            MaterialAlertDialogBuilder(settingsActivity)
+                                .setTitle(R.string.use_global_settings)
+                                .setMessage(R.string.use_global_settings_confirmation)
+                                .setPositiveButton(android.R.string.ok) { _, _ ->
+                                    settingsActivity.onSettingsReset()
+                                }
+                                .setNegativeButton(android.R.string.cancel, null)
+                                .show()
+                        } else {
+                            ResetSettingsDialogFragment().show(
+                                settingsActivity.supportFragmentManager,
+                                ResetSettingsDialogFragment.TAG
+                            )
+                        }
                     }
                 )
             )
@@ -394,7 +411,7 @@ class SettingsFragmentPresenter(private val fragmentView: SettingsFragmentView) 
                         checkCountryCompatibility()
                     }
                 override val key = IntSetting.EMULATED_REGION.key
-                override val section = null
+                override val section = IntSetting.EMULATED_REGION.section
                 override val isRuntimeEditable = false
                 override val valueAsString get() = int.toString()
                 override val defaultValue = IntSetting.EMULATED_REGION.defaultValue
@@ -1207,6 +1224,26 @@ class SettingsFragmentPresenter(private val fragmentView: SettingsFragmentView) 
                     BooleanSetting.USE_SKIP_DUPLICATE_FRAMES.defaultValue
                 )
             )
+            add(
+                SwitchSetting(
+                    BooleanSetting.DISABLE_GAME_POST_FX,
+                    R.string.disable_game_post_fx,
+                    R.string.disable_game_post_fx_description,
+                    BooleanSetting.DISABLE_GAME_POST_FX.key,
+                    BooleanSetting.DISABLE_GAME_POST_FX.defaultValue
+                )
+            )
+            add(
+                StringSingleChoiceSetting(
+                    StringSetting.POST_PROCESSING_SHADER,
+                    R.string.post_processing_shader,
+                    R.string.post_processing_shader_description,
+                    settingsActivity.resources.getStringArray(R.array.postProcessingShaderNames),
+                    settingsActivity.resources.getStringArray(R.array.postProcessingShaderValues),
+                    StringSetting.POST_PROCESSING_SHADER.key,
+                    StringSetting.POST_PROCESSING_SHADER.defaultValue
+                )
+            )
 
             // Disabled until custom texture implementation gets rewrite, current one overloads RAM
             // and crashes Citra.
@@ -1379,10 +1416,10 @@ class SettingsFragmentPresenter(private val fragmentView: SettingsFragmentView) 
                             SettingsFile.FILE_NAME_CONFIG
                         )
                     }
-                override val key = null
-                override val section = null
+                override val key = FloatSetting.BACKGROUND_RED.key
+                override val section = FloatSetting.BACKGROUND_RED.section
                 override val isRuntimeEditable = false
-                override val valueAsString = int.toString()
+                override val valueAsString get() = FloatSetting.BACKGROUND_RED.valueAsString
                 override val defaultValue = FloatSetting.BACKGROUND_RED.defaultValue.toInt()
             }
             add(
@@ -1405,10 +1442,10 @@ class SettingsFragmentPresenter(private val fragmentView: SettingsFragmentView) 
                             SettingsFile.FILE_NAME_CONFIG
                         )
                     }
-                override val key = null
-                override val section = null
+                override val key = FloatSetting.BACKGROUND_GREEN.key
+                override val section = FloatSetting.BACKGROUND_GREEN.section
                 override val isRuntimeEditable = false
-                override val valueAsString = int.toString()
+                override val valueAsString get() = FloatSetting.BACKGROUND_GREEN.valueAsString
                 override val defaultValue = FloatSetting.BACKGROUND_GREEN.defaultValue.toInt()
             }
             add(
@@ -1431,10 +1468,10 @@ class SettingsFragmentPresenter(private val fragmentView: SettingsFragmentView) 
                             SettingsFile.FILE_NAME_CONFIG
                         )
                     }
-                override val key = null
-                override val section = null
+                override val key = FloatSetting.BACKGROUND_BLUE.key
+                override val section = FloatSetting.BACKGROUND_BLUE.section
                 override val isRuntimeEditable = false
-                override val valueAsString = int.toString()
+                override val valueAsString get() = FloatSetting.BACKGROUND_BLUE.valueAsString
                 override val defaultValue = FloatSetting.BACKGROUND_BLUE.defaultValue.toInt()
             }
             add(

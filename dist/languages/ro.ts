@@ -18,8 +18,8 @@
     <name>AboutDialog</name>
     <message>
         <location filename="../../src/citra_qt/aboutdialog.ui" line="14"/>
-        <source>About Azahar</source>
-        <translation>Despre Azahar</translation>
+        <source>About Calamansi</source>
+        <translation>Despre Calamansi</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/aboutdialog.ui" line="118"/>
@@ -740,7 +740,7 @@ Doriți să ignorați eroarea și să continuați?</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/configuration/configure_debug.ui" line="130"/>
-        <source>&lt;html&gt;&lt;body&gt;Immediately commits the debug log to file. Use this if Azahar crashes and the log output is being cut.&lt;br&gt;Enabling this feature will decrease performance, only use it for debugging purposes.&lt;/body&gt;&lt;/html&gt;</source>
+        <source>&lt;html&gt;&lt;body&gt;Immediately commits the debug log to file. Use this if Calamansi crashes and the log output is being cut.&lt;br&gt;Enabling this feature will decrease performance, only use it for debugging purposes.&lt;/body&gt;&lt;/html&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -880,7 +880,7 @@ Doriți să ignorați eroarea și să continuați?</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/configuration/configure_debug.cpp" line="87"/>
-        <source>Please relaunch Azahar for this setting to take effect.</source>
+        <source>Please relaunch Calamansi for this setting to take effect.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -888,7 +888,7 @@ Doriți să ignorați eroarea și să continuați?</translation>
     <name>ConfigureDialog</name>
     <message>
         <location filename="../../src/citra_qt/configuration/configure.ui" line="6"/>
-        <source>Azahar Configuration</source>
+        <source>Calamansi Configuration</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1375,7 +1375,7 @@ Doriți să ignorați eroarea și să continuați?</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/configuration/configure_general.cpp" line="156"/>
-        <source>Are you sure you want to &lt;b&gt;reset your settings&lt;/b&gt; and close Azahar?</source>
+        <source>Are you sure you want to &lt;b&gt;reset your settings&lt;/b&gt; and close Calamansi?</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -2945,7 +2945,7 @@ installed applications.</source>
     </message>
     <message>
         <location filename="../../src/citra_qt/configuration/configure_system.ui" line="596"/>
-        <source>Your real console is linked to Azahar.</source>
+        <source>Your real console is linked to Calamansi.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3700,7 +3700,7 @@ installed applications.</source>
     </message>
     <message>
         <location filename="../../src/citra_qt/configuration/configure_system.cpp" line="612"/>
-        <source>This action will unlink your real console from Azahar, with the following consequences:&lt;br&gt;&lt;ul&gt;&lt;li&gt;Your OTP, SecureInfo and LocalFriendCodeSeed will be removed from Azahar.&lt;/li&gt;&lt;li&gt;Your friend list will reset and you will be logged out of your NNID/PNID account.&lt;/li&gt;&lt;li&gt;System files and eshop titles obtained through Azahar will become inaccessible until the same console is linked again (save data will not be lost).&lt;/li&gt;&lt;/ul&gt;&lt;br&gt;Continue?</source>
+        <source>This action will unlink your real console from Calamansi, with the following consequences:&lt;br&gt;&lt;ul&gt;&lt;li&gt;Your OTP, SecureInfo and LocalFriendCodeSeed will be removed from Calamansi.&lt;/li&gt;&lt;li&gt;Your friend list will reset and you will be logged out of your NNID/PNID account.&lt;/li&gt;&lt;li&gt;System files and eshop titles obtained through Calamansi will become inaccessible until the same console is linked again (save data will not be lost).&lt;/li&gt;&lt;/ul&gt;&lt;br&gt;Continue?</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4149,7 +4149,7 @@ Vă rugăm să verificați instalarea FFmpeg utilizată pentru compilare.</trans
 
 When run this way, the app may be missing certain functionality such as camera emulation.
 
-It is recommended to instead run Azahar using the `open` command, e.g.:
+It is recommended to instead run Calamansi using the `open` command, e.g.:
 `open ./Azahar.app`</source>
         <translation type="unfinished"></translation>
     </message>
@@ -4200,7 +4200,7 @@ It is recommended to instead run Azahar using the `open` command, e.g.:
     </message>
     <message>
         <location filename="../../src/citra_qt/citra_qt.cpp" line="1306"/>
-        <source>Azahar is running an application</source>
+        <source>Calamansi is running an application</source>
         <extracomment>TRANSLATORS: This string is shown to the user to explain why Citra needs to prevent the computer from sleeping</extracomment>
         <translation type="unfinished"></translation>
     </message>
@@ -4231,7 +4231,7 @@ It is recommended to instead run Azahar using the `open` command, e.g.:
     </message>
     <message>
         <location filename="../../src/citra_qt/citra_qt.cpp" line="1411"/>
-        <source>GBA Virtual Console is not supported by Azahar.</source>
+        <source>GBA Virtual Console is not supported by Calamansi.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4451,7 +4451,7 @@ Consultați log-urile pentru detalii.</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/citra_qt.cpp" line="2317"/>
-        <source>&lt;p&gt;Azahar needs console unique data and firmware files from a real console to be able to use some of its features.&lt;br&gt;Such files and data can be set up with the &lt;a href=https://github.com/azahar-emu/ArticSetupTool&gt;Azahar Artic Setup Tool&lt;/a&gt;&lt;br&gt;Notes:&lt;ul&gt;&lt;li&gt;&lt;b&gt;This operation will install console unique data to Azahar, do not share your user or nand folders&lt;br&gt;after performing the setup process!&lt;/b&gt;&lt;/li&gt;&lt;li&gt;While doing the setup process, Azahar will link to the console running the setup tool. You can unlink the&lt;br&gt;console later from the System tab in the emulator configuration menu.&lt;/li&gt;&lt;li&gt;Do not go online with both Azahar and your 3DS console at the same time after setting up system files,&lt;br&gt;as it could cause issues.&lt;/li&gt;&lt;li&gt;Old 3DS setup is needed for the New 3DS setup to work (doing both setup modes is recommended).&lt;/li&gt;&lt;li&gt;Both setup modes will work regardless of the model of the console running the setup tool.&lt;/li&gt;&lt;/ul&gt;&lt;hr&gt;&lt;/p&gt;</source>
+        <source>&lt;p&gt;Calamansi needs console unique data and firmware files from a real console to be able to use some of its features.&lt;br&gt;Such files and data can be set up with the &lt;a href=https://github.com/azahar-emu/ArticSetupTool&gt;Azahar Artic Setup Tool&lt;/a&gt;&lt;br&gt;Notes:&lt;ul&gt;&lt;li&gt;&lt;b&gt;This operation will install console unique data to Calamansi, do not share your user or nand folders&lt;br&gt;after performing the setup process!&lt;/b&gt;&lt;/li&gt;&lt;li&gt;While doing the setup process, Calamansi will link to the console running the setup tool. You can unlink the&lt;br&gt;console later from the System tab in the emulator configuration menu.&lt;/li&gt;&lt;li&gt;Do not go online with both Calamansi and your 3DS console at the same time after setting up system files,&lt;br&gt;as it could cause issues.&lt;/li&gt;&lt;li&gt;Old 3DS setup is needed for the New 3DS setup to work (doing both setup modes is recommended).&lt;/li&gt;&lt;li&gt;Both setup modes will work regardless of the model of the console running the setup tool.&lt;/li&gt;&lt;/ul&gt;&lt;hr&gt;&lt;/p&gt;</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4720,7 +4720,7 @@ Use at your own risk!</source>
         <location filename="../../src/citra_qt/citra_qt.cpp" line="3253"/>
         <source>FFmpeg could not be loaded. Make sure you have a compatible version installed.
 
-To install FFmpeg to Azahar, press Open and select your FFmpeg directory.
+To install FFmpeg to Calamansi, press Open and select your FFmpeg directory.
 
 To view a guide on how to install FFmpeg, press Help.</source>
         <translation type="unfinished"></translation>
@@ -4943,7 +4943,7 @@ To view a guide on how to install FFmpeg, press Help.</source>
     </message>
     <message>
         <location filename="../../src/citra_qt/citra_qt.cpp" line="3960"/>
-        <source>Could not load savestate because it was created on a different Azahar version:&lt;br/&gt;&lt;b&gt;Azahar %1&lt;/b&gt;.&lt;br/&gt;&lt;br/&gt;Please read our blog entry &lt;a href=&apos;https://azahar-emu.org/blog/understanding-save-states/&apos;&gt;understanding savestates&lt;/a&gt; for more information.&lt;br/&gt;&lt;br/&gt;To recover your progress, downgrade to &lt;b&gt;Azahar %1&lt;/b&gt;, load this savestate and use the application&apos;s built-in save functionality.</source>
+        <source>Could not load savestate because it was created on a different Calamansi version:&lt;br/&gt;&lt;b&gt;Calamansi %1&lt;/b&gt;.&lt;br/&gt;&lt;br/&gt;Please read our blog entry &lt;a href=&apos;https://azahar-emu.org/blog/understanding-save-states/&apos;&gt;understanding savestates&lt;/a&gt; for more information.&lt;br/&gt;&lt;br/&gt;To recover your progress, downgrade to &lt;b&gt;Calamansi %1&lt;/b&gt;, load this savestate and use the application&apos;s built-in save functionality.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4998,7 +4998,7 @@ To view a guide on how to install FFmpeg, press Help.</source>
     </message>
     <message>
         <location filename="../../src/citra_qt/citra_qt.cpp" line="4309"/>
-        <source>Update %1 for Azahar is available.
+        <source>Update %1 for Azahar (upstream) is available.
 Would you like to download it?</source>
         <translation type="unfinished"></translation>
     </message>
@@ -6178,7 +6178,7 @@ Debug Message: </source>
     </message>
     <message>
         <location filename="../../src/citra_qt/main.ui" line="81"/>
-        <source>Open Azahar Folder</source>
+        <source>Open Calamansi Folder</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6293,8 +6293,8 @@ Debug Message: </source>
     </message>
     <message>
         <location filename="../../src/citra_qt/main.ui" line="353"/>
-        <source>About Azahar</source>
-        <translation type="unfinished">Despre Azahar</translation>
+        <source>About Calamansi</source>
+        <translation type="unfinished">Despre Calamansi</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/main.ui" line="364"/>
@@ -6458,7 +6458,7 @@ Debug Message: </source>
     </message>
     <message>
         <location filename="../../src/citra_qt/main.ui" line="585"/>
-        <source>Opens the Azahar Log folder</source>
+        <source>Opens the Calamansi Log folder</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6886,7 +6886,7 @@ Debug Message: </source>
     </message>
     <message>
         <location filename="../../src/citra_qt/multiplayer/message.cpp" line="34"/>
-        <source>Creating a room failed. Please retry. Restarting Azahar might be necessary.</source>
+        <source>Creating a room failed. Please retry. Restarting Calamansi might be necessary.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6896,7 +6896,7 @@ Debug Message: </source>
     </message>
     <message>
         <location filename="../../src/citra_qt/multiplayer/message.cpp" line="39"/>
-        <source>Version mismatch! Please update to the latest version of Azahar. If the problem persists, contact the room host and ask them to update the server.</source>
+        <source>Version mismatch! Please update to the latest version of Calamansi. If the problem persists, contact the room host and ask them to update the server.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -7341,7 +7341,7 @@ They may have left the room.</source>
     <name>UserDataMigrator</name>
     <message>
         <location filename="../../src/citra_qt/user_data_migration.cpp" line="30"/>
-        <source>Would you like to migrate your data for use in Azahar?
+        <source>Would you like to migrate your data for use in Calamansi?
 (This may take a while; The old data will not be deleted)</source>
         <translation type="unfinished"></translation>
     </message>
@@ -7356,7 +7356,7 @@ They may have left the room.</source>
     </message>
     <message>
         <location filename="../../src/citra_qt/user_data_migration.cpp" line="41"/>
-        <source>Azahar has detected user data for Citra and Lime3DS.
+        <source>Calamansi has detected user data for Citra and Lime3DS.
 
 </source>
         <translation type="unfinished"></translation>
@@ -7373,14 +7373,14 @@ They may have left the room.</source>
     </message>
     <message>
         <location filename="../../src/citra_qt/user_data_migration.cpp" line="66"/>
-        <source>Azahar has detected user data for Citra.
+        <source>Calamansi has detected user data for Citra.
 
 </source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/user_data_migration.cpp" line="77"/>
-        <source>Azahar has detected user data for Lime3DS.
+        <source>Calamansi has detected user data for Lime3DS.
 
 </source>
         <translation type="unfinished"></translation>

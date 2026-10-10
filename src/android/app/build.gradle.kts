@@ -158,6 +158,14 @@ android {
             }
         }
 
+        // Release build that installs alongside the official app (own package id and label).
+        register("fatesFix") {
+            initWith(getByName("release"))
+            applicationIdSuffix = ".fatesfix"
+            versionNameSuffix = "-fatesfix"
+            matchingFallbacks += listOf("release")
+        }
+
         // Signed by debug key disallowing distribution on Play Store.
         // Attaches 'debug' suffix to version and package name, allowing installation alongside the release build.
         debug {

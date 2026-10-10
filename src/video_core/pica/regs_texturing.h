@@ -457,6 +457,116 @@ struct TexturingRegs {
     const std::array<TevStageConfig, 6> GetTevStages() const {
         return {{tev_stage0, tev_stage1, tev_stage2, tev_stage3, tev_stage4, tev_stage5}};
     };
+
+    /// Texture inputs which reach the final TEV RGB output, not merely bound samplers.
+    u32 GetTevTextureMask() const {
+        using Source = TevStageConfig::Source;
+        using Operation = TevStageConfig::Operation;
+        using Modifier = TevStageConfig::ColorModifier;
+        std::array<u8, 4> previous{}, buffer{}, next_buffer{};
+        const auto source_mask = [&](Source source, u32 channel) -> u8 {
+            switch (source) {
+            case Source::Texture0:
+            case Source::Texture1:
+            case Source::Texture2:
+                return 1U << (static_cast<u32>(source) - static_cast<u32>(Source::Texture0));
+            case Source::Previous:
+                return previous[channel];
+            case Source::PreviousBuffer:
+                return buffer[channel];
+            default:
+                return 0;
+            }
+        };
+        const auto color_mask = [&](Source source, Modifier modifier, u32 channel) -> u8 {
+            switch (modifier) {
+            case Modifier::SourceColor:
+            case Modifier::OneMinusSourceColor:
+                break;
+            case Modifier::SourceAlpha:
+            case Modifier::OneMinusSourceAlpha:
+                channel = 3;
+                break;
+            case Modifier::SourceRed:
+            case Modifier::OneMinusSourceRed:
+                channel = 0;
+                break;
+            case Modifier::SourceGreen:
+            case Modifier::OneMinusSourceGreen:
+                channel = 1;
+                break;
+            case Modifier::SourceBlue:
+            case Modifier::OneMinusSourceBlue:
+                channel = 2;
+                break;
+            default:
+                return 0;
+            }
+            return source_mask(source, channel);
+        };
+        const auto input_count = [](Operation op) {
+            switch (op) {
+            case Operation::Replace:
+                return 1U;
+            case Operation::Lerp:
+            case Operation::MultiplyThenAdd:
+            case Operation::AddThenMultiply:
+                return 3U;
+            case Operation::Modulate:
+            case Operation::Add:
+            case Operation::AddSigned:
+            case Operation::Subtract:
+            case Operation::Dot3_RGB:
+            case Operation::Dot3_RGBA:
+                return 2U;
+            default:
+                return 0U;
+            }
+        };
+        const auto stages = GetTevStages();
+        for (u32 index = 0; index < stages.size(); ++index) {
+            const auto& stage = stages[index];
+            std::array<u8, 4> output{};
+            for (u32 channel = 0; channel < 4; ++channel) {
+                const bool alpha = channel == 3;
+                if (alpha && stage.color_op == Operation::Dot3_RGBA) {
+                    output[3] = output[0];
+                    continue;
+                }
+                const Operation op = alpha ? stage.alpha_op.Value() : stage.color_op.Value();
+                for (u32 input = 0; input < input_count(op); ++input) {
+                    const auto source = static_cast<Source>(
+                        (stage.sources_raw >> ((alpha ? 16 : 0) + input * 4)) & 0xF);
+                    const u32 modifier =
+                        (stage.modifiers_raw >> ((alpha ? 12 : 0) + input * 4)) &
+                        (alpha ? 0x7 : 0xF);
+                    if (alpha) {
+                        output[channel] |= source_mask(source, modifier < 2 ? 3 : modifier / 2 - 1);
+                    } else if (op == Operation::Dot3_RGB || op == Operation::Dot3_RGBA) {
+                        for (u32 component = 0; component < 3; ++component) {
+                            output[channel] |=
+                                color_mask(source, static_cast<Modifier>(modifier), component);
+                        }
+                    } else {
+                        output[channel] |=
+                            color_mask(source, static_cast<Modifier>(modifier), channel);
+                    }
+                }
+            }
+            // The combiner buffer has a one-stage delay, matching the generated shaders.
+            buffer = next_buffer;
+            if (tev_combiner_buffer_input.TevStageUpdatesCombinerBufferColor(index)) {
+                for (u32 channel = 0; channel < 3; ++channel) {
+                    next_buffer[channel] = output[channel];
+                }
+            }
+            if (tev_combiner_buffer_input.TevStageUpdatesCombinerBufferAlpha(index)) {
+                next_buffer[3] = output[3];
+            }
+            previous = output;
+        }
+        return previous[0] | previous[1] | previous[2];
+    }
 };
 
 static_assert(sizeof(TexturingRegs) == 0x80 * sizeof(u32),

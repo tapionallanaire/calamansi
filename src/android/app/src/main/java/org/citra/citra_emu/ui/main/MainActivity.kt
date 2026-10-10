@@ -7,10 +7,13 @@ package org.citra.citra_emu.ui.main
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.ColorStateList
 import android.net.Uri
+import android.os.BatteryManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup.MarginLayoutParams
 import android.view.WindowManager
@@ -45,6 +48,7 @@ import kotlinx.coroutines.launch
 import org.citra.citra_emu.BuildConfig
 import org.citra.citra_emu.NativeLibrary
 import org.citra.citra_emu.R
+import org.citra.citra_emu.activities.EmulationActivity
 import org.citra.citra_emu.contracts.OpenFileResultContract
 import org.citra.citra_emu.databinding.ActivityMainBinding
 import org.citra.citra_emu.dialogs.NetPlayDialog
@@ -52,6 +56,7 @@ import org.citra.citra_emu.features.settings.model.Settings
 import org.citra.citra_emu.features.settings.model.SettingsViewModel
 import org.citra.citra_emu.features.settings.ui.SettingsActivity
 import org.citra.citra_emu.features.settings.utils.SettingsFile
+import org.citra.citra_emu.fragments.GamesFragment
 import org.citra.citra_emu.fragments.GrantMissingFilesystemPermissionFragment
 import org.citra.citra_emu.fragments.SelectUserDirectoryDialogFragment
 import org.citra.citra_emu.fragments.UpdateUserDirectoryDialogFragment
@@ -68,10 +73,14 @@ import org.citra.citra_emu.utils.ThemeUtil
 import org.citra.citra_emu.viewmodel.GamesViewModel
 import org.citra.citra_emu.viewmodel.HomeViewModel
 
-class MainActivity :
+open class MainActivity :
     AppCompatActivity(),
     ThemeProvider {
     private lateinit var binding: ActivityMainBinding
+    private var navigationBackgroundTint: ColorStateList? = null
+    private var navigationIconTint: ColorStateList? = null
+    private var navigationTextTint: ColorStateList? = null
+    private var navigationIndicatorTint: ColorStateList? = null
 
     private val homeViewModel: HomeViewModel by viewModels()
     private val gamesViewModel: GamesViewModel by viewModels()
@@ -81,6 +90,7 @@ class MainActivity :
 
     companion object {
         const val KEY_SETUP_CURRENT_PAGE = "SetupCurrentPage"
+        const val KEY_CONSOLE_HOME = "ConsoleHome"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -96,18 +106,23 @@ class MainActivity :
 
         if (PermissionsHandler.hasWriteAccess(applicationContext) &&
             DirectoryInitialization.areCitraDirectoriesReady() &&
-            !CitraDirectoryUtils.needToUpdateManually()
+            !CitraDirectoryUtils.needToUpdateManually() && !EmulationActivity.isRunning()
         ) {
             settingsViewModel.settings.loadSettings()
         }
 
-        ThemeUtil.themeChangeListener(this)
-        ThemeUtil.setTheme(this)
+        setTheme(R.style.Theme_Azahar_Home_Classic)
         super.onCreate(savedInstanceState)
-        NativeLibrary.initMultiplayer()
+        if (!EmulationActivity.isRunning()) NativeLibrary.initMultiplayer()
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        (binding.navigationView as NavigationBarView).apply {
+            navigationBackgroundTint = backgroundTintList
+            navigationIconTint = itemIconTintList
+            navigationTextTint = itemTextColor
+            navigationIndicatorTint = itemActiveIndicatorColor
+        }
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING)
@@ -149,6 +164,10 @@ class MainActivity :
         val navHostFragment =
             supportFragmentManager.findFragmentById(R.id.fragment_container) as NavHostFragment
         setUpNavigation(savedInstanceState, navHostFragment.navController)
+        homeNavController.addOnDestinationChangedListener { _, destination, _ ->
+            homeFragment()?.onUpperDestinationChanged(destination.id)
+            reconcileHomeLayout()
+        }
         (binding.navigationView as NavigationBarView).setOnItemReselectedListener {
             when (it.itemId) {
                 R.id.gamesFragment -> {
@@ -202,6 +221,19 @@ class MainActivity :
         setInsets()
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        if (!intent.getBooleanExtra(KEY_CONSOLE_HOME, false)) return
+        if (PreferenceManager.getDefaultSharedPreferences(applicationContext)
+                .getBoolean(Settings.PREF_FIRST_APP_LAUNCH, true)) return
+        val controller = (supportFragmentManager.findFragmentById(R.id.fragment_container) as NavHostFragment)
+            .navController
+        if (controller.currentDestination?.id != R.id.gamesFragment &&
+            !controller.popBackStack(R.id.gamesFragment, false)) {
+            controller.navigate(R.id.gamesFragment)
+        }
+    }
+
     override fun onSaveInstanceState(outState: Bundle) {
         // Save the user's current game state.
         outState.putInt(KEY_SETUP_CURRENT_PAGE, homeViewModel.setupCurrentPage)
@@ -212,14 +244,103 @@ class MainActivity :
 
     override fun onResume() {
         checkUserPermissions()
+        // ponytail: charge snapshot on menu resume; a receiver is only needed for live updates.
+        val charge = getSystemService(BatteryManager::class.java)
+            .getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+        binding.homeStatus.homeStatusBattery.apply {
+            visibility = if (charge in 0..100) View.VISIBLE else View.INVISIBLE
+            if (charge in 0..100) {
+                drawable.level = ((charge + 24) / 25) * 2500
+                contentDescription = getString(R.string.home_battery_level, charge)
+            }
+        }
+        WindowCompat.getInsetsController(window, window.decorView)
+            .hide(WindowInsetsCompat.Type.statusBars())
 
-        ThemeUtil.setCorrectTheme(this)
         super.onResume()
     }
 
     override fun onDestroy() {
         super.onDestroy()
     }
+
+    internal val homeNavController: NavController
+        get() = (supportFragmentManager.findFragmentById(R.id.fragment_container) as NavHostFragment)
+            .navController
+
+    internal fun homeFragment(): GamesFragment? =
+        supportFragmentManager.findFragmentById(R.id.home_library_container) as? GamesFragment
+
+    internal val isDualHome: Boolean
+        get() = homeFragment()?.hasSecondaryHome == true
+
+    internal fun reconcileHomeLayout() {
+        if (!::binding.isInitialized) return
+        val games = homeNavController.currentDestination?.id == R.id.gamesFragment
+        binding.homeLibraryContainer.visibility = if (games && !isDualHome) View.VISIBLE else View.GONE
+        binding.fragmentContainer.visibility = if (!games || isDualHome) View.VISIBLE else View.GONE
+        showNavigation(homeViewModel.navigationVisible.value.first, animated = false)
+        (supportFragmentManager.findFragmentById(R.id.fragment_container) as? NavHostFragment)
+            ?.childFragmentManager?.primaryNavigationFragment?.view?.let(ViewCompat::requestApplyInsets)
+    }
+
+    internal fun handleHomeNavigationKey(event: KeyEvent): Boolean {
+        if (event.keyCode != KeyEvent.KEYCODE_BUTTON_L1 &&
+            event.keyCode != KeyEvent.KEYCODE_BUTTON_R1) return false
+        if (homeFragment()?.homeInputEnabled != true) return false
+        val navigation = binding.navigationView as NavigationBarView
+        val menu = navigation.menu
+        val count = menu.size()
+        val destination = homeNavController.currentDestination?.id
+        for (index in 0 until count) {
+            if (menu.getItem(index).itemId != destination) continue
+            if (event.action == KeyEvent.ACTION_UP && !event.isCanceled) {
+                val direction = if (event.keyCode == KeyEvent.KEYCODE_BUTTON_L1) -1 else 1
+                navigation.selectedItemId = menu.getItem((index + direction + count) % count).itemId
+            }
+            return true
+        }
+        return false
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean =
+        handleHomeNavigationKey(event) || ((!binding.fragmentContainer.hasFocus() ||
+            homeNavController.currentDestination?.id == R.id.gamesFragment) &&
+            homeFragment()?.handleHomeKeyEvent(event) == true) || super.dispatchKeyEvent(event)
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) {
+            WindowCompat.getInsetsController(window, window.decorView)
+                .hide(WindowInsetsCompat.Type.statusBars())
+        }
+        homeFragment()?.onHomeOwnerFocusChanged(hasFocus)
+    }
+    fun setClassicHomeChrome(classic: Boolean) {
+        val surface = if (classic) ContextCompat.getColor(this, R.color.home_silver) else
+            MaterialColors.getColor(binding.root, com.google.android.material.R.attr.colorSurface)
+        (binding.navigationView as NavigationBarView).apply {
+            backgroundTintList = if (classic) ContextCompat.getColorStateList(
+                this@MainActivity, R.color.home_silver
+            ) else navigationBackgroundTint
+            val text = ContextCompat.getColorStateList(this@MainActivity, R.color.home_navigation_tint)
+            itemIconTintList = if (classic) text else navigationIconTint
+            itemTextColor = if (classic) text else navigationTextTint
+            itemActiveIndicatorColor = if (classic) ContextCompat.getColorStateList(
+                this@MainActivity, R.color.home_action_container
+            ) else navigationIndicatorTint
+        }
+        binding.root.setBackgroundColor(surface)
+        binding.statusBarShade.setBackgroundColor(
+            ThemeUtil.getColorWithOpacity(surface, ThemeUtil.SYSTEM_BAR_ALPHA)
+        )
+        if (InsetsHelper.getSystemGestureType(this) != InsetsHelper.GESTURE_NAVIGATION) {
+            binding.navigationBarShade.setBackgroundColor(
+                ThemeUtil.getColorWithOpacity(surface, ThemeUtil.SYSTEM_BAR_ALPHA)
+            )
+        }
+    }
+
 
     fun displayMultiplayerDialog() {
         val dialog = NetPlayDialog(this)
@@ -310,7 +431,15 @@ class MainActivity :
     }
 
     private fun showNavigation(visible: Boolean, animated: Boolean) {
+        if (isDualHome) {
+            binding.navigationView.animate().cancel()
+            binding.navigationView.visibility = View.INVISIBLE
+            return
+        }
         if (!animated) {
+            binding.navigationView.animate().cancel()
+            binding.navigationView.translationX = 0f
+            binding.navigationView.translationY = 0f
             if (visible) {
                 binding.navigationView.visibility = View.VISIBLE
             } else {
@@ -386,21 +515,26 @@ class MainActivity :
         }.start()
     }
 
-    private fun setInsets() = ViewCompat.setOnApplyWindowInsetsListener(
-        binding.root
-    ) { _: View, windowInsets: WindowInsetsCompat ->
-        val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-        val mlpStatusShade = binding.statusBarShade.layoutParams as MarginLayoutParams
-        mlpStatusShade.height = insets.top
-        binding.statusBarShade.layoutParams = mlpStatusShade
+    private fun setInsets() {
+        val status = binding.homeStatus.root
+        val left = status.paddingLeft
+        val top = status.paddingTop
+        val right = status.paddingRight
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, windowInsets ->
+            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val safe = windowInsets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
+            status.setPadding(left + safe.left, top + safe.top, right + safe.right, status.paddingBottom)
+            val mlpStatusShade = binding.statusBarShade.layoutParams as MarginLayoutParams
+            mlpStatusShade.height = insets.top
+            binding.statusBarShade.layoutParams = mlpStatusShade
 
-        // The only situation where we care to have a nav bar shade is when it's at the bottom
-        // of the screen where scrolling list elements can go behind it.
-        val mlpNavShade = binding.navigationBarShade.layoutParams as MarginLayoutParams
-        mlpNavShade.height = insets.bottom
-        binding.navigationBarShade.layoutParams = mlpNavShade
-
-        windowInsets
+            val mlpNavShade = binding.navigationBarShade.layoutParams as MarginLayoutParams
+            mlpNavShade.height = insets.bottom
+            binding.navigationBarShade.layoutParams = mlpNavShade
+            windowInsets
+        }
     }
 
     private fun createOpenCitraDirectoryLauncher(

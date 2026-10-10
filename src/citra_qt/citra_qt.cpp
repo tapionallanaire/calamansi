@@ -378,7 +378,7 @@ GMainWindow::GMainWindow(Core::System& system_)
         }
 
         if (args[i] == QStringLiteral("--version") || args[i] == QStringLiteral("-v")) {
-            const std::string version_string = std::string("Azahar ") + Common::g_build_fullname;
+            const std::string version_string = std::string("Calamansi ") + Common::g_build_fullname;
             ShowCommandOutput("Version", version_string);
             exit(0);
         }
@@ -457,7 +457,7 @@ GMainWindow::GMainWindow(Core::System& system_)
     ConnectMenuEvents();
     ConnectWidgetEvents();
 
-    LOG_INFO(Frontend, "Azahar Version: {} | {}-{}", Common::g_build_fullname, Common::g_scm_branch,
+    LOG_INFO(Frontend, "Calamansi Version: {} | {}-{}", Common::g_build_fullname, Common::g_scm_branch,
              Common::g_scm_desc);
     std::string build_variant = Common::g_build_variant;
     if (build_variant == "") {
@@ -501,7 +501,7 @@ GMainWindow::GMainWindow(Core::System& system_)
                "bundle.\n\n"
                "When run this way, the app may be missing certain functionality such as camera "
                "emulation.\n\n"
-               "It is recommended to instead run Azahar using the `open` command, e.g.:\n"
+               "It is recommended to instead run Calamansi using the `open` command, e.g.:\n"
                "`open ./Azahar.app`"));
     }
 #endif
@@ -1312,7 +1312,7 @@ static std::optional<QDBusObjectPath> HoldWakeLockLinux(u32 window_id = 0) {
     //: TRANSLATORS: This string is shown to the user to explain why Citra needs to prevent the
     //: computer from sleeping
     options.insert(QString::fromLatin1("reason"),
-                   QCoreApplication::translate("GMainWindow", "Azahar is running an application"));
+                   QCoreApplication::translate("GMainWindow", "Calamansi is running an application"));
     // 0x4: Suspend lock; 0x8: Idle lock
     QDBusReply<QDBusObjectPath> reply =
         xdp.call(QString::fromLatin1("Inhibit"),
@@ -1417,7 +1417,7 @@ bool GMainWindow::LoadROM(const QString& filename) {
 
         case Core::System::ResultStatus::ErrorLoader_ErrorGbaTitle:
             QMessageBox::critical(this, tr("Unsupported application"),
-                                  tr("GBA Virtual Console is not supported by Azahar."));
+                                  tr("GBA Virtual Console is not supported by Calamansi."));
             break;
 
         case Core::System::ResultStatus::ErrorArticDisconnected:
@@ -1496,7 +1496,7 @@ void GMainWindow::BootGame(const QString& filename) {
 
     show_artic_label = is_artic;
 
-    LOG_INFO(Frontend, "Azahar starting...");
+    LOG_INFO(Frontend, "Calamansi starting...");
     if (!is_artic) {
         StoreRecentFile(filename); // Put the filename on top of the list
     }
@@ -2199,7 +2199,7 @@ void GMainWindow::OnGameListCreateShortcut(u64 program_id, const std::string& ga
     if (CreateShortcutMessagesGUI(this, CREATE_SHORTCUT_MSGBOX_FULLSCREEN_PROMPT, qt_game_title)) {
         arguments = "-f " + arguments;
     }
-    const std::string comment = fmt::format("Start {:s} with the Azahar Emulator", game_title);
+    const std::string comment = fmt::format("Start {:s} with the Calamansi Emulator", game_title);
     const std::string categories = "Game;Emulator;Qt;";
     const std::string keywords = "3ds;Nintendo;";
 
@@ -2233,7 +2233,7 @@ void GMainWindow::OnGameListDumpRomFS(QString game_path, u64 program_id) {
                 const auto& [base, update] = future_watcher->result();
                 if (base != Loader::ResultStatus::Success) {
                     QMessageBox::critical(
-                        this, QStringLiteral("Azahar"),
+                        this, QStringLiteral("Calamansi"),
                         tr("Could not dump base RomFS.\nRefer to the log for details."));
                     return;
                 }
@@ -2327,14 +2327,14 @@ void GMainWindow::OnMenuSetUpSystemFiles() {
     QVBoxLayout layout(&dialog);
 
     QLabel label_description(
-        tr("<p>Azahar needs console unique data and firmware files from a real console to be "
+        tr("<p>Calamansi needs console unique data and firmware files from a real console to be "
            "able to use some of its features.<br>Such files and data can be set up with the <a "
            "href=https://github.com/azahar-emu/ArticSetupTool>Azahar "
            "Artic Setup Tool</a><br>Notes:<ul><li><b>This operation will install console unique "
-           "data to Azahar, do not share your user or nand folders<br>after performing the setup "
-           "process!</b></li><li>While doing the setup process, Azahar will link to the console "
+           "data to Calamansi, do not share your user or nand folders<br>after performing the setup "
+           "process!</b></li><li>While doing the setup process, Calamansi will link to the console "
            "running the setup tool. You can unlink the<br>console later from the System tab in the "
-           "emulator configuration menu.</li><li>Do not go online with both Azahar and your 3DS "
+           "emulator configuration menu.</li><li>Do not go online with both Calamansi and your 3DS "
            "console at the same time after setting up system files,<br>as it could cause "
            "issues.</li><li>Old 3DS setup is needed for the New 3DS setup to work (doing both "
            "setup modes is recommended).</li><li>Both setup modes will work regardless of the "
@@ -2585,10 +2585,10 @@ void GMainWindow::UninstallTitles(
     future_watcher.waitForFinished();
 
     if (failed) {
-        QMessageBox::critical(this, QStringLiteral("Azahar"),
+        QMessageBox::critical(this, QStringLiteral("Calamansi"),
                               tr("Failed to uninstall '%1'.").arg(failed_name));
     } else if (!future_watcher.isCanceled()) {
-        QMessageBox::information(this, QStringLiteral("Azahar"),
+        QMessageBox::information(this, QStringLiteral("Calamansi"),
                                  tr("Successfully uninstalled '%1'.").arg(first_name));
         emit InstalledTitlesChanged();
     }
@@ -3485,7 +3485,7 @@ void GMainWindow::StartVideoDumping(const QString& path) {
         system.RegisterVideoDumper(dumper);
     } else {
         QMessageBox::critical(
-            this, QStringLiteral("Azahar"),
+            this, QStringLiteral("Calamansi"),
             tr("Could not start video dumping.<br>Please ensure that the video encoder is "
                "configured correctly.<br>Refer to the log for details."));
         ui->action_Dump_Video->setChecked(false);
@@ -3887,12 +3887,12 @@ void GMainWindow::OnCoreError(Core::System::ResultStatus result, std::string det
         can_continue = false;
     } else if (result == Core::System::ResultStatus::ErrorSavestateBuildMismatch) {
         title = tr("Savestate version mismatch");
-        message = tr("Could not load savestate because it was created on a different Azahar "
+        message = tr("Could not load savestate because it was created on a different Calamansi "
                      "version:<br/>"
-                     "<b>Azahar %1</b>.<br/><br/>Please read our blog entry <a "
+                     "<b>Calamansi %1</b>.<br/><br/>Please read our blog entry <a "
                      "href='https://azahar-emu.org/blog/understanding-save-states/'>understanding "
                      "savestates</a> for more information.<br/><br/>To recover your progress, "
-                     "downgrade to <b>Azahar %1</b>, load this savestate and use the application's "
+                     "downgrade to <b>Calamansi %1</b>, load this savestate and use the application's "
                      "built-in save functionality.")
                       .arg(QString::fromStdString(details));
         error_severity_icon = QMessageBox::Icon::Critical;
@@ -3951,7 +3951,7 @@ bool GMainWindow::ConfirmClose() {
     }
 
     QMessageBox::StandardButton answer =
-        QMessageBox::question(this, QStringLiteral("Azahar"), tr("Would you like to exit now?"),
+        QMessageBox::question(this, QStringLiteral("Calamansi"), tr("Would you like to exit now?"),
                               QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
     return answer != QMessageBox::No;
 }
@@ -4047,7 +4047,7 @@ bool GMainWindow::ConfirmChangeGame() {
     }
 
     auto answer = QMessageBox::question(
-        this, QStringLiteral("Azahar"),
+        this, QStringLiteral("Calamansi"),
         tr("The application is still running. Would you like to stop emulation?"),
         QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
     return answer != QMessageBox::No;
@@ -4236,8 +4236,9 @@ void GMainWindow::OnEmulatorUpdateAvailable() {
     update_prompt.setIcon(QMessageBox::Information);
     update_prompt.addButton(QMessageBox::Yes);
     update_prompt.addButton(QMessageBox::Ignore);
-    update_prompt.setText(tr("Update %1 for Azahar is available.\nWould you like to download it?")
-                              .arg(version_string));
+    update_prompt.setText(
+        tr("Update %1 for Azahar (upstream) is available.\nWould you like to download it?")
+            .arg(version_string));
     update_prompt.exec();
     if (update_prompt.button(QMessageBox::Yes) == update_prompt.clickedButton()) {
         std::string update_page_url;
@@ -4268,12 +4269,12 @@ void GMainWindow::UpdateWindowTitle() {
     const QString full_name = QString::fromUtf8(Common::g_build_fullname);
 
     if (game_title.isEmpty()) {
-        setWindowTitle(QStringLiteral("Azahar %1").arg(full_name));
+        setWindowTitle(QStringLiteral("Calamansi %1").arg(full_name));
     } else {
-        setWindowTitle(QStringLiteral("Azahar %1 | %2").arg(full_name, game_title));
+        setWindowTitle(QStringLiteral("Calamansi %1 | %2").arg(full_name, game_title));
         render_window->setWindowTitle(
-            QStringLiteral("Azahar %1 | %2 | %3").arg(full_name, game_title, tr("Primary Window")));
-        secondary_window->setWindowTitle(QStringLiteral("Azahar %1 | %2 | %3")
+            QStringLiteral("Calamansi %1 | %2 | %3").arg(full_name, game_title, tr("Primary Window")));
+        secondary_window->setWindowTitle(QStringLiteral("Calamansi %1 | %2 | %3")
                                              .arg(full_name, game_title, tr("Secondary Window")));
     }
 }
@@ -4489,6 +4490,7 @@ int LaunchQtFrontend(int argc, char* argv[]) {
     QCoreApplication::setOrganizationName(QStringLiteral("Azahar Developers"));
     QCoreApplication::setOrganizationDomain(QStringLiteral("azahar_emu.org"));
     QCoreApplication::setApplicationName(QStringLiteral("Azahar"));
+    QGuiApplication::setApplicationDisplayName(QStringLiteral("Calamansi"));
     QGuiApplication::setDesktopFileName(QStringLiteral("org.azahar_emu.Azahar"));
 
     auto rounding_policy = GetHighDpiRoundingPolicy();

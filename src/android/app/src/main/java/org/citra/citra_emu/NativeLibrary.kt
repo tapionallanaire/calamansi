@@ -69,7 +69,33 @@ object NativeLibrary {
      * @param action Mask identifying which action is happening (button pressed down, or button released).
      * @return If we handled the button press.
      */
-    external fun onGamePadEvent(device: String, button: Int, action: Int): Boolean
+    fun onGamePadEvent(device: String, button: Int, action: Int): Boolean {
+        if (button == ButtonType.BUTTON_HOME) {
+            sEmulationActivity.get()?.let { activity ->
+                if (action == ButtonState.RELEASED) {
+                    activity.runOnUiThread { activity.returnToHome() }
+                }
+                return true
+            }
+        }
+        return onGamePadEventNative(device, button, action)
+    }
+
+    private external fun onGamePadEventNative(device: String, button: Int, action: Int): Boolean
+
+    internal fun releaseInputForHome() {
+        // Releases may arrive on HOME instead of emulation; never resume with stuck input.
+        for (button in ButtonType.BUTTON_A..ButtonType.STICK_C_DOWN) {
+            onGamePadEventNative(TOUCHSCREEN_DEVICE, button, ButtonState.RELEASED)
+        }
+        for (button in ButtonType.STICK_C_LEFT..ButtonType.TRIGGER_R) {
+            onGamePadEventNative(TOUCHSCREEN_DEVICE, button, ButtonState.RELEASED)
+        }
+        onGamePadMoveEvent(TOUCHSCREEN_DEVICE, ButtonType.STICK_LEFT, 0f, 0f)
+        onGamePadMoveEvent(TOUCHSCREEN_DEVICE, ButtonType.STICK_C, 0f, 0f)
+        onTouchEvent(0f, 0f, false)
+        onSecondaryTouchEvent(0f, 0f, false)
+    }
 
     /**
      * Handles gamepad movement events.

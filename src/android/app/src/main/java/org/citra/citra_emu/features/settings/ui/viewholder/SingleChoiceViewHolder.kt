@@ -57,7 +57,7 @@ class SingleChoiceViewHolder(val binding: ListItemSettingBinding, adapter: Setti
                         return item.choices[i]
                     }
                 }
-                return ""
+                return item.selectedValue
             }
 
             else -> return ""

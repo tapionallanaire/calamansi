@@ -27,9 +27,12 @@ import androidx.core.os.BundleCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.navigation.ActivityNavigator
+import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.preference.PreferenceManager
 import org.citra.citra_emu.CitraApplication
+import org.citra.citra_emu.HomeNavigationDirections
 import org.citra.citra_emu.NativeLibrary
 import org.citra.citra_emu.R
 import org.citra.citra_emu.camera.StillImageCameraHelper.onFilePickerResult
@@ -46,6 +49,7 @@ import org.citra.citra_emu.features.settings.model.view.InputBindingSetting
 import org.citra.citra_emu.fragments.EmulationFragment
 import org.citra.citra_emu.fragments.MessageDialogFragment
 import org.citra.citra_emu.model.Game
+import org.citra.citra_emu.ui.main.ConsoleHomeActivity
 import org.citra.citra_emu.ui.main.MainActivity
 import org.citra.citra_emu.utils.BuildUtil
 import org.citra.citra_emu.utils.CitraDirectoryUtils
@@ -92,6 +96,17 @@ class EmulationActivity : AppCompatActivity() {
     private var isEmulationRunning: Boolean = false
     private var isEmulationReady: Boolean = false
 
+    private var homeRequested = false
+
+    internal var currentGame: Game? = null
+
+    fun returnToHome() {
+        if (!isEmulationReady || isFinishing || isDestroyed || homeRequested) return
+        homeRequested = true
+        NativeLibrary.releaseInputForHome()
+        secondaryDisplayManager.setActive(false)
+        startActivity(ConsoleHomeActivity.menuIntent(this))
+    }
     private fun ensureUserDirectoryReady(): Boolean {
         if (DirectoryInitialization.areCitraDirectoriesReady()) return true
         CitraDirectoryUtils.attemptAutomaticUpdateDirectory() // Lime3DS -> Azahar
@@ -120,7 +135,12 @@ class EmulationActivity : AppCompatActivity() {
             return
         }
 
-        settingsViewModel.settings.loadSettings()
+        val settingsTitleId = intent.extras?.let {
+            BundleCompat.getParcelable(it, "game", Game::class.java)?.titleId
+        } ?: 0L
+        settingsViewModel.settings.loadSettings(
+            if (settingsTitleId != 0L) String.format("%016X", settingsTitleId) else ""
+        )
 
         screenAdjustmentUtil = ScreenAdjustmentUtil(this, windowManager, settingsViewModel.settings)
 
@@ -134,7 +154,6 @@ class EmulationActivity : AppCompatActivity() {
         NativeLibrary.initMultiplayer()
 
         secondaryDisplayManager = SecondaryDisplay(this)
-        secondaryDisplayManager.updateDisplay()
 
         binding = ActivityEmulationBinding.inflate(layoutInflater)
         hotkeyUtility = HotkeyUtility(screenAdjustmentUtil, this)
@@ -167,24 +186,17 @@ class EmulationActivity : AppCompatActivity() {
         isEmulationRunning = true
         instance = this
 
-        val game = try {
-            intent.extras?.let { extras ->
-                BundleCompat.getParcelable(extras, "game", Game::class.java)
-            } ?: run {
-                Log.error("[EmulationActivity] Missing game data in intent extras")
-                return
-            }
-        } catch (e: Exception) {
-            Log.error("[EmulationActivity] Failed to retrieve game data: ${e.message}")
-            return
-        }
+        val game = currentGame ?: return
 
         NativeLibrary.playTimeManagerStart(game.titleId)
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        // Reordering a suspended session is not a new cartridge launch.
+        if (!intent.hasExtra("game") && intent.data == null && !intent.hasExtra("SelectedGame")) return
         setIntent(intent)
+        currentGame = null
 
         NativeLibrary.stopEmulation()
         NativeLibrary.playTimeManagerStop()
@@ -198,6 +210,9 @@ class EmulationActivity : AppCompatActivity() {
             BundleCompat.getParcelable(extras, "game", Game::class.java)
         }
         if (game != null) {
+            settingsViewModel.settings.loadSettings(
+                if (game.titleId != 0L) String.format("%016X", game.titleId) else ""
+            )
             NativeLibrary.playTimeManagerStart(game.titleId)
         }
 
@@ -210,6 +225,8 @@ class EmulationActivity : AppCompatActivity() {
     // rotations. Here we set full screen immersive repeatedly in onResume and in
     // onWindowFocusChanged to prevent the unwanted status bar state.
     override fun onResume() {
+        homeRequested = false
+        secondaryDisplayManager.setActive(true)
         enableFullscreenImmersive()
         if (isEmulationReady) {
             // If emulation is ready then unblock rotation
@@ -224,9 +241,9 @@ class EmulationActivity : AppCompatActivity() {
         super.onResume()
     }
 
-    override fun onStop() {
-        secondaryDisplayManager.releasePresentation()
-        super.onStop()
+    override fun onPause() {
+        secondaryDisplayManager.setActive(false)
+        super.onPause()
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -236,7 +253,6 @@ class EmulationActivity : AppCompatActivity() {
 
     public override fun onRestart() {
         super.onRestart()
-        secondaryDisplayManager.updateDisplay()
         NativeLibrary.reloadCameraDevices()
     }
 
@@ -258,11 +274,13 @@ class EmulationActivity : AppCompatActivity() {
         EmulationLifecycleUtil.removeHook(onShutdown)
         NativeLibrary.playTimeManagerStop()
         isEmulationRunning = false
-        instance = null
-        secondaryDisplayManager.releasePresentation()
+        if (instance === this) instance = null
         secondaryDisplayManager.releaseVD()
 
         super.onDestroy()
+        if (isFinishing && DirectoryInitialization.areCitraDirectoriesReady()) {
+            settingsViewModel.settings.loadSettings("")
+        }
     }
 
     override fun onRequestPermissionsResult(
@@ -651,5 +669,27 @@ class EmulationActivity : AppCompatActivity() {
         private var instance: EmulationActivity? = null
 
         fun isRunning(): Boolean = instance?.isEmulationRunning ?: false
+
+        fun launchGame(controller: NavController, game: Game) {
+            controller.navigate(
+                HomeNavigationDirections.actionGlobalEmulationActivity(game),
+                ActivityNavigator.Extras.Builder()
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+                    .build()
+            )
+        }
+
+        val activeGame: Game?
+            get() = instance?.takeIf {
+                it.isEmulationRunning && !it.isFinishing && !it.isDestroyed
+            }?.currentGame
+
+        fun resumeGame(context: android.content.Context): Boolean {
+            if (activeGame == null) return false
+            context.startActivity(Intent(context, EmulationActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+            })
+            return true
+        }
     }
 }

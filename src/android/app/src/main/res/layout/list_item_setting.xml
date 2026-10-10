@@ -34,7 +34,7 @@
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/text_setting_name"
-                style="@style/TextAppearance.Material3.HeadlineMedium"
+                style="@style/TextAppearance.Material3.TitleMedium"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textAlignment="viewStart"
@@ -58,6 +58,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="@dimen/spacing_small"
                 android:textAlignment="viewStart"
+                android:textColor="?attr/colorPrimary"
                 android:textStyle="bold"
                 android:textSize="13sp"
                 tools:text="1x" />

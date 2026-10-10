@@ -18,8 +18,8 @@
     <name>AboutDialog</name>
     <message>
         <location filename="../../src/citra_qt/aboutdialog.ui" line="14"/>
-        <source>About Azahar</source>
-        <translation>O Azahar</translation>
+        <source>About Calamansi</source>
+        <translation>O Calamansi</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/aboutdialog.ui" line="118"/>
@@ -740,7 +740,7 @@ Czy chcesz zignorować błąd i kontynuować?</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/configuration/configure_debug.ui" line="130"/>
-        <source>&lt;html&gt;&lt;body&gt;Immediately commits the debug log to file. Use this if Azahar crashes and the log output is being cut.&lt;br&gt;Enabling this feature will decrease performance, only use it for debugging purposes.&lt;/body&gt;&lt;/html&gt;</source>
+        <source>&lt;html&gt;&lt;body&gt;Immediately commits the debug log to file. Use this if Calamansi crashes and the log output is being cut.&lt;br&gt;Enabling this feature will decrease performance, only use it for debugging purposes.&lt;/body&gt;&lt;/html&gt;</source>
         <translation>&lt;html&gt;&lt;body&gt;Natychmiast zapisuje log debugowania do pliku. Użyj tego, jeśli azahar ulegnie awarii, a dane wyjściowe logu zostaną usunięte.&lt;br&gt;Włączenie tej funkcji zmniejszy wydajność, używaj tej opcji tylko do celów debugowania.&lt;/body&gt;&lt;/html&gt;</translation>
     </message>
     <message>
@@ -880,7 +880,7 @@ Czy chcesz zignorować błąd i kontynuować?</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/configuration/configure_debug.cpp" line="87"/>
-        <source>Please relaunch Azahar for this setting to take effect.</source>
+        <source>Please relaunch Calamansi for this setting to take effect.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -888,8 +888,8 @@ Czy chcesz zignorować błąd i kontynuować?</translation>
     <name>ConfigureDialog</name>
     <message>
         <location filename="../../src/citra_qt/configuration/configure.ui" line="6"/>
-        <source>Azahar Configuration</source>
-        <translation>Konfiguracja Azahar</translation>
+        <source>Calamansi Configuration</source>
+        <translation>Konfiguracja Calamansi</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/configuration/configure_dialog.cpp" line="50"/>
@@ -1375,8 +1375,8 @@ Czy chcesz zignorować błąd i kontynuować?</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/configuration/configure_general.cpp" line="156"/>
-        <source>Are you sure you want to &lt;b&gt;reset your settings&lt;/b&gt; and close Azahar?</source>
-        <translation>Czy na pewno chcesz&lt;b&gt;przywrócić ustawienia&lt;/b&gt;i zamknąć Azahar?</translation>
+        <source>Are you sure you want to &lt;b&gt;reset your settings&lt;/b&gt; and close Calamansi?</source>
+        <translation>Czy na pewno chcesz&lt;b&gt;przywrócić ustawienia&lt;/b&gt;i zamknąć Calamansi?</translation>
     </message>
 </context>
 <context>
@@ -2947,8 +2947,8 @@ do zainstalowanych aplikacji.</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/configuration/configure_system.ui" line="596"/>
-        <source>Your real console is linked to Azahar.</source>
-        <translation>Twoja rzeczywista konsola jest połączona z Azahar.</translation>
+        <source>Your real console is linked to Calamansi.</source>
+        <translation>Twoja rzeczywista konsola jest połączona z Calamansi.</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/configuration/configure_system.ui" line="612"/>
@@ -3702,8 +3702,8 @@ do zainstalowanych aplikacji.</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/configuration/configure_system.cpp" line="612"/>
-        <source>This action will unlink your real console from Azahar, with the following consequences:&lt;br&gt;&lt;ul&gt;&lt;li&gt;Your OTP, SecureInfo and LocalFriendCodeSeed will be removed from Azahar.&lt;/li&gt;&lt;li&gt;Your friend list will reset and you will be logged out of your NNID/PNID account.&lt;/li&gt;&lt;li&gt;System files and eshop titles obtained through Azahar will become inaccessible until the same console is linked again (save data will not be lost).&lt;/li&gt;&lt;/ul&gt;&lt;br&gt;Continue?</source>
-        <translation>Ta czynność spowoduje odłączenie twojej rzeczywistej konsoli od Azahar, z następującymi konsekwencjami: &lt;br&gt;&lt;ul&gt;&lt;li&gt;Twój OTP, SecureInfo i LocalFriendCodeSeed zostaną usunięte z Azahar.&lt;/li&gt;&lt;li&gt;Lista znajomych zostanie zresetowana, a użytkownik zostanie wylogowany z konta NNID/PNID.&lt;/li&gt;&lt;li&gt;Pliki systemowe i tytuły z eshopu uzyskane za pośrednictwem Azahar staną się niedostępne do czasu ponownego połączenia z tą samą konsolą (dane zapisu nie zostaną utracone).&lt;/li&gt;&lt;/ul&gt;&lt;br&gt;Kontynuować?</translation>
+        <source>This action will unlink your real console from Calamansi, with the following consequences:&lt;br&gt;&lt;ul&gt;&lt;li&gt;Your OTP, SecureInfo and LocalFriendCodeSeed will be removed from Calamansi.&lt;/li&gt;&lt;li&gt;Your friend list will reset and you will be logged out of your NNID/PNID account.&lt;/li&gt;&lt;li&gt;System files and eshop titles obtained through Calamansi will become inaccessible until the same console is linked again (save data will not be lost).&lt;/li&gt;&lt;/ul&gt;&lt;br&gt;Continue?</source>
+        <translation>Ta czynność spowoduje odłączenie twojej rzeczywistej konsoli od Calamansi, z następującymi konsekwencjami: &lt;br&gt;&lt;ul&gt;&lt;li&gt;Twój OTP, SecureInfo i LocalFriendCodeSeed zostaną usunięte z Calamansi.&lt;/li&gt;&lt;li&gt;Lista znajomych zostanie zresetowana, a użytkownik zostanie wylogowany z konta NNID/PNID.&lt;/li&gt;&lt;li&gt;Pliki systemowe i tytuły z eshopu uzyskane za pośrednictwem Calamansi staną się niedostępne do czasu ponownego połączenia z tą samą konsolą (dane zapisu nie zostaną utracone).&lt;/li&gt;&lt;/ul&gt;&lt;br&gt;Kontynuować?</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/configuration/configure_system.cpp" line="640"/>
@@ -4151,13 +4151,13 @@ Sprawdź instalację FFmpeg używaną do kompilacji.</translation>
 
 When run this way, the app may be missing certain functionality such as camera emulation.
 
-It is recommended to instead run Azahar using the `open` command, e.g.:
+It is recommended to instead run Calamansi using the `open` command, e.g.:
 `open ./Azahar.app`</source>
         <translation>Plik wykonywalny „azahar” jest uruchamiany bezpośrednio, a nie za pośrednictwem pakietu Azahar.app.
 
 W przypadku uruchomienia w ten sposób aplikacja może nie posiadać niektórych funkcji, takich jak emulacja aparatu.
 
-Zaleca się uruchamianie Azahar za pomocą polecenia &quot;open”, np.:
+Zaleca się uruchamianie Calamansi za pomocą polecenia &quot;open”, np.:
 &quot;open ./Azahar.app”</translation>
     </message>
     <message>
@@ -4207,9 +4207,9 @@ Zaleca się uruchamianie Azahar za pomocą polecenia &quot;open”, np.:
     </message>
     <message>
         <location filename="../../src/citra_qt/citra_qt.cpp" line="1306"/>
-        <source>Azahar is running an application</source>
+        <source>Calamansi is running an application</source>
         <extracomment>TRANSLATORS: This string is shown to the user to explain why Citra needs to prevent the computer from sleeping</extracomment>
-        <translation>Azahar jest w trakcie uruchamiania aplikację</translation>
+        <translation>Calamansi jest w trakcie uruchamiania aplikację</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/citra_qt.cpp" line="1378"/>
@@ -4238,8 +4238,8 @@ Zaleca się uruchamianie Azahar za pomocą polecenia &quot;open”, np.:
     </message>
     <message>
         <location filename="../../src/citra_qt/citra_qt.cpp" line="1411"/>
-        <source>GBA Virtual Console is not supported by Azahar.</source>
-        <translation>Wirtualnej konsola GBA nie są obsługiwana przez Azahar.</translation>
+        <source>GBA Virtual Console is not supported by Calamansi.</source>
+        <translation>Wirtualnej konsola GBA nie są obsługiwana przez Calamansi.</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/citra_qt.cpp" line="1416"/>
@@ -4458,8 +4458,8 @@ Szczegółowe informacje można znaleźć w logu.</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/citra_qt.cpp" line="2317"/>
-        <source>&lt;p&gt;Azahar needs console unique data and firmware files from a real console to be able to use some of its features.&lt;br&gt;Such files and data can be set up with the &lt;a href=https://github.com/azahar-emu/ArticSetupTool&gt;Azahar Artic Setup Tool&lt;/a&gt;&lt;br&gt;Notes:&lt;ul&gt;&lt;li&gt;&lt;b&gt;This operation will install console unique data to Azahar, do not share your user or nand folders&lt;br&gt;after performing the setup process!&lt;/b&gt;&lt;/li&gt;&lt;li&gt;While doing the setup process, Azahar will link to the console running the setup tool. You can unlink the&lt;br&gt;console later from the System tab in the emulator configuration menu.&lt;/li&gt;&lt;li&gt;Do not go online with both Azahar and your 3DS console at the same time after setting up system files,&lt;br&gt;as it could cause issues.&lt;/li&gt;&lt;li&gt;Old 3DS setup is needed for the New 3DS setup to work (doing both setup modes is recommended).&lt;/li&gt;&lt;li&gt;Both setup modes will work regardless of the model of the console running the setup tool.&lt;/li&gt;&lt;/ul&gt;&lt;hr&gt;&lt;/p&gt;</source>
-        <translation>&lt;p&gt;Azahar potrzebuje plików z rzeczywistej konsoli, aby móc korzystać z niektórych jej funkcji.&lt;br&gt;Możesz uzyskać te pliki za pomocą &lt;a href=https://github.com/azahar-emu/ArticSetupTool&gt;Azahar Artic Setup Tool&lt;/a&gt;&lt;br&gt;Uwagi:&lt;ul&gt;&lt;li&gt;&lt;b&gt;Ta operacja zainstaluje unikalne pliki konsoli do Azahar, nie udostępniaj swoich folderów użytkownika lub nand&lt;br&gt;po wykonaniu procesu konfiguracji!&lt;/b&gt;&lt;/li&gt;&lt;li&gt;Podczas procesu konfiguracji Azahar połączy się z konsolą, na której uruchomione jest narzędzie instalacyjne.&lt;br&gt;Konsolę można później odłączyć w zakładce System w menu konfiguracji emulatora.&lt;/li&gt;&lt;li&gt;Nie korzystaj jednocześnie z Azahar i konsoli 3DS po skonfigurowaniu plików systemowych,&lt;br&gt;bo może to spowodować błędy. &lt;/li&gt;&lt;li&gt;Old 3DS jest wymagany do działania konfiguracji New 3DS (zalecane jest wykonanie obu tych konfiguracji).&lt;/li&gt;&lt;li&gt;Oba tryby konfiguracji będą działać niezależnie od modelu konsoli, na której uruchomiono narzędzie konfiguracyjne.&lt;/li&gt;&lt;/ul&gt;&lt;hr&gt;&lt;/p&gt;</translation>
+        <source>&lt;p&gt;Calamansi needs console unique data and firmware files from a real console to be able to use some of its features.&lt;br&gt;Such files and data can be set up with the &lt;a href=https://github.com/azahar-emu/ArticSetupTool&gt;Azahar Artic Setup Tool&lt;/a&gt;&lt;br&gt;Notes:&lt;ul&gt;&lt;li&gt;&lt;b&gt;This operation will install console unique data to Calamansi, do not share your user or nand folders&lt;br&gt;after performing the setup process!&lt;/b&gt;&lt;/li&gt;&lt;li&gt;While doing the setup process, Calamansi will link to the console running the setup tool. You can unlink the&lt;br&gt;console later from the System tab in the emulator configuration menu.&lt;/li&gt;&lt;li&gt;Do not go online with both Calamansi and your 3DS console at the same time after setting up system files,&lt;br&gt;as it could cause issues.&lt;/li&gt;&lt;li&gt;Old 3DS setup is needed for the New 3DS setup to work (doing both setup modes is recommended).&lt;/li&gt;&lt;li&gt;Both setup modes will work regardless of the model of the console running the setup tool.&lt;/li&gt;&lt;/ul&gt;&lt;hr&gt;&lt;/p&gt;</source>
+        <translation>&lt;p&gt;Calamansi potrzebuje plików z rzeczywistej konsoli, aby móc korzystać z niektórych jej funkcji.&lt;br&gt;Możesz uzyskać te pliki za pomocą &lt;a href=https://github.com/azahar-emu/ArticSetupTool&gt;Azahar Artic Setup Tool&lt;/a&gt;&lt;br&gt;Uwagi:&lt;ul&gt;&lt;li&gt;&lt;b&gt;Ta operacja zainstaluje unikalne pliki konsoli do Calamansi, nie udostępniaj swoich folderów użytkownika lub nand&lt;br&gt;po wykonaniu procesu konfiguracji!&lt;/b&gt;&lt;/li&gt;&lt;li&gt;Podczas procesu konfiguracji Calamansi połączy się z konsolą, na której uruchomione jest narzędzie instalacyjne.&lt;br&gt;Konsolę można później odłączyć w zakładce System w menu konfiguracji emulatora.&lt;/li&gt;&lt;li&gt;Nie korzystaj jednocześnie z Calamansi i konsoli 3DS po skonfigurowaniu plików systemowych,&lt;br&gt;bo może to spowodować błędy. &lt;/li&gt;&lt;li&gt;Old 3DS jest wymagany do działania konfiguracji New 3DS (zalecane jest wykonanie obu tych konfiguracji).&lt;/li&gt;&lt;li&gt;Oba tryby konfiguracji będą działać niezależnie od modelu konsoli, na której uruchomiono narzędzie konfiguracyjne.&lt;/li&gt;&lt;/ul&gt;&lt;hr&gt;&lt;/p&gt;</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/citra_qt.cpp" line="2336"/>
@@ -4730,12 +4730,12 @@ Używaj na własne ryzyko!</translation>
         <location filename="../../src/citra_qt/citra_qt.cpp" line="3253"/>
         <source>FFmpeg could not be loaded. Make sure you have a compatible version installed.
 
-To install FFmpeg to Azahar, press Open and select your FFmpeg directory.
+To install FFmpeg to Calamansi, press Open and select your FFmpeg directory.
 
 To view a guide on how to install FFmpeg, press Help.</source>
         <translation>Nie można załadować FFmpeg. Upewnij się, że masz zainstalowaną kompatybilną wersję.
 
-Aby zainstalować FFmpeg do Azahar, naciśnij Otwórz i wybierz katalog FFmpeg.
+Aby zainstalować FFmpeg do Calamansi, naciśnij Otwórz i wybierz katalog FFmpeg.
 
 Aby wyświetlić poradnik dotyczący instalacji FFmpeg, naciśnij Pomoc.</translation>
     </message>
@@ -4957,7 +4957,7 @@ Aby wyświetlić poradnik dotyczący instalacji FFmpeg, naciśnij Pomoc.</transl
     </message>
     <message>
         <location filename="../../src/citra_qt/citra_qt.cpp" line="3960"/>
-        <source>Could not load savestate because it was created on a different Azahar version:&lt;br/&gt;&lt;b&gt;Azahar %1&lt;/b&gt;.&lt;br/&gt;&lt;br/&gt;Please read our blog entry &lt;a href=&apos;https://azahar-emu.org/blog/understanding-save-states/&apos;&gt;understanding savestates&lt;/a&gt; for more information.&lt;br/&gt;&lt;br/&gt;To recover your progress, downgrade to &lt;b&gt;Azahar %1&lt;/b&gt;, load this savestate and use the application&apos;s built-in save functionality.</source>
+        <source>Could not load savestate because it was created on a different Calamansi version:&lt;br/&gt;&lt;b&gt;Calamansi %1&lt;/b&gt;.&lt;br/&gt;&lt;br/&gt;Please read our blog entry &lt;a href=&apos;https://azahar-emu.org/blog/understanding-save-states/&apos;&gt;understanding savestates&lt;/a&gt; for more information.&lt;br/&gt;&lt;br/&gt;To recover your progress, downgrade to &lt;b&gt;Calamansi %1&lt;/b&gt;, load this savestate and use the application&apos;s built-in save functionality.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -5012,9 +5012,9 @@ Aby wyświetlić poradnik dotyczący instalacji FFmpeg, naciśnij Pomoc.</transl
     </message>
     <message>
         <location filename="../../src/citra_qt/citra_qt.cpp" line="4309"/>
-        <source>Update %1 for Azahar is available.
+        <source>Update %1 for Azahar (upstream) is available.
 Would you like to download it?</source>
-        <translation>Aktualizacja %1 dla Azahar jest dostępna.
+        <translation>Aktualizacja %1 dla Azahar (upstream) jest dostępna.
 Czy chcesz ją pobrać?</translation>
     </message>
     <message>
@@ -6200,8 +6200,8 @@ Komunikat debugowania: </translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/main.ui" line="81"/>
-        <source>Open Azahar Folder</source>
-        <translation>Otwórz folder Azahar</translation>
+        <source>Open Calamansi Folder</source>
+        <translation>Otwórz folder Calamansi</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/main.ui" line="104"/>
@@ -6315,8 +6315,8 @@ Komunikat debugowania: </translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/main.ui" line="353"/>
-        <source>About Azahar</source>
-        <translation>O Azahar</translation>
+        <source>About Calamansi</source>
+        <translation>O Calamansi</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/main.ui" line="364"/>
@@ -6480,8 +6480,8 @@ Komunikat debugowania: </translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/main.ui" line="585"/>
-        <source>Opens the Azahar Log folder</source>
-        <translation>Otwiera folder logu Azahar</translation>
+        <source>Opens the Calamansi Log folder</source>
+        <translation>Otwiera folder logu Calamansi</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/main.ui" line="593"/>
@@ -6908,8 +6908,8 @@ Debug Message: </source>
     </message>
     <message>
         <location filename="../../src/citra_qt/multiplayer/message.cpp" line="34"/>
-        <source>Creating a room failed. Please retry. Restarting Azahar might be necessary.</source>
-        <translation>Tworzenie pokoju nie powiodło się. Spróbuj ponownie. Może być konieczne ponowne uruchomienie Azahar.</translation>
+        <source>Creating a room failed. Please retry. Restarting Calamansi might be necessary.</source>
+        <translation>Tworzenie pokoju nie powiodło się. Spróbuj ponownie. Może być konieczne ponowne uruchomienie Calamansi.</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/multiplayer/message.cpp" line="36"/>
@@ -6918,8 +6918,8 @@ Debug Message: </source>
     </message>
     <message>
         <location filename="../../src/citra_qt/multiplayer/message.cpp" line="39"/>
-        <source>Version mismatch! Please update to the latest version of Azahar. If the problem persists, contact the room host and ask them to update the server.</source>
-        <translation>Niezgodność wersji! Zaktualizuj do najnowszej wersji Azahar. Jeśli problem dalej występuje, skontaktuj się z hostem pokoju i poproś o aktualizację serwera.</translation>
+        <source>Version mismatch! Please update to the latest version of Calamansi. If the problem persists, contact the room host and ask them to update the server.</source>
+        <translation>Niezgodność wersji! Zaktualizuj do najnowszej wersji Calamansi. Jeśli problem dalej występuje, skontaktuj się z hostem pokoju i poproś o aktualizację serwera.</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/multiplayer/message.cpp" line="41"/>
@@ -7366,9 +7366,9 @@ Możliwe, że opuścił pokój.</translation>
     <name>UserDataMigrator</name>
     <message>
         <location filename="../../src/citra_qt/user_data_migration.cpp" line="30"/>
-        <source>Would you like to migrate your data for use in Azahar?
+        <source>Would you like to migrate your data for use in Calamansi?
 (This may take a while; The old data will not be deleted)</source>
-        <translation>Czy chcesz przenieść swoje dane do Azahar?
+        <translation>Czy chcesz przenieść swoje dane do Calamansi?
 (Może to chwilę potrwać; stare dane nie zostaną usunięte)</translation>
     </message>
     <message>
@@ -7382,10 +7382,10 @@ Możliwe, że opuścił pokój.</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/user_data_migration.cpp" line="41"/>
-        <source>Azahar has detected user data for Citra and Lime3DS.
+        <source>Calamansi has detected user data for Citra and Lime3DS.
 
 </source>
-        <translation>Azahar wykrył dane użytkownika Citry i Lime3DS.
+        <translation>Calamansi wykrył dane użytkownika Citry i Lime3DS.
 
 </translation>
     </message>
@@ -7401,19 +7401,19 @@ Możliwe, że opuścił pokój.</translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/user_data_migration.cpp" line="66"/>
-        <source>Azahar has detected user data for Citra.
+        <source>Calamansi has detected user data for Citra.
 
 </source>
-        <translation>Azahar wykrył dane użytkownika Citry.
+        <translation>Calamansi wykrył dane użytkownika Citry.
 
 </translation>
     </message>
     <message>
         <location filename="../../src/citra_qt/user_data_migration.cpp" line="77"/>
-        <source>Azahar has detected user data for Lime3DS.
+        <source>Calamansi has detected user data for Lime3DS.
 
 </source>
-        <translation>Azahar wykrył dane użytkownika Lime3DS.
+        <translation>Calamansi wykrył dane użytkownika Lime3DS.
 
 </translation>
     </message>

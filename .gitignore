@@ -64,3 +64,16 @@ GIT-TAG
 
 # verify-release.sh downloads
 verify/
+
+# Local credentials, publishing artifacts and agent-only session notes
+.env
+.env.*
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+*.key
+local.properties
+artifacts/
+.superpowers/

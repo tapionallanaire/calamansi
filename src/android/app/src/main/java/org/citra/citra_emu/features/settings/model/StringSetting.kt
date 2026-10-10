@@ -12,6 +12,11 @@ enum class StringSetting(
     override val defaultValue: String
 ) : AbstractStringSetting {
     INIT_TIME(SettingKeys.init_time(), Settings.SECTION_SYSTEM, "946731601"),
+    POST_PROCESSING_SHADER(
+        SettingKeys.pp_shader_name(),
+        Settings.SECTION_RENDERER,
+        "None (builtin)"
+    ),
     CAMERA_INNER_NAME(SettingKeys.camera_inner_name(), Settings.SECTION_CAMERA, "ndk"),
     CAMERA_INNER_CONFIG(SettingKeys.camera_inner_config(), Settings.SECTION_CAMERA, "_front"),
     CAMERA_OUTER_LEFT_NAME(SettingKeys.camera_outer_left_name(), Settings.SECTION_CAMERA, "ndk"),
@@ -52,7 +57,8 @@ enum class StringSetting(
             CAMERA_OUTER_LEFT_NAME,
             CAMERA_OUTER_LEFT_CONFIG,
             CAMERA_OUTER_RIGHT_NAME,
-            CAMERA_OUTER_RIGHT_CONFIG
+            CAMERA_OUTER_RIGHT_CONFIG,
+            POST_PROCESSING_SHADER
         )
 
         fun from(key: String): StringSetting? = StringSetting.values().firstOrNull { it.key == key }

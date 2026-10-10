@@ -1,9 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+    <style name="Theme.Azahar.Home.Classic" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/home_action_green</item>
+        <item name="colorOnPrimary">@color/home_tile_highlight</item>
+        <item name="colorPrimaryContainer">@color/home_action_container</item>
+        <item name="colorOnPrimaryContainer">@color/home_action_green</item>
+        <item name="colorSecondaryContainer">@color/home_action_container</item>
+        <item name="colorOnSecondaryContainer">@color/home_action_green</item>
+        <item name="colorSurface">@color/home_silver</item>
+        <item name="colorSurfaceVariant">@color/home_silver_deep</item>
+        <item name="colorOnSurface">@color/home_ink</item>
+        <item name="colorOnSurfaceVariant">@color/home_secondary_ink</item>
+        <item name="colorOutline">@color/home_outline</item>
+        <item name="android:colorBackground">@color/home_silver</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowFullscreen">true</item>
+    </style>
+
     <style name="CitraSlider" parent="Widget.Material3.Slider">
         <item name="tickVisible">false</item>
         <item name="labelBehavior">gone</item>
+    </style>
+
+    <style name="Widget.Azahar.Home.Cartridge" parent="Widget.Material3.CardView.Outlined">
+        <item name="cardCornerRadius">10dp</item>
+        <item name="cardElevation">2dp</item>
+        <item name="strokeWidth">2dp</item>
+        <item name="strokeColor">@color/home_tile_stroke</item>
+        <item name="cardBackgroundColor">?attr/colorSurface</item>
+    </style>
+
+    <style name="Widget.Azahar.Home.Action" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="cornerRadius">8dp</item>
+        <item name="android:minHeight">48dp</item>
+    </style>
+
+    <style name="ShapeAppearance.Azahar.Home" parent="ShapeAppearance.Material3.SmallComponent">
+        <item name="cornerSize">8dp</item>
     </style>
 
 </resources>

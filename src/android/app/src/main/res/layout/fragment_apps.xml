@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/home_silver"
+    android:orientation="vertical">
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/apps_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingVertical="16dp"
+        android:text="@string/home_apps"
+        android:textAppearance="?attr/textAppearanceTitleLarge"
+        android:textColor="@color/home_ink"
+        android:accessibilityHeading="true" />
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/grid_apps"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:scrollbars="vertical" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/no_apps_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="@string/home_no_apps"
+            android:textAppearance="?attr/textAppearanceBodyLarge"
+            android:textColor="@color/home_secondary_ink"
+            android:visibility="gone" />
+
+    </FrameLayout>
+
+</LinearLayout>

@@ -29,7 +29,7 @@ if (APPLE)
     set_target_properties(citra_meta PROPERTIES
         MACOSX_BUNDLE TRUE
         MACOSX_BUNDLE_INFO_PLIST "${DIST_DIR}/Info.plist.in"
-        MACOSX_BUNDLE_BUNDLE_NAME "Azahar"
+        MACOSX_BUNDLE_BUNDLE_NAME "Calamansi"
         MACOSX_BUNDLE_GUI_IDENTIFIER "org.azahar-emu.azahar"
         MACOSX_BUNDLE_BUNDLE_VERSION "${BUILD_VERSION}"
         MACOSX_BUNDLE_SHORT_VERSION_STRING "${BUILD_FULLNAME}"

@@ -44,7 +44,6 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.drawerlayout.widget.DrawerLayout.DrawerListener
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -108,7 +107,7 @@ class EmulationFragment :
     private lateinit var screenAdjustmentUtil: ScreenAdjustmentUtil
 
     private val emulationViewModel: EmulationViewModel by activityViewModels()
-    private val settingsViewModel: SettingsViewModel by viewModels()
+    private val settingsViewModel: SettingsViewModel by activityViewModels()
     private val settings get() = settingsViewModel.settings
 
     private val onPause = Runnable { togglePause() }
@@ -121,6 +120,12 @@ class EmulationFragment :
         super.onAttach(context)
         if (context is EmulationActivity) {
             NativeLibrary.setEmulationActivity(context)
+            if (::game.isInitialized) {
+                context.currentGame = game
+                settings.loadSettings(
+                    if (game.titleId != 0L) String.format("%016X", game.titleId) else ""
+                )
+            }
         } else {
             throw IllegalStateException("EmulationFragment must have EmulationActivity parent")
         }
@@ -191,6 +196,12 @@ class EmulationFragment :
             requireActivity().finish()
             return
         }
+
+        emulationActivity.currentGame = game
+
+        settings.loadSettings(
+            if (game.titleId != 0L) String.format("%016X", game.titleId) else ""
+        )
 
         Log.info("[EmulationFragment] Starting application " + game.path)
 
@@ -301,11 +312,17 @@ class EmulationFragment :
 
             titleView.text = game.title
 
-            GameIconUtils.loadGameIcon(requireActivity(), game, iconView)
+            GameIconUtils.loadGameIcon(game, iconView)
         }
 
         binding.inGameMenu.setNavigationItemSelectedListener {
             when (it.itemId) {
+                R.id.menu_console_home -> {
+                    binding.drawerLayout.close()
+                    emulationActivity.returnToHome()
+                    true
+                }
+
                 R.id.menu_emulation_pause -> {
                     if (emulationState.isPaused) {
                         emulationState.unpause()
@@ -404,7 +421,7 @@ class EmulationFragment :
                     SettingsActivity.launch(
                         requireContext(),
                         SettingsFile.FILE_NAME_CONFIG,
-                        ""
+                        if (game.titleId != 0L) String.format("%016X", game.titleId) else ""
                     )
 
                     true
@@ -452,7 +469,7 @@ class EmulationFragment :
             }
         )
 
-        GameIconUtils.loadGameIcon(requireActivity(), game, binding.loadingImage)
+        GameIconUtils.loadGameIcon(game, binding.loadingImage)
         binding.loadingTitle.text = game.title
 
         viewLifecycleOwner.lifecycleScope.apply {

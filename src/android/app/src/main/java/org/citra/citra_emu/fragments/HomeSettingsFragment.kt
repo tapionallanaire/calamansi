@@ -27,7 +27,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.transition.MaterialSharedAxis
 import org.citra.citra_emu.CitraApplication
-import org.citra.citra_emu.HomeNavigationDirections
+import org.citra.citra_emu.activities.EmulationActivity
 import org.citra.citra_emu.R
 import org.citra.citra_emu.adapters.HomeSettingAdapter
 import org.citra.citra_emu.databinding.DialogSoftwareKeyboardBinding
@@ -38,6 +38,7 @@ import org.citra.citra_emu.features.settings.ui.SettingsActivity
 import org.citra.citra_emu.features.settings.utils.SettingsFile
 import org.citra.citra_emu.model.Game
 import org.citra.citra_emu.model.HomeSetting
+import org.citra.citra_emu.ui.main.ConsoleHomeActivity
 import org.citra.citra_emu.ui.main.MainActivity
 import org.citra.citra_emu.utils.GameHelper
 import org.citra.citra_emu.utils.GpuDriverHelper
@@ -58,6 +59,13 @@ class HomeSettingsFragment : Fragment() {
     private val preferences
         get() =
             PreferenceManager.getDefaultSharedPreferences(CitraApplication.appContext)
+
+    private val requestHomeRole =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == android.app.Activity.RESULT_OK) {
+                findNavController().popBackStack(R.id.gamesFragment, false)
+            }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,13 +89,32 @@ class HomeSettingsFragment : Fragment() {
                 R.string.grid_menu_core_settings,
                 R.string.settings_description,
                 R.drawable.ic_settings,
-                { SettingsActivity.launch(requireContext(), SettingsFile.FILE_NAME_CONFIG, "") }
+                {
+                    mainActivity.homeFragment()?.handoffHome()
+                    SettingsActivity.launch(requireContext(), SettingsFile.FILE_NAME_CONFIG, "")
+                }
+            ),
+            HomeSetting(
+                R.string.home_set_default,
+                R.string.home_set_default_description,
+                R.drawable.ic_home,
+                {
+                    mainActivity.homeFragment()?.suspendHomeForModal()
+                    requestHomeRole.launch(ConsoleHomeActivity.roleRequest(requireContext()))
+                }
+            ),
+            HomeSetting(
+                R.string.home_android_launcher,
+                R.string.home_android_launcher_description,
+                R.drawable.ic_home,
+                { ConsoleHomeActivity.openAndroidLauncher(requireContext()) }
             ),
             HomeSetting(
                 R.string.artic_base_connect,
                 R.string.artic_base_connect_description,
                 R.drawable.ic_network,
                 {
+                    mainActivity.homeFragment()?.suspendHomeForModal()
                     val inflater = LayoutInflater.from(context)
                     val inputBinding = DialogSoftwareKeyboardBinding.inflate(inflater)
                     var textInputValue: String = preferences.getString(
@@ -117,9 +144,8 @@ class HomeSettingsFragment : Fragment() {
                                         path = "articbase://$textInputValue",
                                         filename = ""
                                     )
-                                    val action =
-                                        HomeNavigationDirections.actionGlobalEmulationActivity(menu)
-                                    binding.root.findNavController().navigate(action)
+                                    mainActivity.homeFragment()?.handoffHome()
+                                    EmulationActivity.launchGame(binding.root.findNavController(), menu)
                                 }
                             }
                             .setNegativeButton(android.R.string.cancel) { _, _ -> }
@@ -131,7 +157,10 @@ class HomeSettingsFragment : Fragment() {
                 R.string.multiplayer,
                 R.string.multiplayer_description,
                 R.drawable.ic_multiplayer,
-                { mainActivity.displayMultiplayerDialog() }
+                {
+                    mainActivity.homeFragment()?.suspendHomeForModal()
+                    mainActivity.displayMultiplayerDialog()
+                }
             ),
             HomeSetting(
                 R.string.install_game_content,
@@ -186,7 +215,10 @@ class HomeSettingsFragment : Fragment() {
                 R.string.preferences_theme,
                 R.string.theme_and_color_description,
                 R.drawable.ic_palette,
-                { SettingsActivity.launch(requireContext(), Settings.SECTION_THEME, "") }
+                {
+                    mainActivity.homeFragment()?.handoffHome()
+                    SettingsActivity.launch(requireContext(), Settings.SECTION_THEME, "")
+                }
             ),
             HomeSetting(
                 R.string.about,
@@ -283,14 +315,16 @@ class HomeSettingsFragment : Fragment() {
     private fun setInsets() = ViewCompat.setOnApplyWindowInsetsListener(
         binding.root
     ) { view: View, windowInsets: WindowInsetsCompat ->
-        val barInsets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-        val cutoutInsets = windowInsets.getInsets(WindowInsetsCompat.Type.displayCutout())
-        val spacingNavigation = resources.getDimensionPixelSize(R.dimen.spacing_navigation)
-        val spacingNavigationRail =
+        val barInsets = windowInsets.getInsets(
+            WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+        )
+        val spacingNavigation = if (mainActivity.isDualHome) 0 else
+            resources.getDimensionPixelSize(R.dimen.spacing_navigation)
+        val spacingNavigationRail = if (mainActivity.isDualHome) 0 else
             resources.getDimensionPixelSize(R.dimen.spacing_navigation_rail)
 
-        val leftInsets = barInsets.left + cutoutInsets.left
-        val rightInsets = barInsets.right + cutoutInsets.right
+        val leftInsets = barInsets.left
+        val rightInsets = barInsets.right
 
         binding.scrollViewSettings.updatePadding(
             top = barInsets.top,
@@ -305,9 +339,9 @@ class HomeSettingsFragment : Fragment() {
         binding.linearLayoutSettings.updatePadding(bottom = spacingNavigation)
 
         if (view.layoutDirection == View.LAYOUT_DIRECTION_LTR) {
-            binding.linearLayoutSettings.updatePadding(left = spacingNavigationRail)
+            binding.linearLayoutSettings.updatePadding(left = spacingNavigationRail, right = 0)
         } else {
-            binding.linearLayoutSettings.updatePadding(right = spacingNavigationRail)
+            binding.linearLayoutSettings.updatePadding(left = 0, right = spacingNavigationRail)
         }
 
         windowInsets

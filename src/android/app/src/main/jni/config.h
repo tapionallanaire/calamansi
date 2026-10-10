@@ -8,18 +8,19 @@
 #include <string>
 #include "common/settings.h"
 
-class INIReader;
+class AndroidConfig;
 
 class Config {
 private:
-    std::unique_ptr<INIReader> android_config;
+    std::unique_ptr<AndroidConfig> android_config;
     std::string android_config_loc;
+    std::string game_id;
 
     bool LoadINI(const std::string& default_contents = "", bool retry = true);
     void ReadValues();
 
 public:
-    Config();
+    explicit Config(std::string game_id = "");
     ~Config();
 
     void Reload();

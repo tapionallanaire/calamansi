@@ -598,9 +598,17 @@ class SettingsAdapter(private val fragmentView: SettingsFragmentView, public val
 
     fun onLongClick(setting: AbstractSetting, position: Int): Boolean {
         MaterialAlertDialogBuilder(context)
-            .setMessage(R.string.reset_setting_confirmation)
+            .setMessage(
+                if (fragmentView.activityView!!.settings.isPerGame) {
+                    R.string.use_global_setting_confirmation
+                } else {
+                    R.string.reset_setting_confirmation
+                }
+            )
             .setPositiveButton(android.R.string.ok) { _: DialogInterface, _: Int ->
-                when (setting) {
+                if (fragmentView.activityView!!.settings.isPerGame) {
+                    fragmentView.activityView!!.settings.useGlobal(setting)
+                } else when (setting) {
                     is AbstractBooleanSetting -> setting.boolean = setting.defaultValue as Boolean
 
                     is AbstractFloatSetting -> {

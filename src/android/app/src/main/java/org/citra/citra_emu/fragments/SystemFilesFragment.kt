@@ -33,7 +33,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.citra.citra_emu.CitraApplication
-import org.citra.citra_emu.HomeNavigationDirections
+import org.citra.citra_emu.activities.EmulationActivity
 import org.citra.citra_emu.NativeLibrary
 import org.citra.citra_emu.R
 import org.citra.citra_emu.databinding.DialogSoftwareKeyboardBinding
@@ -308,12 +308,7 @@ class SystemFilesFragment : Fragment() {
                                         withContext(Dispatchers.Main) {
                                             setupStateCached = null
                                             progressDialog2?.dismiss()
-                                            val action =
-                                                HomeNavigationDirections
-                                                    .actionGlobalEmulationActivity(
-                                                        menu
-                                                    )
-                                            binding.root.findNavController().navigate(action)
+                                            EmulationActivity.launchGame(binding.root.findNavController(), menu)
                                         }
                                     }
                                 }
@@ -333,8 +328,7 @@ class SystemFilesFragment : Fragment() {
                 path = menuPath,
                 filename = ""
             )
-            val action = HomeNavigationDirections.actionGlobalEmulationActivity(menu)
-            binding.root.findNavController().navigate(action)
+            EmulationActivity.launchGame(binding.root.findNavController(), menu)
         }
     }
 

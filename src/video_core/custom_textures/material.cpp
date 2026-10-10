@@ -105,6 +105,11 @@ void Material::LoadFromDisk(bool flip_png) noexcept {
             continue;
         }
         texture->LoadFromDisk(flip_png);
+        if (!texture->IsLoaded()) {
+            // Decode failed; width/height are garbage, so never upload this material.
+            state = DecodeState::Failed;
+            return;
+        }
         size += texture->data.size();
         LOG_DEBUG(Render, "Loading {} map {}", MapTypeName(texture->type), texture->path);
     }

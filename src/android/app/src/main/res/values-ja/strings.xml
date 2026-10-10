@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_notification_running">Azaharが動いている</string>
+    <string name="app_notification_running">Calamansiが動いている</string>
     <!-- Home Strings -->
     <string name="grid_menu_core_settings">設定</string>
     <string name="home_options">オプション</string>
@@ -11,12 +11,12 @@
     <string name="install_game_content">CIAファイルをインストールする</string>
     <string name="install_game_content_description">アプリケーション、アップデート、またはダウンロードコンテンツをインストール</string>
     <string name="share_log">シェアログ</string>
-    <string name="share_log_description">問題をデバッグするためにAzaharにログファイルを送る</string>
+    <string name="share_log_description">問題をデバッグするためにCalamansiにログファイルを送る</string>
     <string name="gpu_driver_manager">GPUドライバーマネージャー</string>
     <string name="install_gpu_driver">GPUドライバーをインストール</string>
     <string name="driver_already_installed">ドライバーはもうインストールしています</string>
     <string name="select_games_folder">アプリケーションフォルダを選択</string>
-    <string name="about">Azaharについて</string>
+    <string name="about">Calamansiについて</string>
     <string name="citra_description">オープンソースの3DSエミュレータ</string>
     <string name="about_description">ビルドバージョンやクレジットなど</string>
     <string name="games_dir_selected">アプリケーシヨンフォルダが選択</string>
@@ -33,7 +33,7 @@
 
     <string name="contributors">貢献者</string>
     <string name="contributors_description">Azaharにコントリビューターたち</string>
-    <string name="licenses_description">Android用Azaharが使うプロジェクト</string>
+    <string name="licenses_description">Android用Calamansiが使うプロジェクト</string>
     <string name="build">ビルド</string>
     <string name="licenses">ライセンス</string>
     <!-- Setup strings -->
@@ -104,7 +104,7 @@
     <!-- Audio settings strings -->
     <string name="audio_volume">音量</string>
     <string name="simulate_headphones_plugged">ヘッドホンの接続をシミュレートする</string>
-    <string name="instant_debug_log_description">デバッグログを即座にファイルに書き込みます。Azaharがクラッシュしてログが途切れるときに有効にしてください。</string>
+    <string name="instant_debug_log_description">デバッグログを即座にファイルに書き込みます。Calamansiがクラッシュしてログが途切れるときに有効にしてください。</string>
     <!-- Layout settings strings -->
     <string name="layout_screen_orientation">画面の向き</string>
     <string name="layout_screen_orientation_auto_sensor">自動回転</string>

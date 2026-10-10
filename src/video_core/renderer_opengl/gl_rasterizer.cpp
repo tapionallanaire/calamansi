@@ -553,6 +553,10 @@ void RasterizerOpenGL::DrawTriangles() {
 bool RasterizerOpenGL::Draw(bool accelerate, bool is_indexed) {
     MICROPROFILE_SCOPE(OpenGL_Drawing);
     const DebugScope scope(runtime, Common::Vec4f{}, "RasterizerOpenGL::Draw");
+    if (accelerate && res_cache.IsPostFxCompositeDraw()) {
+        vertex_batch.clear();
+        return true;
+    }
 
     SyncDrawState();
 

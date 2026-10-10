@@ -125,20 +125,7 @@ class SettingsActivity :
         presenter.onResume()
     }
 
-    override fun onStart() {
-        super.onStart()
-        presenter.onStart()
-    }
 
-    /**
-     * If this is called, the user has left the settings screen (potentially through the
-     * home button) and will expect their changes to be persisted. So we kick off an
-     * IntentService which will do so on a background thread.
-     */
-    override fun onStop() {
-        super.onStop()
-        presenter.onStop(isFinishing)
-    }
 
     override fun showSettingsFragment(menuTag: String, addToStack: Boolean, gameId: String) {
         if (!addToStack && settingsFragment != null) {
@@ -202,6 +189,14 @@ class SettingsActivity :
     }
 
     fun onSettingsReset() {
+        if (settings.isPerGame) {
+            if (settings.resetGameSettings(this)) {
+                presenter.onSettingsReset()
+                showToastMessage(getString(R.string.game_settings_reset), true)
+                finish()
+            }
+            return
+        }
         // Prevents saving to a non-existent settings file
         presenter.onSettingsReset()
 
@@ -249,7 +244,11 @@ class SettingsActivity :
     }
 
     fun setToolbarTitle(title: String) {
-        binding.toolbarSettingsLayout.title = title
+        binding.toolbarSettingsLayout.title = if (settings.isPerGame) {
+            getString(R.string.game_settings_title, title, intent.getStringExtra(ARG_GAME_ID))
+        } else {
+            title
+        }
     }
 
     private val settingsFragment: SettingsFragment?

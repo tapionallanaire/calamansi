@@ -6,7 +6,7 @@
 
     <fragment
         android:id="@+id/gamesFragment"
-        android:name="org.citra.citra_emu.fragments.GamesFragment"
+        android:name="org.citra.citra_emu.fragments.HomePreviewFragment"
         android:label="PlatformGamesFragment" />
 
     <fragment
@@ -39,6 +39,11 @@
         android:id="@+id/searchFragment"
         android:name="org.citra.citra_emu.fragments.SearchFragment"
         android:label="SearchFragment" />
+
+    <fragment
+        android:id="@+id/appsFragment"
+        android:name="org.citra.citra_emu.fragments.AppsFragment"
+        android:label="@string/home_apps" />
 
     <fragment
         android:id="@+id/aboutFragment"

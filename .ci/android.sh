@@ -1,25 +1,15 @@
-#!/bin/bash -ex
+#!/usr/bin/env bash
+set -euo pipefail
 
-export NDK_CCACHE=$(which ccache)
+export NDK_CCACHE="$(command -v ccache)"
+export CMAKE_BUILD_PARALLEL_LEVEL="${CMAKE_BUILD_PARALLEL_LEVEL:-2}"
 
-if [ ! -z "${ANDROID_KEYSTORE_B64}" ]; then
-    export ANDROID_KEYSTORE_FILE="${GITHUB_WORKSPACE}/ks.jks"
-    base64 --decode <<< "${ANDROID_KEYSTORE_B64}" > "${ANDROID_KEYSTORE_FILE}"
-fi
-
-cd src/android
+cd "$(dirname "$0")/../src/android"
 chmod +x ./gradlew
+./gradlew --no-daemon --no-parallel --max-workers=2 \
+    --no-configuration-cache --no-build-cache \
+    '-Dorg.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=768m -XX:ActiveProcessorCount=2' \
+    -Pkotlin.compiler.execution.strategy=in-process \
+    assembleVanillaRelease assembleVanillaFatesFix
 
-if [[ "$TARGET" == "googleplay" ]]; then
-    ./gradlew assembleGooglePlayRelease
-    ./gradlew bundleGooglePlayRelease
-else
-    ./gradlew assembleVanillaRelease
-    ./gradlew bundleVanillaRelease
-fi
-
-ccache -s -v
-
-if [ ! -z "${ANDROID_KEYSTORE_B64}" ]; then
-    rm "${ANDROID_KEYSTORE_FILE}"
-fi
+ccache -s

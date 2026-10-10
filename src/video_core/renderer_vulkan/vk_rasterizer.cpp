@@ -543,6 +543,10 @@ void RasterizerVulkan::DrawTriangles() {
 
 bool RasterizerVulkan::Draw(bool accelerate, bool is_indexed) {
     MICROPROFILE_SCOPE(Vulkan_Drawing);
+    if (accelerate && res_cache.IsPostFxCompositeDraw()) {
+        vertex_batch.clear();
+        return true;
+    }
     SyncDrawState();
 
     const bool shadow_rendering = regs.framebuffer.IsShadowRendering();
@@ -649,7 +653,7 @@ void RasterizerVulkan::SyncTextureUnits(const Framebuffer* framebuffer) {
             switch (texture.config.type.Value()) {
             case TextureType::TextureCube:
             case TextureType::ShadowCube: {
-                const Sampler& null_sampler = res_cache.GetSampler(VideoCore::NULL_SURFACE_CUBE_ID);
+                const Sampler& null_sampler = res_cache.GetSampler(VideoCore::NULL_SAMPLER_ID);
                 if (instance.IsNullDescriptorSupported()) {
                     update_queue.AddImageSampler(texture_set, texture_index, 0, vk::ImageView{},
                                                  null_sampler.Handle());
@@ -661,7 +665,7 @@ void RasterizerVulkan::SyncTextureUnits(const Framebuffer* framebuffer) {
                 break;
             }
             default: {
-                const Sampler& null_sampler = res_cache.GetSampler(VideoCore::NULL_SURFACE_ID);
+                const Sampler& null_sampler = res_cache.GetSampler(VideoCore::NULL_SAMPLER_ID);
                 if (instance.IsNullDescriptorSupported()) {
                     update_queue.AddImageSampler(texture_set, texture_index, 0, vk::ImageView{},
                                                  null_sampler.Handle());

@@ -4,10 +4,12 @@
 
 #pragma once
 
+#include <algorithm>
 #include "common/hash.h"
 #include "common/math_util.h"
 #include "video_core/pica/regs_rasterizer.h"
 #include "video_core/rasterizer_cache/slot_id.h"
+#include "video_core/rasterizer_cache/surface_base.h"
 #include "video_core/rasterizer_cache/surface_params.h"
 
 namespace VideoCore {
@@ -112,16 +114,39 @@ public:
         if (flip_rect) {
             scissor_rect = scissor_rect.VerticalMirror(height);
         }
+
+        // Pixels outside an inclusive scissor box are never written, so only invalidate the
+        // intersection. Invalidating the whole viewport clobbers textures that alias the render
+        // target outside the box (e.g. the blur chain in Fire Emblem Fates/Echoes).
+        written_rect = draw_rect;
+        if (regs.scissor_test.mode == Pica::RasterizerRegs::ScissorMode::Include && !flip_rect) {
+            const auto clamp_u = [](s32 v) { return static_cast<u32>(std::max(v, 0)); };
+            written_rect.left = std::max(written_rect.left, clamp_u(scissor_rect.left));
+            written_rect.bottom = std::max(written_rect.bottom, clamp_u(scissor_rect.bottom));
+            written_rect.right = std::min(written_rect.right, clamp_u(scissor_rect.right));
+            written_rect.top = std::min(written_rect.top, clamp_u(scissor_rect.top));
+            written_rect.right = std::max(written_rect.right, written_rect.left);
+            written_rect.top = std::max(written_rect.top, written_rect.bottom);
+        }
     }
 
     ~FramebufferHelper() {
-        const Common::Rectangle draw_rect_unscaled{draw_rect / fb->Scale()};
+        if (written_rect.GetWidth() == 0 || written_rect.GetHeight() == 0) {
+            return;
+        }
+        const Common::Rectangle draw_rect_unscaled{written_rect / fb->Scale()};
         const auto invalidate = [&](SurfaceId surface_id, u32 level) {
             const auto& surface = res_cache->GetSurface(surface_id);
             const SurfaceInterval interval = surface.GetSubRectInterval(draw_rect_unscaled, level);
-            const PAddr addr = boost::icl::first(interval);
-            const u32 size = boost::icl::length(interval);
-            res_cache->InvalidateRegion(addr, size, surface_id);
+            // Don't claim regions this surface only holds via stride aliasing: draws without a
+            // scissor report the whole viewport, and taking ownership there would discard the
+            // real data held by the aliasing surfaces (Fire Emblem Fates/Echoes blur chain).
+            SurfaceRegions written{interval};
+            written -= surface.alias_regions;
+            for (const auto& sub : written) {
+                res_cache->InvalidateRegion(boost::icl::first(sub), boost::icl::length(sub),
+                                            surface_id);
+            }
         };
         if (fb->color_id) {
             invalidate(fb->color_id, fb->color_level);
@@ -152,6 +177,7 @@ private:
     typename T::Framebuffer* fb;
     Common::Rectangle<s32> scissor_rect;
     Common::Rectangle<u32> draw_rect;
+    Common::Rectangle<u32> written_rect;
     ViewportInfo viewport;
 };
 

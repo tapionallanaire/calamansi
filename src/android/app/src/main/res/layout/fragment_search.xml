@@ -65,7 +65,7 @@
             style="?attr/materialCardViewFilledStyle"
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            app:cardCornerRadius="28dp">
+            app:cardCornerRadius="10dp">
 
             <LinearLayout
                 android:id="@+id/search_container"
@@ -91,16 +91,19 @@
                     android:hint="@string/home_search_games"
                     android:inputType="text"
                     android:maxLines="1"
-                    android:imeOptions="flagNoFullscreen" />
+                    android:imeOptions="flagNoFullscreen|flagNoExtractUi" />
 
             </LinearLayout>
 
             <ImageView
                 android:id="@+id/clear_button"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
                 android:layout_gravity="center_vertical|end"
-                android:layout_marginEnd="24dp"
+                android:layout_marginEnd="4dp"
+                android:padding="12dp"
+                android:contentDescription="@string/home_clear_search"
+                android:focusable="true"
                 android:background="?attr/selectableItemBackground"
                 android:src="@drawable/ic_clear"
                 android:visibility="invisible"
@@ -139,7 +142,7 @@
                 android:layout_height="wrap_content"
                 android:checked="false"
                 android:text="@string/search_recently_played"
-                app:chipCornerRadius="28dp" />
+                app:chipCornerRadius="8dp" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/chip_recently_added"
@@ -148,7 +151,7 @@
                 android:layout_height="wrap_content"
                 android:checked="false"
                 android:text="@string/search_recently_added"
-                app:chipCornerRadius="28dp" />
+                app:chipCornerRadius="8dp" />
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/chip_installed"
@@ -157,7 +160,7 @@
                 android:layout_height="wrap_content"
                 android:checked="false"
                 android:text="@string/search_installed"
-                app:chipCornerRadius="28dp" />
+                app:chipCornerRadius="8dp" />
 
         </com.google.android.material.chip.ChipGroup>
 

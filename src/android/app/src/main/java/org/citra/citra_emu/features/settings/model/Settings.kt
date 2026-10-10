@@ -4,7 +4,6 @@
 
 package org.citra.citra_emu.features.settings.model
 
-import android.text.TextUtils
 import java.util.TreeMap
 import org.citra.citra_emu.CitraApplication
 import org.citra.citra_emu.R
@@ -12,7 +11,10 @@ import org.citra.citra_emu.features.settings.ui.SettingsActivityView
 import org.citra.citra_emu.features.settings.utils.SettingsFile
 
 class Settings {
-    private var gameId: String? = null
+    private var gameId: String = ""
+    private var globalValues: Map<Pair<String?, String?>, String> = emptyMap()
+
+    val isPerGame: Boolean get() = gameId.isNotEmpty()
 
     var isLoaded = false
 
@@ -39,10 +41,12 @@ class Settings {
         get() = sections.isEmpty()
 
     fun loadSettings(view: SettingsActivityView? = null) {
+        clearSettingValues()
         sections = SettingsSectionMap()
         loadCitraSettings(view)
-        if (!TextUtils.isEmpty(gameId)) {
-            loadCustomGameSettings(gameId!!, view)
+        globalValues = allSettings().associate { (it.section to it.key) to it.valueAsString }
+        if (isPerGame) {
+            loadCustomGameSettings(gameId, view)
         }
         isLoaded = true
     }
@@ -69,13 +73,14 @@ class Settings {
         }
     }
 
-    fun loadSettings(gameId: String, view: SettingsActivityView) {
-        this.gameId = gameId
+    fun loadSettings(gameId: String, view: SettingsActivityView? = null) {
+        require(gameId.isEmpty() || gameId.matches(Regex("[0-9A-Fa-f]{16}")))
+        this.gameId = gameId.uppercase()
         loadSettings(view)
     }
 
     fun saveSettings(view: SettingsActivityView) {
-        if (TextUtils.isEmpty(gameId)) {
+        if (!isPerGame) {
             view.showToastMessage(
                 CitraApplication.appContext.getString(R.string.ini_saved),
                 false
@@ -88,12 +93,50 @@ class Settings {
                 SettingsFile.saveFile(fileName, iniSections, view)
             }
         } else {
-            // TODO: Implement per game settings
+            val overrides = TreeMap<String, SettingSection?>()
+            for (setting in gameOverrides(globalValues, allSettings())) {
+                val section = overrides.getOrPut(setting.section!!) {
+                    SettingSection(setting.section!!)
+                }!!
+                section.putSetting(setting)
+            }
+            SettingsFile.saveCustomGameSettings(gameId, overrides, view)
         }
     }
 
     fun saveSetting(setting: AbstractSetting, filename: String) {
-        SettingsFile.saveFile(filename, setting)
+        if (isPerGame) {
+            getSection(setting.section!!)!!.putSetting(setting)
+            SettingsFile.saveCustomGameSetting(
+                gameId,
+                setting,
+                setting.valueAsString == globalValues[setting.section to setting.key]
+            )
+        } else {
+            SettingsFile.saveFile(filename, setting)
+        }
+    }
+
+    fun useGlobal(setting: AbstractSetting) {
+        val value = globalValues[setting.section to setting.key] ?: return
+        SettingsFile.applySettingValue(setting.key!!, value)
+        getSection(setting.section!!)!!.putSetting(setting)
+    }
+
+    fun resetGameSettings(view: SettingsActivityView): Boolean =
+        SettingsFile.deleteCustomGameSettings(gameId, view)
+
+    private fun allSettings(): List<AbstractSetting> =
+        BooleanSetting.values().toList() + IntSetting.values() + FloatSetting.values() +
+            ScaledFloatSetting.values() + StringSetting.values() + IntListSetting.values()
+
+    private fun clearSettingValues() {
+        BooleanSetting.clear()
+        IntSetting.clear()
+        FloatSetting.clear()
+        ScaledFloatSetting.clear()
+        StringSetting.clear()
+        IntListSetting.clear()
     }
 
     companion object {

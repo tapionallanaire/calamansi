@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string notr="true">Azahar</string>
+   <string notr="true">Calamansi</string>
   </property>
   <property name="windowIcon">
    <iconset>
@@ -78,7 +78,7 @@
     </widget>
     <widget class="QMenu" name="menu_Open_Folder">
      <property name="title">
-      <string>Open Azahar Folder</string>
+      <string>Open Calamansi Folder</string>
      </property>
      <addaction name="action_Open_Citra_Folder"/>
      <addaction name="action_Open_NAND_Folder"/>
@@ -350,7 +350,7 @@
   </action>
   <action name="action_About">
    <property name="text">
-    <string>About Azahar</string>
+    <string>About Calamansi</string>
    </property>
    <property name="menuRole">
     <enum>QAction::AboutRole</enum>
@@ -582,7 +582,7 @@
     <string>Open Log Folder</string>
    </property>
    <property name="toolTip">
-    <string>Opens the Azahar Log folder</string>
+    <string>Opens the Calamansi Log folder</string>
    </property>
   </action>
   <action name="action_Screen_Layout_Default">

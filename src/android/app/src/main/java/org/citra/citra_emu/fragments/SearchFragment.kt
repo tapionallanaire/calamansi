@@ -25,6 +25,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.preference.PreferenceManager
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import info.debatty.java.stringsimilarity.Jaccard
 import info.debatty.java.stringsimilarity.JaroWinkler
@@ -37,6 +38,7 @@ import org.citra.citra_emu.adapters.GameAdapter
 import org.citra.citra_emu.databinding.FragmentSearchBinding
 import org.citra.citra_emu.model.Game
 import org.citra.citra_emu.viewmodel.GamesViewModel
+import org.citra.citra_emu.ui.main.MainActivity
 import org.citra.citra_emu.viewmodel.HomeViewModel
 
 class SearchFragment : Fragment() {
@@ -101,6 +103,13 @@ class SearchFragment : Fragment() {
             requireActivity() as AppCompatActivity,
             inflater,
             openImageLauncher,
+            navController = findNavController(),
+            onBeforeNavigate = {
+                (requireActivity() as MainActivity).homeFragment()?.handoffHome()
+            },
+            onBeforeModal = {
+                (requireActivity() as MainActivity).homeFragment()?.suspendHomeForModal()
+            },
             onRequestCompressOrDecompress = { inputPath, suggestedName, shouldCompress ->
                 pendingCompressInvocation = inputPath
                 onCompressDecompressLauncher.launch(suggestedName)
@@ -110,10 +119,13 @@ class SearchFragment : Fragment() {
         )
 
         binding.gridGamesSearch.apply {
-            layoutManager = GridLayoutManager(
-                requireContext(),
-                resources.getInteger(R.integer.game_grid_columns)
-            )
+            val grid = GridLayoutManager(context, 1)
+            layoutManager = grid
+            addOnLayoutChangeListener { view, _, _, _, _, _, _, _, _ ->
+                val width = view.width - view.paddingLeft - view.paddingRight
+                val columns = (width / resources.getDimensionPixelSize(R.dimen.home_tile_width)).coerceAtLeast(1)
+                if (grid.spanCount != columns) grid.spanCount = columns
+            }
             adapter = this@SearchFragment.gameAdapter
         }
 
@@ -250,18 +262,21 @@ class SearchFragment : Fragment() {
     private fun setInsets() = ViewCompat.setOnApplyWindowInsetsListener(
         binding.root
     ) { view: View, windowInsets: WindowInsetsCompat ->
-        val barInsets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-        val cutoutInsets = windowInsets.getInsets(WindowInsetsCompat.Type.displayCutout())
+        val barInsets = windowInsets.getInsets(
+            WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+        )
         val extraListSpacing = resources.getDimensionPixelSize(R.dimen.spacing_med)
-        val spacingNavigation = resources.getDimensionPixelSize(R.dimen.spacing_navigation)
-        val spacingNavigationRail =
+        val dual = (requireActivity() as MainActivity).isDualHome
+        val spacingNavigation = if (dual) 0 else
+            resources.getDimensionPixelSize(R.dimen.spacing_navigation)
+        val spacingNavigationRail = if (dual) 0 else
             resources.getDimensionPixelSize(R.dimen.spacing_navigation_rail)
         val chipSpacing = resources.getDimensionPixelSize(R.dimen.spacing_chip)
 
         binding.constraintSearch.updatePadding(
-            left = barInsets.left + cutoutInsets.left,
+            left = barInsets.left,
             top = barInsets.top,
-            right = barInsets.right + cutoutInsets.right
+            right = barInsets.right
         )
 
         binding.gridGamesSearch.updatePadding(
@@ -272,9 +287,9 @@ class SearchFragment : Fragment() {
 
         val mlpDivider = binding.divider.layoutParams as ViewGroup.MarginLayoutParams
         if (view.layoutDirection == View.LAYOUT_DIRECTION_LTR) {
-            binding.frameSearch.updatePadding(left = spacingNavigationRail)
-            binding.gridGamesSearch.updatePadding(left = spacingNavigationRail)
-            binding.noResultsView.updatePadding(left = spacingNavigationRail)
+            binding.frameSearch.updatePadding(left = spacingNavigationRail, right = 0)
+            binding.gridGamesSearch.updatePadding(left = spacingNavigationRail, right = 0)
+            binding.noResultsView.updatePadding(left = spacingNavigationRail, right = 0)
             binding.chipGroup.updatePadding(
                 left = chipSpacing + spacingNavigationRail,
                 right = chipSpacing
@@ -282,9 +297,9 @@ class SearchFragment : Fragment() {
             mlpDivider.leftMargin = chipSpacing + spacingNavigationRail
             mlpDivider.rightMargin = chipSpacing
         } else {
-            binding.frameSearch.updatePadding(right = spacingNavigationRail)
-            binding.gridGamesSearch.updatePadding(right = spacingNavigationRail)
-            binding.noResultsView.updatePadding(right = spacingNavigationRail)
+            binding.frameSearch.updatePadding(left = 0, right = spacingNavigationRail)
+            binding.gridGamesSearch.updatePadding(left = 0, right = spacingNavigationRail)
+            binding.noResultsView.updatePadding(left = 0, right = spacingNavigationRail)
             binding.chipGroup.updatePadding(
                 left = chipSpacing,
                 right = chipSpacing + spacingNavigationRail

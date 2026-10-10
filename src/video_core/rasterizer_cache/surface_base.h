@@ -87,6 +87,9 @@ public:
     SurfaceFlagBits flags{};
     const Material* material = nullptr;
     SurfaceRegions invalid_regions;
+    /// Regions marked valid without copying data because the guest aliased them with a
+    /// different stride. The surface holds no real data there.
+    SurfaceRegions alias_regions;
     u32 fill_size = 0;
     std::array<u8, 4> fill_data{};
     u64 modification_tick = 1;

@@ -25,9 +25,11 @@ namespace {
 MICROPROFILE_DEFINE(CustomTexManager_TickFrame, "CustomTexManager", "TickFrame",
                     MP_RGB(54, 16, 32));
 
-constexpr std::size_t MAX_UPLOADS_PER_TICK = 8;
-
 using namespace Common::Literals;
+
+// Budget by bytes, not count: HD packs decode to tens of MB per texture and
+// uploading several in one frame causes visible hitches.
+constexpr u64 MAX_UPLOAD_BYTES_PER_TICK = 32_MiB;
 
 bool IsPow2(u32 value) {
     return value != 0 && (value & (value - 1)) == 0;
@@ -65,15 +67,15 @@ void CustomTexManager::TickFrame() {
     if (!textures_loaded) {
         return;
     }
-    std::size_t num_uploads = 0;
+    u64 uploaded_bytes = 0;
     for (auto it = async_uploads.begin(); it != async_uploads.end();) {
-        if (num_uploads >= MAX_UPLOADS_PER_TICK) {
+        if (uploaded_bytes >= MAX_UPLOAD_BYTES_PER_TICK) {
             return;
         }
         switch (it->material->state) {
         case DecodeState::Decoded:
             it->func();
-            num_uploads++;
+            uploaded_bytes += it->material->size;
             [[fallthrough]];
         case DecodeState::Failed:
             it = async_uploads.erase(it);
@@ -299,7 +301,7 @@ Material* CustomTexManager::GetMaterial(u64 data_hash) {
 bool CustomTexManager::Decode(Material* material, std::function<bool()>&& upload) {
     if (!async_custom_loading) {
         material->LoadFromDisk(flip_png_files);
-        return upload();
+        return material->IsDecoded() && upload();
     }
     if (material->IsUnloaded()) {
         material->state = DecodeState::Pending;

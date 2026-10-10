@@ -7,6 +7,7 @@
 #include <ranges>
 #include <sstream>
 #include <unordered_map>
+#include <utility>
 #include <INIReader.h>
 #include <boost/hana/string.hpp>
 #include "common/file_util.h"
@@ -25,15 +26,60 @@
 #include "jni/default_ini.h"
 #include "jni/input_manager.h"
 
-Config::Config() {
-    // TODO: Don't hardcode the path; let the frontend decide where to put the config files.
-    android_config_loc = FileUtil::GetUserPath(FileUtil::UserPath::ConfigDir) + "config.ini";
-    std::string ini_buffer;
-    FileUtil::ReadFileToString(true, android_config_loc, ini_buffer);
-    if (!ini_buffer.empty()) {
-        android_config = std::make_unique<INIReader>(ini_buffer.c_str(), ini_buffer.size());
+// Keep the existing reader calls, selecting a title override only when its key exists.
+class AndroidConfig : public INIReader {
+public:
+    AndroidConfig(const char* buffer, std::size_t size) : INIReader(buffer, size) {}
+
+    void LoadGameSettings(const std::string& contents) {
+        if (contents.empty()) {
+            return;
+        }
+        game_config = std::make_unique<INIReader>(contents.c_str(), contents.size());
+        if (game_config->ParseError() != 0) {
+            LOG_WARNING(Config, "Ignoring invalid game settings (line {})",
+                        game_config->ParseError());
+            game_config.reset();
+        }
     }
 
+    std::string Get(const std::string& section, const std::string& key,
+                    const std::string& fallback) const {
+        return Reader(section, key).Get(section, key, fallback);
+    }
+
+    std::string GetString(const std::string& section, const std::string& key,
+                          const std::string& fallback) const {
+        return Reader(section, key).GetString(section, key, fallback);
+    }
+
+    bool GetBoolean(const std::string& section, const std::string& key, bool fallback) const {
+        return Reader(section, key).GetBoolean(section, key, fallback);
+    }
+
+    long GetInteger(const std::string& section, const std::string& key, long fallback) const {
+        return Reader(section, key).GetInteger(section, key, fallback);
+    }
+
+    double GetReal(const std::string& section, const std::string& key, double fallback) const {
+        return Reader(section, key).GetReal(section, key, fallback);
+    }
+
+private:
+    const INIReader& Reader(const std::string& section, const std::string& key) const {
+        if (section == "Controls" || section == "WebService") {
+            return *this;
+        }
+        return game_config && !game_config->GetString(section, key, "").empty()
+                   ? *game_config
+                   : static_cast<const INIReader&>(*this);
+    }
+
+    std::unique_ptr<INIReader> game_config;
+};
+
+Config::Config(std::string game_id) : game_id{std::move(game_id)} {
+    android_config_loc = FileUtil::GetUserPath(FileUtil::UserPath::ConfigDir) + "config.ini";
     Reload();
 }
 
@@ -49,7 +95,7 @@ bool Config::LoadINI(const std::string& default_contents, bool retry) {
             std::string ini_buffer;
             FileUtil::ReadFileToString(true, location, ini_buffer);
             android_config =
-                std::make_unique<INIReader>(ini_buffer.c_str(), ini_buffer.size()); // Reopen file
+                std::make_unique<AndroidConfig>(ini_buffer.c_str(), ini_buffer.size()); // Reopen file
 
             return LoadINI(default_contents, false);
         }
@@ -153,6 +199,7 @@ void Config::ReadValues() {
     ReadSetting("Renderer", Settings::values.use_disk_shader_cache);
     ReadSetting("Renderer", Settings::values.use_vsync);
     ReadSetting("Renderer", Settings::values.use_skip_duplicate_frames);
+    ReadSetting("Renderer", Settings::values.disable_game_post_fx);
     ReadSetting("Renderer", Settings::values.texture_filter);
     ReadSetting("Renderer", Settings::values.texture_sampling);
     ReadSetting("Renderer", Settings::values.turbo_limit);
@@ -348,6 +395,21 @@ void Config::Reload() {
                        *key);
         }
     }
-    LoadINI(DefaultINI::android_config_default_file_content);
+    std::string ini_buffer;
+    FileUtil::ReadFileToString(true, android_config_loc, ini_buffer);
+    android_config.reset();
+    if (!ini_buffer.empty()) {
+        android_config = std::make_unique<AndroidConfig>(ini_buffer.c_str(), ini_buffer.size());
+    }
+    if (!LoadINI(DefaultINI::android_config_default_file_content)) {
+        return;
+    }
+    if (!game_id.empty()) {
+        std::string game_buffer;
+        const std::string game_config_loc =
+            FileUtil::GetUserPath(FileUtil::UserPath::UserDir) + "GameSettings/" + game_id + ".ini";
+        FileUtil::ReadFileToString(true, game_config_loc, game_buffer);
+        android_config->LoadGameSettings(game_buffer);
+    }
     ReadValues();
 }

@@ -7,7 +7,6 @@ package org.citra.citra_emu.utils
 import android.graphics.Bitmap
 import android.widget.ImageView
 import androidx.core.graphics.drawable.toDrawable
-import androidx.fragment.app.FragmentActivity
 import coil.ImageLoader
 import coil.decode.DataSource
 import coil.fetch.DrawableResult
@@ -19,6 +18,7 @@ import coil.request.ImageRequest
 import coil.request.Options
 import coil.transform.RoundedCornersTransformation
 import java.nio.IntBuffer
+import org.citra.citra_emu.CitraApplication
 import org.citra.citra_emu.R
 import org.citra.citra_emu.model.Game
 
@@ -46,26 +46,28 @@ class GameIconKeyer : Keyer<Game> {
 }
 
 object GameIconUtils {
-    fun loadGameIcon(activity: FragmentActivity, game: Game, imageView: ImageView) {
-        val imageLoader = ImageLoader.Builder(activity)
+    private val imageLoader by lazy {
+        ImageLoader.Builder(CitraApplication.appContext)
             .components {
                 add(GameIconKeyer())
                 add(GameIconFetcher.Factory())
             }
             .memoryCache {
-                MemoryCache.Builder(activity)
+                MemoryCache.Builder(CitraApplication.appContext)
                     .maxSizePercent(0.25)
                     .build()
             }
             .build()
+    }
 
-        val request = ImageRequest.Builder(activity)
+    fun loadGameIcon(game: Game, imageView: ImageView) {
+        val request = ImageRequest.Builder(imageView.context)
             .data(game)
             .target(imageView)
             .error(R.drawable.no_icon)
             .transformations(
                 RoundedCornersTransformation(
-                    activity.resources.getDimensionPixelSize(R.dimen.spacing_med).toFloat()
+                    imageView.resources.getDimensionPixelSize(R.dimen.spacing_med).toFloat()
                 )
             )
             .build()

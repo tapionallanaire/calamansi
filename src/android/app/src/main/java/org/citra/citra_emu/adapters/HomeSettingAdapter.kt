@@ -4,7 +4,6 @@
 
 package org.citra.citra_emu.adapters
 
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -78,13 +77,6 @@ class HomeSettingAdapter(
                     option.details.collect { updateOptionDetails(it) }
                 }
             }
-            binding.optionDetail.postDelayed(
-                {
-                    binding.optionDetail.ellipsize = TextUtils.TruncateAt.MARQUEE
-                    binding.optionDetail.isSelected = true
-                },
-                3000
-            )
 
             if (option.isEnabled.invoke()) {
                 binding.optionTitle.alpha = 1f

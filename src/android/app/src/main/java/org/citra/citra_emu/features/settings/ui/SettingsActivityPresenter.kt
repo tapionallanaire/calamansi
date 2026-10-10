@@ -6,7 +6,6 @@ package org.citra.citra_emu.features.settings.ui
 
 import android.net.Uri
 import android.os.Bundle
-import android.text.TextUtils
 import androidx.documentfile.provider.DocumentFile
 import org.citra.citra_emu.CitraApplication
 import org.citra.citra_emu.NativeLibrary
@@ -36,24 +35,31 @@ class SettingsActivityPresenter(private val activityView: SettingsActivityView) 
 
     fun onResume() {
         SystemSaveGame.load()
+        prepareDirectoriesIfNeeded()
     }
 
     fun onPause() {
         SystemSaveGame.save()
+        val changed = shouldSave
+        if (changed) {
+            settings.saveSettings(activityView)
+            if (!settings.isPerGame) updateAndroidImageVisibility()
+            shouldSave = false
+        }
+        val runningTitleId = if (NativeLibrary.isRunning()) NativeLibrary.getRunningTitleId() else 0L
+        Settings().loadSettings(
+            if (runningTitleId != 0L) String.format("%016X", runningTitleId) else ""
+        )
+        NativeLibrary.reloadSettings()
+        if (changed) {
+            NativeLibrary.updateFramebuffer(NativeLibrary.isPortraitMode())
+            TurboHelper.reloadTurbo(false)
+        }
     }
 
-    fun onStart() {
-        prepareDirectoriesIfNeeded()
-    }
 
     private fun loadSettingsUI() {
-        if (!settings.isLoaded) {
-            if (!TextUtils.isEmpty(gameId)) {
-                settings.loadSettings(gameId, activityView)
-            } else {
-                settings.loadSettings(activityView)
-            }
-        }
+        settings.loadSettings(gameId, activityView)
         activityView.showSettingsFragment(menuTag, false, gameId)
         activityView.onSettingsFileLoaded()
     }
@@ -95,18 +101,6 @@ class SettingsActivityPresenter(private val activityView: SettingsActivityView) 
         }
     }
 
-    fun onStop(finishing: Boolean) {
-        if (finishing && shouldSave) {
-            Log.debug("[SettingsActivity] Settings activity stopping. Saving settings to INI...")
-            settings.saveSettings(activityView)
-            // added to ensure that layout changes take effect as soon as settings window closes
-            NativeLibrary.reloadSettings()
-            NativeLibrary.updateFramebuffer(NativeLibrary.isPortraitMode())
-            updateAndroidImageVisibility()
-            TurboHelper.reloadTurbo(false) // TODO: Can this go somewhere else? -OS
-        }
-        NativeLibrary.reloadSettings()
-    }
 
     fun onSettingChanged() {
         shouldSave = true

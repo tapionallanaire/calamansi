@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_disclaimer">Este software ejecutará aplicaciones para la consola portátil Nintendo 3DS. No se incluyen juegos.\n\nAntes de comenzar con la emulación, seleccione una carpeta para almacenar los datos de usuario de Azahar en.\n\nQué es ésto:\n<a href='https://github.com/azahar-emu/azahar/wiki/Android-User-Data-and-Storage'>Wiki - Datos de usuario de Azahar Android y almacenamiento</a></string>
-    <string name="app_notification_channel_description">Notificaciones del emulador 3DS Azahar</string>
-    <string name="app_notification_running">Azahar está ejecutándose</string>
-    <string name="app_game_install_description">A continuación, deberá seleccionar una Carpeta de Aplicaciones. Azahar mostrará todas las ROM de 3DS de la carpeta seleccionada en la aplicación.\n\nLas ROM CIA, actualizaciones y los DLC deberán instalarse por separado haciendo clic en el icono de la carpeta y seleccionando Instalar CIA.</string>
+    <string name="app_disclaimer">Este software ejecutará aplicaciones para la consola portátil Nintendo 3DS. No se incluyen juegos.\n\nAntes de comenzar con la emulación, seleccione una carpeta para almacenar los datos de usuario de Calamansi en.\n\nQué es ésto:\n<a href='https://github.com/azahar-emu/azahar/wiki/Android-User-Data-and-Storage'>Wiki - Datos de usuario de Azahar Android y almacenamiento</a></string>
+    <string name="app_notification_channel_description">Notificaciones del emulador 3DS Calamansi</string>
+    <string name="app_notification_running">Calamansi está ejecutándose</string>
+    <string name="app_game_install_description">A continuación, deberá seleccionar una Carpeta de Aplicaciones. Calamansi mostrará todas las ROM de 3DS de la carpeta seleccionada en la aplicación.\n\nLas ROM CIA, actualizaciones y los DLC deberán instalarse por separado haciendo clic en el icono de la carpeta y seleccionando Instalar CIA.</string>
 
     <!-- Home Strings -->
     <string name="grid_menu_core_settings">Configuración</string>
@@ -15,7 +15,7 @@
     <string name="install_game_content">Instalar archivo CIA</string>
     <string name="install_game_content_description">Instalar aplicaciones, actualizaciones o DLC</string>
     <string name="share_log">Compartir Registro</string>
-    <string name="share_log_description">Compartir el archivo de registro de Azahar para depurar problemas</string>
+    <string name="share_log_description">Compartir el archivo de registro de Calamansi para depurar problemas</string>
     <string name="gpu_driver_manager">Administrador de drivers de GPU</string>
     <string name="install_gpu_driver">Instalar drivers de GPU</string>
     <string name="install_gpu_driver_description">Instala drivers alternativos para, potencialmente, conseguir mejor rendimiento y/o precisión</string>
@@ -24,12 +24,12 @@
     <string name="custom_driver_not_supported_description">La carga de drivers personalizados no está soportada en este dispositivo.\n¡Compruebe esta opción otra vez en el futuro para ver si ya está soportada!</string>
     <string name="share_log_not_found">No se encontró ningún archivo de registro</string>
     <string name="select_games_folder">Seleccionar Directorio de Aplicaciones</string>
-    <string name="select_games_folder_description">Permite que Azahar rellene la lista de aplicaciones</string>
+    <string name="select_games_folder_description">Permite que Calamansi rellene la lista de aplicaciones</string>
     <string name="about">Acerca de</string>
     <string name="citra_description">Un emulador de 3DS de código abierto</string>
     <string name="about_description">Versión de compilación, créditos y más</string>
     <string name="games_dir_selected">Directorio de aplicaciones seleccionado</string>
-    <string name="select_citra_user_folder_home_description">Cambia los archivos que Azahar usa para cargar aplicaciones</string>
+    <string name="select_citra_user_folder_home_description">Cambia los archivos que Calamansi usa para cargar aplicaciones</string>
     <string name="theme_and_color_description">Modifica el aspecto de la app</string>
     <string name="install_cia_title">Instalar CIA</string>
 
@@ -57,12 +57,12 @@
     <string name="copied_to_clipboard">Copiado al portapapeles</string>
     <string name="contributors">Contribuidores</string>
     <string name="contributors_description">Colaboradores que hicieron posible Azahar</string>
-    <string name="licenses_description">Proyectos utilizados por Azahar para Android</string>
+    <string name="licenses_description">Proyectos utilizados por Calamansi para Android</string>
     <string name="build">Compilación</string>
     <string name="licenses">Licencias</string>
     <!-- Setup strings -->
     <string name="welcome">¡Bienvenido/a!</string>
-    <string name="welcome_description">Aprenda a configurar &lt;b>Azahar&lt;/b> y entra en la emulación.</string>
+    <string name="welcome_description">Aprenda a configurar &lt;b>Calamansi&lt;/b> y entra en la emulación.</string>
     <string name="get_started">Empezar</string>
     <string name="step_complete">¡Completado!</string>
     <string name="games">Aplicaciones</string>
@@ -74,15 +74,15 @@
     <string name="notifications_description">Concede el permiso de notificaciones con el botón de debajo.</string>
     <string name="give_permission">Conceder permiso</string>
     <string name="notification_warning">¿Saltarse la concesión del permiso de notificaciones?</string>
-    <string name="notification_warning_description">Azahar no podrá notificarte sobre información importante.</string>
+    <string name="notification_warning_description">Calamansi no podrá notificarte sobre información importante.</string>
     <string name="filesystem_permission_warning">Faltan Permisos</string>
-    <string name="filesystem_permission_warning_description">Azahar necesita permiso para administrar archivos en este dispositivo para poder almacenar y administrar los datos de usuario de 3DS.\n\nPor favor, otorgue el permiso antes de continuar.</string>
+    <string name="filesystem_permission_warning_description">Calamansi necesita permiso para administrar archivos en este dispositivo para poder almacenar y administrar los datos de usuario de 3DS.\n\nPor favor, otorgue el permiso antes de continuar.</string>
     <string name="camera_permission">Cámara</string>
     <string name="camera_permission_description">Concede el permiso de cámara debajo para emular la cámara de la 3DS.</string>
     <string name="microphone_permission">Micrófono</string>
     <string name="microphone_permission_description">Concede el permiso de micrófono debajo para emular el micrófono de la 3DS.</string>
     <string name="filesystem_permission">Sistema de archivos</string>
-    <string name="filesystem_permission_description">Concede el permiso de sistema de archivos abajo para permitir que Azahar almacene archivos.</string>
+    <string name="filesystem_permission_description">Concede el permiso de sistema de archivos abajo para permitir que Calamansi almacene archivos.</string>
     <string name="permission_denied">Permiso denegado</string>
     <string name="add_games_warning">¿Saltarse la selección de la carpeta de aplicaciones?</string>
     <string name="add_games_warning_description">Nada se mostrará en la lista de aplicaciones si no se selecciona una carpeta.</string>
@@ -95,18 +95,18 @@
     <string name="warning_cancel">Cancelar</string>
     <string name="select_citra_user_folder">Seleccionar Carpeta de Usuario</string>
     <string name="select_citra_user_folder_description"><![CDATA[Selecciona tu directorio de <a href=\"https://github.com/azahar-emu/azahar/wiki/Android-User-Data-and-Storage\">datos de usuario</a> con el botón de abajo.]]></string>
-    <string name="select_which_user_directory_to_use">Parece que tienes directorios de usuario configurados tanto para Lime3DS como para Azahar. Probablemente se deba a que actualizaste a Azahar y, cuando se te pidió, elegiste un directorio de usuario diferente al que usabas para Lime3DS.\n\nEsto puede haberte hecho pensar que perdiste partidas guardadas u otras configuraciones; te pedimos disculpas si eso ocurrió.\n\n¿Prefieres volver a usar tu directorio de usuario original de Lime3DS, restaurando la configuración y las partidas guardadas de Lime3DS, o conservar tu directorio de usuario actual de Azahar?\n\nNinguno de los directorios se eliminará, independientemente de tu elección, y puedes cambiar libremente entre ellos usando la opción \"Seleccionar carpeta de usuario\".</string>
-    <string name="keep_current_azahar_directory">Mantener el directorio Azahar actual</string>
+    <string name="select_which_user_directory_to_use">Parece que tienes directorios de usuario configurados tanto para Lime3DS como para Azahar. Probablemente se deba a que actualizaste a Azahar y, cuando se te pidió, elegiste un directorio de usuario diferente al que usabas para Lime3DS.\n\nEsto puede haberte hecho pensar que perdiste partidas guardadas u otras configuraciones; te pedimos disculpas si eso ocurrió.\n\n¿Prefieres volver a usar tu directorio de usuario original de Lime3DS, restaurando la configuración y las partidas guardadas de Lime3DS, o conservar tu directorio de usuario actual de Calamansi?\n\nNinguno de los directorios se eliminará, independientemente de tu elección, y puedes cambiar libremente entre ellos usando la opción \"Seleccionar carpeta de usuario\".</string>
+    <string name="keep_current_azahar_directory">Mantener el directorio Calamansi actual</string>
     <string name="use_prior_lime3ds_directory">Usar el directorio de Lime3DS anterior</string>
     <string name="select">Seleccionar</string>
     <string name="cannot_skip">No puedes saltarte el configuración de la carpeta de usuario</string>
-    <string name="cannot_skip_directory_description">Este paso es necesario para permitir que Azahar funcione. Por favor, seleccione un directorio y luego puede continuar.</string>
+    <string name="cannot_skip_directory_description">Este paso es necesario para permitir que Calamansi funcione. Por favor, seleccione un directorio y luego puede continuar.</string>
     <string name="selecting_user_directory_without_write_permissions">Has perdido los permisos de escritura en tu <a href="https://github.com/azahar-emu/azahar/wiki/Android-User-Data-and-Storage">directorio de datos de usuario</a> , donde se guardan las partidas guardadas y otra información. Esto puede ocurrir después de algunas actualizaciones de aplicaciones o de Android. Vuelve a seleccionar el directorio para recuperar los permisos y poder continuar.</string>
     <string name="invalid_selection">Selección no válida</string>
     <string name="invalid_user_directory">La selección del directorio de usuario no es válida.\nVuelve a seleccionar el directorio de usuario, asegurándote de navegar hasta él desde la raíz del almacenamiento del dispositivo.</string>
-    <string name="filesystem_permission_lost">Azahar ha perdido el permiso para administrar archivos en este dispositivo. Esto puede ocurrir después de alguna actualización de la aplicación o de Android. Vuelve a conceder este permiso en la siguiente pantalla para seguir usando la aplicación.</string>
+    <string name="filesystem_permission_lost">Calamansi ha perdido el permiso para administrar archivos en este dispositivo. Esto puede ocurrir después de alguna actualización de la aplicación o de Android. Vuelve a conceder este permiso en la siguiente pantalla para seguir usando la aplicación.</string>
     <string name="set_up_theme_settings">Configuración de tema</string>
-    <string name="setup_theme_settings_description">Configura tus preferencias de tema de Azahar.</string>
+    <string name="setup_theme_settings_description">Configura tus preferencias de tema de Calamansi.</string>
     <string name="setup_set_theme">Establecer tema</string>
 
     <!-- Search Strings -->
@@ -414,7 +414,7 @@ Se esperan fallos gráficos temporales cuando ésta esté activado.</string>
     <string name="setting_not_editable">No puedes editarlo ahora</string>
     <string name="setting_disabled">Configuración deshabilitada</string>
     <string name="setting_disabled_description_incompatible_setting">Esta opción está desactivada actualmente porque otra configuración no tiene el valor adecuado.</string>
-    <string name="setting_disabled_description_angle">No se puede cambiar el renderizador porque el dispositivo está utilizando ANGLE para OpenGL, que actualmente es incompatible con Azahar. Se utilizará Vulkan.</string>
+    <string name="setting_disabled_description_angle">No se puede cambiar el renderizador porque el dispositivo está utilizando ANGLE para OpenGL, que actualmente es incompatible con Calamansi. Se utilizará Vulkan.</string>
     <string name="setting_not_editable_description">Esta opción no puede cambiarse mientras se está ejecutando un juego.</string>
     <string name="auto_select">Auto-elegir</string>
     <string name="start">Iniciar</string>
@@ -452,7 +452,7 @@ Se esperan fallos gráficos temporales cuando ésta esté activado.</string>
     <string name="loader_error_applying_patches_description">Un error genérico ha ocurrido al intentar aplicar un parche a la aplicación. Por favor comprueba el log para más detalles.</string>
     <string name="loader_error_patch_wrong_application">No se pudo aplicar un parche porque está diseñado para otra aplicación. Por favor comprueba que estés usando parches para la aplicación correcta, incluyendo región y versión.</string>
     <string name="loader_error_encrypted">Tu ROM está cifrada</string>
-    <string name="loader_error_encrypted_description"><![CDATA[Azahar no admite aplicaciones cifradas. Lee nuestra <a href=\"https://azahar-emu.org/blog/game-loading-changes/\">entrada del blog</a> para obtener más información.]]></string>
+    <string name="loader_error_encrypted_description"><![CDATA[Calamansi no admite aplicaciones cifradas. Lee nuestra <a href=\"https://azahar-emu.org/blog/game-loading-changes/\">entrada del blog</a> para obtener más información.]]></string>
     <string name="loader_error_file_not_found">El archivo ROM no existe</string>
     <string name="no_game_present">¡No hay ningún juego iniciable!</string>
     <string name="invalid_rom">ROM no válido</string>
@@ -505,7 +505,7 @@ Se esperan fallos gráficos temporales cuando ésta esté activado.</string>
     <string name="emulation_switch_screen_layout">Estilo de Pantalla Apaisada</string>
     <string name="emulation_switch_portrait_layout">Estilo de Pantalla de Perfil</string>
     <string name="emulation_secondary_display_enable">Activar la pantalla secundaria</string>
-    <string name="emulation_secondary_display_enable_description">Si está desactivado, Azahar permitirá que Android gestione las pantallas conectadas. Si está activado y hay varias pantallas conectadas, puede seleccionar cuál utilizará Azahar en el menú rápido.</string>
+    <string name="emulation_secondary_display_enable_description">Si está desactivado, Calamansi permitirá que Android gestione las pantallas conectadas. Si está activado y hay varias pantallas conectadas, puede seleccionar cuál utilizará Calamansi en el menú rápido.</string>
     <string name="emulation_switch_secondary_layout">Estilo de Pantalla Secundaria</string>
     <string name="emulation_secondary_display_management">Pantalla Secundaria</string>
     <string name="emulation_select_secondary_display">Elige Pantalla</string>
@@ -623,7 +623,7 @@ Se esperan fallos gráficos temporales cuando ésta esté activado.</string>
     <string name="unsupported_encrypted">Aplicación cifrada no soportada</string>
     <string name="invalid_system_mode">Modo de sistema no válido</string>
     <string name="invalid_system_mode_message">Las aplicaciones exclusivas de New 3DS no se pueden cargar sin activar el modo New 3DS.</string>
-    <string name="savestate_build_mismatch_message"><![CDATA[No se pudo cargar el estado guardado porque se creó con una versión diferente de Azahar:<br/><b>Azahar %1$s</b>.<br/><br/>Por favor lee nuestro blog <a href=\"https://azahar-emu.org/blog/understanding-save-states/\">entendiendo estados guardados</a> para más información.<br/><br/>Para recuperar tu progreso, vuelve a la versión <b>Azahar %1$s</b>, carga este estado guardado y utiliza la función de guardado integrada de la aplicación emulada.]]></string>
+    <string name="savestate_build_mismatch_message"><![CDATA[No se pudo cargar el estado guardado porque se creó con una versión diferente de Calamansi:<br/><b>Calamansi %1$s</b>.<br/><br/>Por favor lee nuestro blog <a href=\"https://azahar-emu.org/blog/understanding-save-states/\">entendiendo estados guardados</a> para más información.<br/><br/>Para recuperar tu progreso, vuelve a la versión <b>Calamansi %1$s</b>, carga este estado guardado y utiliza la función de guardado integrada de la aplicación emulada.]]></string>
 
     <!-- Disk Shader Cache -->
     <string name="preparing_shaders">Preparando shaders</string>
@@ -707,7 +707,7 @@ Se esperan fallos gráficos temporales cuando ésta esté activado.</string>
         <item quantity="many">Instalando %d archivos. Mira la notificación para más detalles.</item>
         <item quantity="other">Instalando%d archivos. Mira la notificación para más detalles.</item>
     </plurals>
-    <string name="cia_install_notification_channel_description">Notificaciones de Azahar durante la instalación de CIAs.</string>
+    <string name="cia_install_notification_channel_description">Notificaciones de Calamansi durante la instalación de CIAs.</string>
     <string name="cia_install_notification_title">Instalando CIA</string>
     <string name="cia_install_notification_installing">Instalando %1$s (%2$d/%3$d)</string>
     <string name="cia_install_notification_success_title">CIA instalado con éxito</string>
@@ -715,7 +715,7 @@ Se esperan fallos gráficos temporales cuando ésta esté activado.</string>
     <string name="cia_install_success">\"%s\" se ha instalado con éxito</string>
     <string name="cia_install_error_aborted">La instalación de \"%s\" ha sido abortada.\n Por favor, mira el log para más información.</string>
     <string name="cia_install_error_invalid">\"%s\" no es un CIA válido.</string>
-    <string name="cia_install_error_encrypted">\"%s\" debe ser descifrado antes de ser usado en Azahar. Se necesita una 3DS real.</string>
+    <string name="cia_install_error_encrypted">\"%s\" debe ser descifrado antes de ser usado en Calamansi. Se necesita una 3DS real.</string>
     <string name="cia_install_error_unknown">Ha ocurrido un error desconocido mientras se instalaba \"%s\".\n Por favor, mira el log para más detalles.</string>
 
     <string name="memory_byte">Byte</string>
@@ -1065,9 +1065,9 @@ Se esperan fallos gráficos temporales cuando ésta esté activado.</string>
     <string name="no_preference">Sin Preferencia</string>
 
     <string name="update_available">Actualización Disponible</string>
-    <string name="update_available_description">Hay una nueva versión de Azahar disponible (versión %1$s).\n¿Quieres descargarla?</string>
+    <string name="update_available_description">Hay una nueva versión de Azahar (upstream) disponible (versión %1$s).\n¿Quieres descargarla?</string>
     <string name="check_for_updates">Buscar Actualizaciones</string>
-    <string name="check_for_updates_description">Mostrar una notificación cuando haya una actualización disponible para Azahar.</string>
+    <string name="check_for_updates_description">Mostrar una notificación cuando haya una actualización disponible para Azahar (upstream).</string>
     <string name="update_check_channel">Canal de Actualización</string>
     <string name="update_check_channel_description">Canal a usar para comprobar actualizaciones.</string>
     <string name="update_check_channel_stable">Estable</string>

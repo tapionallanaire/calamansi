@@ -11,11 +11,11 @@
     <color name="citra_tertiary_blue">#75546F</color>
     <color name="citra_tertiaryContainer_blue">#FFD7F5</color>
     <color name="citra_onTertiaryContainer_blue">#2C1229</color>
-    <color name="citra_background_blue">#FEFBFF</color>
+    <color name="citra_background_blue">#F5F6F8</color>
     <color name="citra_onBackground_blue">#1B1B1F</color>
-    <color name="citra_surface_blue">#FEFBFF</color>
+    <color name="citra_surface_blue">#F5F6F8</color>
     <color name="citra_onSurface_blue">#1B1B1F</color>
-    <color name="citra_surfaceVariant_blue">#E2E1EC</color>
+    <color name="citra_surfaceVariant_blue">#E4E7EC</color>
     <color name="citra_onSurfaceVariant_blue">#45464F</color>
     <color name="citra_outline_blue">#767680</color>
     <color name="citra_inverseOnSurface_blue">#F2F0F4</color>

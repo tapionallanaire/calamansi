@@ -28,6 +28,7 @@ class DocumentsTree {
     private var root: DocumentsNode? = null
     private val context get() = CitraApplication.appContext
 
+    @Synchronized
     fun setRoot(rootUri: Uri?) {
         root = null
         root = DocumentsNode()
@@ -376,7 +377,8 @@ class DocumentsTree {
         val kotlinDirectoryAccessWhitelist = arrayOf(
             "/config/",
             "/log/",
-            "/gpu_drivers/"
+            "/gpu_drivers/",
+            "/GameSettings/"
         )
     }
 }

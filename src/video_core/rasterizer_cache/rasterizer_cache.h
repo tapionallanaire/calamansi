@@ -104,6 +104,9 @@ template <class T>
 void RasterizerCache<T>::TickFrame() {
     custom_tex_manager.TickFrame();
     RunGarbageCollector();
+    if (!Settings::values.disable_game_post_fx.GetValue()) {
+        post_fx_regions.clear();
+    }
 
     const auto new_filter = Settings::values.texture_filter.GetValue();
     if (filter != new_filter) [[unlikely]] {
@@ -282,6 +285,13 @@ bool RasterizerCache<T>::AccelerateTextureCopy(const Pica::DisplayTransferConfig
     runtime.CopyTextures(src_surface, dst_surface, texture_copy);
 
     InvalidateRegion(dst_params.addr, dst_params.size, dst_surface_id);
+    if (Settings::values.disable_game_post_fx.GetValue()) {
+        if (boost::icl::intersects(post_fx_regions, src_params.GetInterval())) {
+            post_fx_regions.add(dst_params.GetInterval());
+        } else {
+            post_fx_regions.erase(dst_params.GetInterval());
+        }
+    }
     return true;
 }
 
@@ -352,6 +362,16 @@ bool RasterizerCache<T>::AccelerateDisplayTransfer(const Pica::DisplayTransferCo
     runtime.BlitTextures(src_surface, dst_surface, texture_blit);
 
     InvalidateRegion(dst_params.addr, dst_params.size, dst_surface_id);
+    if (Settings::values.disable_game_post_fx.GetValue()) {
+        const bool post_fx = (config.scaling == config.ScaleXY &&
+                              True(src_surface.flags & SurfaceFlagBits::RenderTarget)) ||
+                             boost::icl::intersects(post_fx_regions, src_params.GetInterval());
+        if (post_fx) {
+            post_fx_regions.add(dst_params.GetInterval());
+        } else {
+            post_fx_regions.erase(dst_params.GetInterval());
+        }
+    }
     return true;
 }
 
@@ -1011,6 +1031,7 @@ void RasterizerCache<T>::ValidateSurface(SurfaceId surface_id, PAddr addr, u32 s
             Surface& copy_surface = slot_surfaces[copy_surface_id];
             const SurfaceInterval copy_interval = copy_surface.GetCopyableInterval(params);
             CopySurface(copy_surface, surface, copy_interval);
+            surface.alias_regions.erase(copy_interval);
             notify_validated(copy_interval);
             continue;
         }
@@ -1026,6 +1047,7 @@ void RasterizerCache<T>::ValidateSurface(SurfaceId surface_id, PAddr addr, u32 s
         if (!use_custom_textures || !UploadCustomSurface(surface_id, interval)) {
             UploadSurface(surface, interval);
         }
+        surface.alias_regions.erase(params.GetInterval());
         notify_validated(params.GetInterval());
     }
 
@@ -1223,6 +1245,7 @@ bool RasterizerCache<T>::ValidateByReinterpretation(Surface& surface, SurfacePar
             .dst_offset = {dst_rect.left, dst_rect.bottom},
             .extent = {src_rect.GetWidth(), src_rect.GetHeight()},
         };
+        surface.alias_regions.erase(interval);
         return runtime.Reinterpret(src_surface, surface, reinterpret);
     }
 
@@ -1235,8 +1258,47 @@ bool RasterizerCache<T>::ValidateByReinterpretation(Surface& surface, SurfacePar
     // the warping effect when running in dugeons relies on this stride reinterpretation.
     // In the future this transformation should be properly implemented with a GPU shader.
     const auto it = dirty_regions.find(interval);
-    return it != dirty_regions.end() && it->second &&
-           slot_surfaces[it->second].stride != surface.stride;
+    const bool aliased = it != dirty_regions.end() && it->second &&
+                         slot_surfaces[it->second].stride != surface.stride;
+    if (aliased) {
+        surface.alias_regions.add(interval);
+    }
+    return aliased;
+}
+
+template <class T>
+bool RasterizerCache<T>::IsPostFxCompositeDraw() const {
+    if (!Settings::values.disable_game_post_fx.GetValue() || post_fx_regions.empty() ||
+        regs.pipeline.num_vertices != 6) {
+        return false;
+    }
+    // Passes rendering into the effect buffers themselves are left alone.
+    const PAddr color_addr = regs.framebuffer.framebuffer.GetColorBufferPhysicalAddress();
+    if (boost::icl::contains(post_fx_regions, color_addr)) {
+        return false;
+    }
+    // The composite quad samples both its framebuffer and the downscaled effect chain.
+    // Sampling a tagged shadow/auxiliary target alone is not a post-processing composite.
+    u32 framebuffer_units = 0;
+    u32 effect_units = 0;
+    const auto textures = regs.texturing.GetTextures();
+    for (u32 unit = 0; unit < textures.size(); ++unit) {
+        const auto& texture = textures[unit];
+        if (!texture.enabled) {
+            continue;
+        }
+        const PAddr texture_addr = texture.config.GetPhysicalAddress();
+        if (texture_addr == color_addr) {
+            framebuffer_units |= 1U << unit;
+        } else if (boost::icl::contains(post_fx_regions, texture_addr)) {
+            effect_units |= 1U << unit;
+        }
+    }
+    if (!framebuffer_units || !effect_units) {
+        return false;
+    }
+    const u32 used_textures = regs.texturing.GetTevTextureMask();
+    return (used_textures & framebuffer_units) && (used_textures & effect_units);
 }
 
 template <class T>
@@ -1260,6 +1322,7 @@ void RasterizerCache<T>::ClearAll(bool flush) {
     // Remove the whole cache without really looking at it.
     cached_pages -= flush_interval;
     dirty_regions.clear();
+    post_fx_regions.clear();
     page_table.clear();
 }
 
@@ -1329,6 +1392,7 @@ void RasterizerCache<T>::InvalidateRegion(PAddr addr, u32 size, SurfaceId region
         ASSERT(addr >= region_owner.addr && addr + size <= region_owner.end);
         ASSERT(region_owner.width == region_owner.stride);
         region_owner.MarkValid(invalid_interval);
+        region_owner.alias_regions.erase(invalid_interval);
     }
 
     boost::container::small_vector<SurfaceId, 4> remove_surfaces;
@@ -1355,6 +1419,7 @@ void RasterizerCache<T>::InvalidateRegion(PAddr addr, u32 size, SurfaceId region
         dirty_regions.set({invalid_interval, region_owner_id});
     } else {
         dirty_regions.erase(invalid_interval);
+        post_fx_regions.erase(invalid_interval);
     }
 
     for (const SurfaceId surface_id : remove_surfaces) {
@@ -1449,6 +1514,7 @@ void RasterizerCache<T>::UnregisterAll() {
     }
     runtime.Finish();
     RunGarbageCollector();
+    post_fx_regions.clear();
 }
 
 template <class T>

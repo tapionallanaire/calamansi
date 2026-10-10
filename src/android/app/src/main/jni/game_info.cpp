@@ -45,6 +45,7 @@ GameInfoData* GetNewGameInfoData(const std::string& path) {
     if (!loader || result != Loader::ResultStatus::Success) {
         GameInfoData* gid = new GameInfoData();
         memset(&gid->smdh, 0, sizeof(Loader::SMDH));
+        gid->is_encrypted = result == Loader::ResultStatus::ErrorEncrypted;
         return gid;
     }
 

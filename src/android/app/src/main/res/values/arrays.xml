@@ -707,4 +707,13 @@
         <item>1</item>
     </integer-array>
 
+    <string-array name="postProcessingShaderNames">
+        <item>@string/post_processing_none</item>
+        <item>@string/post_processing_fxaa</item>
+    </string-array>
+    <string-array name="postProcessingShaderValues" translatable="false">
+        <item>None (builtin)</item>
+        <item>FXAA (builtin)</item>
+    </string-array>
+
 </resources>

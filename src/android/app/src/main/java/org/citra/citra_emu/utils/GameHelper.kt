@@ -102,11 +102,10 @@ object GameHelper {
         }
 
         val valid = gameInfo.isValid()
+        val isEncrypted = gameInfo.isEncrypted()
         if (!valid) {
             gameInfo = null
         }
-
-        val isEncrypted = gameInfo?.isEncrypted() == true
 
         val newGame = Game(
             valid,
