@@ -457,8 +457,8 @@ GMainWindow::GMainWindow(Core::System& system_)
     ConnectMenuEvents();
     ConnectWidgetEvents();
 
-    LOG_INFO(Frontend, "Calamansi Version: {} | {}-{}", Common::g_build_fullname, Common::g_scm_branch,
-             Common::g_scm_desc);
+    LOG_INFO(Frontend, "Calamansi Version: {} | {}-{}", Common::g_build_fullname,
+             Common::g_scm_branch, Common::g_scm_desc);
     std::string build_variant = Common::g_build_variant;
     if (build_variant == "") {
         build_variant = "N/A";
@@ -1311,8 +1311,9 @@ static std::optional<QDBusObjectPath> HoldWakeLockLinux(u32 window_id = 0) {
     QVariantMap options = {};
     //: TRANSLATORS: This string is shown to the user to explain why Citra needs to prevent the
     //: computer from sleeping
-    options.insert(QString::fromLatin1("reason"),
-                   QCoreApplication::translate("GMainWindow", "Calamansi is running an application"));
+    options.insert(
+        QString::fromLatin1("reason"),
+        QCoreApplication::translate("GMainWindow", "Calamansi is running an application"));
     // 0x4: Suspend lock; 0x8: Idle lock
     QDBusReply<QDBusObjectPath> reply =
         xdp.call(QString::fromLatin1("Inhibit"),
@@ -2331,7 +2332,8 @@ void GMainWindow::OnMenuSetUpSystemFiles() {
            "able to use some of its features.<br>Such files and data can be set up with the <a "
            "href=https://github.com/azahar-emu/ArticSetupTool>Azahar "
            "Artic Setup Tool</a><br>Notes:<ul><li><b>This operation will install console unique "
-           "data to Calamansi, do not share your user or nand folders<br>after performing the setup "
+           "data to Calamansi, do not share your user or nand folders<br>after performing the "
+           "setup "
            "process!</b></li><li>While doing the setup process, Calamansi will link to the console "
            "running the setup tool. You can unlink the<br>console later from the System tab in the "
            "emulator configuration menu.</li><li>Do not go online with both Calamansi and your 3DS "
@@ -3887,14 +3889,15 @@ void GMainWindow::OnCoreError(Core::System::ResultStatus result, std::string det
         can_continue = false;
     } else if (result == Core::System::ResultStatus::ErrorSavestateBuildMismatch) {
         title = tr("Savestate version mismatch");
-        message = tr("Could not load savestate because it was created on a different Calamansi "
-                     "version:<br/>"
-                     "<b>Calamansi %1</b>.<br/><br/>Please read our blog entry <a "
-                     "href='https://azahar-emu.org/blog/understanding-save-states/'>understanding "
-                     "savestates</a> for more information.<br/><br/>To recover your progress, "
-                     "downgrade to <b>Calamansi %1</b>, load this savestate and use the application's "
-                     "built-in save functionality.")
-                      .arg(QString::fromStdString(details));
+        message =
+            tr("Could not load savestate because it was created on a different Calamansi "
+               "version:<br/>"
+               "<b>Calamansi %1</b>.<br/><br/>Please read our blog entry <a "
+               "href='https://azahar-emu.org/blog/understanding-save-states/'>understanding "
+               "savestates</a> for more information.<br/><br/>To recover your progress, "
+               "downgrade to <b>Calamansi %1</b>, load this savestate and use the application's "
+               "built-in save functionality.")
+                .arg(QString::fromStdString(details));
         error_severity_icon = QMessageBox::Icon::Critical;
     } else {
         title = tr("Fatal Error");
@@ -4272,8 +4275,8 @@ void GMainWindow::UpdateWindowTitle() {
         setWindowTitle(QStringLiteral("Calamansi %1").arg(full_name));
     } else {
         setWindowTitle(QStringLiteral("Calamansi %1 | %2").arg(full_name, game_title));
-        render_window->setWindowTitle(
-            QStringLiteral("Calamansi %1 | %2 | %3").arg(full_name, game_title, tr("Primary Window")));
+        render_window->setWindowTitle(QStringLiteral("Calamansi %1 | %2 | %3")
+                                          .arg(full_name, game_title, tr("Primary Window")));
         secondary_window->setWindowTitle(QStringLiteral("Calamansi %1 | %2 | %3")
                                              .arg(full_name, game_title, tr("Secondary Window")));
     }

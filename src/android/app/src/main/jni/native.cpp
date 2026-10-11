@@ -36,7 +36,6 @@
 #include "common/settings.h"
 #include "common/string_util.h"
 #include "core/core.h"
-#include "core/movie.h"
 #include "core/frontend/applets/default_applets.h"
 #include "core/frontend/camera/factory.h"
 #include "core/hle/service/am/am.h"
@@ -44,6 +43,7 @@
 #include "core/hle/service/nfc/nfc.h"
 #include "core/hw/unique_data.h"
 #include "core/loader/loader.h"
+#include "core/movie.h"
 #include "core/savestate.h"
 #include "core/system_titles.h"
 #include "jni/android_common/android_common.h"
@@ -886,10 +886,9 @@ jlong Java_org_citra_citra_1emu_NativeLibrary_getRunningTitleId([[maybe_unused]]
     return static_cast<jlong>(title_id);
 }
 
-jboolean Java_org_citra_citra_1emu_NativeLibrary_onGamePadEventNative([[maybe_unused]] JNIEnv* env,
-                                                                [[maybe_unused]] jobject obj,
-                                                                [[maybe_unused]] jstring j_device,
-                                                                jint j_button, jint action) {
+jboolean Java_org_citra_citra_1emu_NativeLibrary_onGamePadEventNative(
+    [[maybe_unused]] JNIEnv* env, [[maybe_unused]] jobject obj, [[maybe_unused]] jstring j_device,
+    jint j_button, jint action) {
     bool consumed{};
     if (action) {
         consumed = InputManager::ButtonHandler()->PressKey(j_button);

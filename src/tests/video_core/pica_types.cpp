@@ -99,8 +99,8 @@ TEST_CASE("float16", "[video_core]") {
 TEST_CASE("Post-processing ignores unused TEV texture bindings", "[video_core][postfx]") {
     using Stage = Pica::TexturingRegs::TevStageConfig;
     Pica::TexturingRegs regs{};
-    for (auto* stage : {&regs.tev_stage0, &regs.tev_stage1, &regs.tev_stage2,
-                        &regs.tev_stage3, &regs.tev_stage4, &regs.tev_stage5}) {
+    for (auto* stage : {&regs.tev_stage0, &regs.tev_stage1, &regs.tev_stage2, &regs.tev_stage3,
+                        &regs.tev_stage4, &regs.tev_stage5}) {
         stage->color_source1.Assign(Stage::Source::Previous);
         stage->alpha_source1.Assign(Stage::Source::Previous);
     }

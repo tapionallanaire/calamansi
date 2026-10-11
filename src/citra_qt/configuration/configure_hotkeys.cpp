@@ -60,8 +60,9 @@ void ConfigureHotkeys::Populate(const HotkeyRegistry& registry) {
         QStandardItem* parent_item = new QStandardItem(group.first);
         parent_item->setEditable(false);
         for (const auto& hotkey : group.second) {
-            QStandardItem* action = new QStandardItem(
-                hotkey.first == QStringLiteral("Exit Azahar") ? tr("Exit Calamansi") : hotkey.first);
+            QStandardItem* action = new QStandardItem(hotkey.first == QStringLiteral("Exit Azahar")
+                                                          ? tr("Exit Calamansi")
+                                                          : hotkey.first);
             action->setData(hotkey.first, Qt::UserRole);
             QStandardItem* keyseq =
                 new QStandardItem(hotkey.second.keyseq.toString(QKeySequence::NativeText));

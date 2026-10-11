@@ -20,8 +20,8 @@ struct LoaderFiles {
     LoaderFiles() {
 #ifndef ANDROID
         directory = std::filesystem::temp_directory_path() /
-                    ("azahar-loader-" + std::to_string(
-                                           std::chrono::steady_clock::now().time_since_epoch().count()));
+                    ("azahar-loader-" +
+                     std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
         REQUIRE(std::filesystem::create_directory(directory));
 #endif
     }
@@ -122,8 +122,8 @@ TEST_CASE("Cartridge extensions do not bypass encryption or corrupt NCCH errors"
     for (const auto* extension : {".cci", ".3ds", ".3DS"}) {
         INFO(extension);
         for (bool encrypted : {false, true}) {
-            const auto path = files.Write(std::string("invalid") + extension,
-                                          Cartridge(encrypted, !encrypted));
+            const auto path =
+                files.Write(std::string("invalid") + extension, Cartridge(encrypted, !encrypted));
             auto loader = Loader::GetLoader(path);
             REQUIRE(loader);
             u64 program_id{};

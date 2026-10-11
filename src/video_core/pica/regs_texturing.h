@@ -537,9 +537,8 @@ struct TexturingRegs {
                 for (u32 input = 0; input < input_count(op); ++input) {
                     const auto source = static_cast<Source>(
                         (stage.sources_raw >> ((alpha ? 16 : 0) + input * 4)) & 0xF);
-                    const u32 modifier =
-                        (stage.modifiers_raw >> ((alpha ? 12 : 0) + input * 4)) &
-                        (alpha ? 0x7 : 0xF);
+                    const u32 modifier = (stage.modifiers_raw >> ((alpha ? 12 : 0) + input * 4)) &
+                                         (alpha ? 0x7 : 0xF);
                     if (alpha) {
                         output[channel] |= source_mask(source, modifier < 2 ? 3 : modifier / 2 - 1);
                     } else if (op == Operation::Dot3_RGB || op == Operation::Dot3_RGBA) {

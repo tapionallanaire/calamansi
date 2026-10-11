@@ -94,8 +94,8 @@ bool Config::LoadINI(const std::string& default_contents, bool retry) {
             FileUtil::WriteStringToFile(true, location, default_contents);
             std::string ini_buffer;
             FileUtil::ReadFileToString(true, location, ini_buffer);
-            android_config =
-                std::make_unique<AndroidConfig>(ini_buffer.c_str(), ini_buffer.size()); // Reopen file
+            android_config = std::make_unique<AndroidConfig>(ini_buffer.c_str(),
+                                                             ini_buffer.size()); // Reopen file
 
             return LoadINI(default_contents, false);
         }

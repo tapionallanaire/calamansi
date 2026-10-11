@@ -608,13 +608,13 @@ void ConfigureSystem::RefreshMAC() {
 void ConfigureSystem::UnlinkConsole() {
     ui->button_unlink_console->setEnabled(false);
     QMessageBox::StandardButton reply;
-    QString warning_text =
-        tr("This action will unlink your real console from Calamansi, with the following "
-           "consequences:<br><ul><li>Your OTP, SecureInfo and LocalFriendCodeSeed will be removed "
-           "from Calamansi.</li><li>Your friend list will reset and you will be logged out of your "
-           "NNID/PNID account.</li><li>System files and eshop titles obtained through Calamansi will "
-           "become inaccessible until the same console is linked again (save data will not be "
-           "lost).</li></ul><br>Continue?");
+    QString warning_text = tr(
+        "This action will unlink your real console from Calamansi, with the following "
+        "consequences:<br><ul><li>Your OTP, SecureInfo and LocalFriendCodeSeed will be removed "
+        "from Calamansi.</li><li>Your friend list will reset and you will be logged out of your "
+        "NNID/PNID account.</li><li>System files and eshop titles obtained through Calamansi will "
+        "become inaccessible until the same console is linked again (save data will not be "
+        "lost).</li></ul><br>Continue?");
     reply =
         QMessageBox::warning(this, tr("Warning"), warning_text, QMessageBox::No | QMessageBox::Yes);
     if (reply == QMessageBox::No) {
