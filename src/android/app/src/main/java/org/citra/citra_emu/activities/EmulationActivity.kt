@@ -194,7 +194,11 @@ class EmulationActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         // Reordering a suspended session is not a new cartridge launch.
-        if (!intent.hasExtra("game") && intent.data == null && !intent.hasExtra("SelectedGame")) return
+        if (!intent.hasExtra("game") && intent.data == null &&
+            !intent.hasExtra("SelectedGame")
+        ) {
+            return
+        }
         setIntent(intent)
         currentGame = null
 
@@ -674,7 +678,9 @@ class EmulationActivity : AppCompatActivity() {
             controller.navigate(
                 HomeNavigationDirections.actionGlobalEmulationActivity(game),
                 ActivityNavigator.Extras.Builder()
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+                    .addFlags(
+                        Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                    )
                     .build()
             )
         }
@@ -686,9 +692,11 @@ class EmulationActivity : AppCompatActivity() {
 
         fun resumeGame(context: android.content.Context): Boolean {
             if (activeGame == null) return false
-            context.startActivity(Intent(context, EmulationActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
-            })
+            context.startActivity(
+                Intent(context, EmulationActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+                }
+            )
             return true
         }
     }

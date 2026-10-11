@@ -4,8 +4,8 @@
 
 package org.citra.citra_emu.adapters
 
-import android.content.Context
 import android.app.Dialog
+import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.ShortcutInfo
@@ -48,8 +48,8 @@ import kotlinx.coroutines.launch
 import org.citra.citra_emu.CitraApplication
 import org.citra.citra_emu.NativeLibrary
 import org.citra.citra_emu.R
-import org.citra.citra_emu.adapters.GameAdapter.GameViewHolder
 import org.citra.citra_emu.activities.EmulationActivity
+import org.citra.citra_emu.adapters.GameAdapter.GameViewHolder
 import org.citra.citra_emu.databinding.CardGameBinding
 import org.citra.citra_emu.databinding.DialogShortcutBinding
 import org.citra.citra_emu.features.cheats.ui.CheatsFragmentDirections
@@ -131,7 +131,11 @@ class GameAdapter(
         holder.bind(currentList[position])
     }
 
-    override fun onBindViewHolder(holder: GameViewHolder, position: Int, payloads: MutableList<Any>) {
+    override fun onBindViewHolder(
+        holder: GameViewHolder,
+        position: Int,
+        payloads: MutableList<Any>
+    ) {
         if (payloads.isNotEmpty() && payloads.all { it == "home_selection" }) {
             holder.updateStatus()
         } else {
@@ -292,7 +296,8 @@ class GameAdapter(
 
         fun updateStatus() {
             binding.cardGame.isSelected = game.path == selectedHomePath
-            binding.cardGame.isFocusedByDefault = onHomeTileClick != null && binding.cardGame.isSelected
+            binding.cardGame.isFocusedByDefault =
+                onHomeTileClick != null && binding.cardGame.isSelected
             val active = game.path == activeHomePath
             binding.homeActiveBadge.visibility = if (active) View.VISIBLE else View.GONE
             ViewCompat.setStateDescription(

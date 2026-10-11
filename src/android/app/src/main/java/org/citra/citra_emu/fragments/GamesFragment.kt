@@ -18,21 +18,21 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.view.ContextThemeWrapper
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.view.ContextThemeWrapper
 import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.DialogFragment
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.preference.PreferenceManager
 import androidx.navigation.ui.onNavDestinationSelected
+import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.GridLayoutManager
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -84,7 +84,9 @@ class GamesFragment : Fragment() {
     private var confirmingKey: Int? = null
     private var previousLightStatusBars = false
     private var previousLightNavigationBars = false
-    private val displayManager get() = requireActivity().getSystemService(DisplayManager::class.java)
+    private val displayManager get() = requireActivity().getSystemService(
+        DisplayManager::class.java
+    )
     private val displayListener = object : DisplayManager.DisplayListener {
         override fun onDisplayAdded(displayId: Int) = updateHomeDisplay()
         override fun onDisplayRemoved(displayId: Int) = updateHomeDisplay()
@@ -179,7 +181,9 @@ class GamesFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentGamesBinding.inflate(
-            inflater.cloneInContext(ContextThemeWrapper(requireContext(), R.style.Theme_Azahar_Home_Classic))
+            inflater.cloneInContext(
+                ContextThemeWrapper(requireContext(), R.style.Theme_Azahar_Home_Classic)
+            )
         )
         return binding.root
     }
@@ -204,7 +208,8 @@ class GamesFragment : Fragment() {
             },
             onHomeTileClick = { game ->
                 if (gamesViewModel.selectedHomeGame.value?.path == game.path ||
-                    EmulationActivity.activeGame?.path == game.path) {
+                    EmulationActivity.activeGame?.path == game.path
+                ) {
                     gameAdapter.launchGame(game)
                 } else {
                     gamesViewModel.selectHomeGame(game)
@@ -216,7 +221,10 @@ class GamesFragment : Fragment() {
         )
 
         attachPanel(binding.homeLibrary, secondary = false)
-        requireActivity().supportFragmentManager.registerFragmentLifecycleCallbacks(modalListener, true)
+        requireActivity().supportFragmentManager.registerFragmentLifecycleCallbacks(
+            modalListener,
+            true
+        )
 
         viewLifecycleOwner.lifecycleScope.apply {
             launch {
@@ -411,14 +419,20 @@ class GamesFragment : Fragment() {
         activePanel?.gridGames?.adapter = null
         activePanel = panel
         panel.gridGames.apply {
-            val manager = (layoutManager as? GridLayoutManager) ?: GridLayoutManager(context, 1).also { grid ->
-                layoutManager = grid
-                addOnLayoutChangeListener { view, _, _, _, _, _, _, _, _ ->
-                    val width = view.width - view.paddingLeft - view.paddingRight
-                    val columns = (width / resources.getDimensionPixelSize(R.dimen.home_tile_width)).coerceAtLeast(1)
-                    if (grid.spanCount != columns) grid.spanCount = columns
-                }
-            }
+            val manager =
+                (layoutManager as? GridLayoutManager)
+                    ?: GridLayoutManager(context, 1).also { grid ->
+                        layoutManager = grid
+                        addOnLayoutChangeListener { view, _, _, _, _, _, _, _, _ ->
+                            val width = view.width - view.paddingLeft - view.paddingRight
+                            val columns = (
+                                width / resources.getDimensionPixelSize(
+                                    R.dimen.home_tile_width
+                                )
+                                ).coerceAtLeast(1)
+                            if (grid.spanCount != columns) grid.spanCount = columns
+                        }
+                    }
             adapter = gameAdapter
             manager.onRestoreInstanceState(gridState)
         }
@@ -432,7 +446,9 @@ class GamesFragment : Fragment() {
             )
         }
         panel.homeOpen.setOnClickListener { selectedGame()?.let(gameAdapter::launchGame) }
-        panel.homeProperties.setOnClickListener { selectedGame()?.let(gameAdapter::showGameProperties) }
+        panel.homeProperties.setOnClickListener {
+            selectedGame()?.let(gameAdapter::showGameProperties)
+        }
         panel.homeResumeActive.setOnClickListener {
             EmulationActivity.activeGame?.let(gameAdapter::launchGame)
         }
@@ -441,17 +457,21 @@ class GamesFragment : Fragment() {
             if (game.titleId == 0L) return@setOnClickListener
             suspendHomeForModal()
             SettingsActivity.launch(
-                requireActivity(), SettingsFile.FILE_NAME_CONFIG,
+                requireActivity(),
+                SettingsFile.FILE_NAME_CONFIG,
                 String.format("%016X", game.titleId)
             )
         }
         panel.homeNavigation.visibility = if (secondary) View.VISIBLE else View.GONE
         panel.homeNavigation.menu.findItem(
-            (requireActivity() as MainActivity).homeNavController.currentDestination?.id ?: R.id.gamesFragment
+            (requireActivity() as MainActivity).homeNavController.currentDestination?.id
+                ?: R.id.gamesFragment
         )?.isChecked = true
         panel.homeNavigation.setOnItemSelectedListener {
             if (it.itemId == R.id.gamesFragment &&
-                (requireActivity() as MainActivity).homeNavController.currentDestination?.id == R.id.gamesFragment) {
+                (requireActivity() as MainActivity).homeNavController.currentDestination?.id ==
+                R.id.gamesFragment
+            ) {
                 scrollToTop()
                 true
             } else {
@@ -511,7 +531,8 @@ class GamesFragment : Fragment() {
             homeOpen.isEnabled = game != null
             homeProperties.isEnabled = game != null
             homeOpen.contentDescription = game?.let { getString(R.string.home_open_game, it.title) }
-            homeProperties.contentDescription = game?.let { getString(R.string.home_game_properties, it.title) }
+            homeProperties.contentDescription =
+                game?.let { getString(R.string.home_game_properties, it.title) }
         }
         updateActiveGame()
     }
@@ -524,8 +545,10 @@ class GamesFragment : Fragment() {
             if (game != null) {
                 homeActiveTitle.text = game.title
                 GameIconUtils.loadGameIcon(game, homeResumeActive)
-                homeResumeActive.contentDescription = getString(R.string.home_resume_game, game.title)
-                homeActiveSettings.contentDescription = getString(R.string.home_active_settings, game.title)
+                homeResumeActive.contentDescription =
+                    getString(R.string.home_resume_game, game.title)
+                homeActiveSettings.contentDescription =
+                    getString(R.string.home_active_settings, game.title)
                 homeActiveSettings.isEnabled = game.titleId != 0L
             }
         }
@@ -534,7 +557,8 @@ class GamesFragment : Fragment() {
     private fun canShowHome(): Boolean = _binding != null && homeResumed &&
         !handingOff && !requireActivity().isFinishing &&
         !requireActivity().isDestroyed &&
-        (requireActivity() as MainActivity).homeNavController.currentDestination?.id != R.id.firstTimeSetupFragment &&
+        (requireActivity() as MainActivity).homeNavController.currentDestination?.id !=
+        R.id.firstTimeSetupFragment &&
         requireActivity().getSystemService(PowerManager::class.java).isInteractive
 
     internal val homeInputEnabled: Boolean
@@ -549,13 +573,18 @@ class GamesFragment : Fragment() {
             displayManager.registerDisplayListener(displayListener, Handler(Looper.getMainLooper()))
             listening = true
         }
-        val display = selectSecondaryDisplay(requireActivity(), secondaryDisplayCandidates(requireActivity()))
+        val display =
+            selectSecondaryDisplay(requireActivity(), secondaryDisplayCandidates(requireActivity()))
         if (!recreate && homePresentation?.display?.displayId == display?.displayId) return
         dismissHomePresentation()
         if (display == null) return
         val activity = requireActivity()
-        val presentation = HomePresentation(activity, display,
-            { attachPanel(it, secondary = true) }, ::handleHomeKeyEvent)
+        val presentation = HomePresentation(
+            activity,
+            display,
+            { attachPanel(it, secondary = true) },
+            ::handleHomeKeyEvent
+        )
         homePresentation = presentation
         presentation.inputEnabled = !modalSuspended
         presentation.setOnDismissListener {
@@ -585,7 +614,6 @@ class GamesFragment : Fragment() {
         ViewCompat.requestApplyInsets(binding.root)
         (requireActivity() as MainActivity).reconcileHomeLayout()
     }
-
 
     private fun dismissHomePresentation() {
         val presentation = homePresentation ?: return
@@ -645,27 +673,37 @@ class GamesFragment : Fragment() {
             if (event.action == KeyEvent.ACTION_DOWN) {
                 val panel = activePanel ?: return false
                 val focused = panel.root.findFocus()
-                if (focused == null) panel.gridGames.restoreDefaultFocus()
-                else focused.focusSearch(direction)?.requestFocus()
+                if (focused == null) {
+                    panel.gridGames.restoreDefaultFocus()
+                } else {
+                    focused.focusSearch(direction)?.requestFocus()
+                }
             }
             return true
         }
         when (event.keyCode) {
             KeyEvent.KEYCODE_BUTTON_A, KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
                 if (homePresentation == null && activePanel?.root?.hasFocus() != true &&
-                    requireActivity().currentFocus?.isClickable == true) return false
+                    requireActivity().currentFocus?.isClickable == true
+                ) {
+                    return false
+                }
                 if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
                     confirmingKey = event.keyCode
                 } else if (event.action == KeyEvent.ACTION_UP && confirmingKey == event.keyCode) {
                     confirmingKey = null
                     if (!event.isCanceled) {
                         val focused = activePanel?.root?.findFocus()
-                        if (focused?.isClickable == true) focused.performClick()
-                        else selectedGame()?.let(gameAdapter::launchGame)
+                        if (focused?.isClickable == true) {
+                            focused.performClick()
+                        } else {
+                            selectedGame()?.let(gameAdapter::launchGame)
+                        }
                     }
                 }
                 return true
             }
+
             KeyEvent.KEYCODE_BUTTON_B, KeyEvent.KEYCODE_BACK -> {
                 if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
                     requireActivity().onBackPressedDispatcher.onBackPressed()

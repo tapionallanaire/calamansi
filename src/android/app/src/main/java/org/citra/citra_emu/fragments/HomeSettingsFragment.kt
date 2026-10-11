@@ -27,8 +27,8 @@ import androidx.recyclerview.widget.GridLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.transition.MaterialSharedAxis
 import org.citra.citra_emu.CitraApplication
-import org.citra.citra_emu.activities.EmulationActivity
 import org.citra.citra_emu.R
+import org.citra.citra_emu.activities.EmulationActivity
 import org.citra.citra_emu.adapters.HomeSettingAdapter
 import org.citra.citra_emu.databinding.DialogSoftwareKeyboardBinding
 import org.citra.citra_emu.databinding.FragmentHomeSettingsBinding
@@ -145,7 +145,10 @@ class HomeSettingsFragment : Fragment() {
                                         filename = ""
                                     )
                                     mainActivity.homeFragment()?.handoffHome()
-                                    EmulationActivity.launchGame(binding.root.findNavController(), menu)
+                                    EmulationActivity.launchGame(
+                                        binding.root.findNavController(),
+                                        menu
+                                    )
                                 }
                             }
                             .setNegativeButton(android.R.string.cancel) { _, _ -> }
@@ -318,10 +321,16 @@ class HomeSettingsFragment : Fragment() {
         val barInsets = windowInsets.getInsets(
             WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
         )
-        val spacingNavigation = if (mainActivity.isDualHome) 0 else
+        val spacingNavigation = if (mainActivity.isDualHome) {
+            0
+        } else {
             resources.getDimensionPixelSize(R.dimen.spacing_navigation)
-        val spacingNavigationRail = if (mainActivity.isDualHome) 0 else
+        }
+        val spacingNavigationRail = if (mainActivity.isDualHome) {
+            0
+        } else {
             resources.getDimensionPixelSize(R.dimen.spacing_navigation_rail)
+        }
 
         val leftInsets = barInsets.left
         val rightInsets = barInsets.right

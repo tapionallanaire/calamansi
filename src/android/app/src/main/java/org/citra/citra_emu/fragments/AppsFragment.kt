@@ -67,12 +67,15 @@ class AppsFragment : Fragment() {
                 val packageManager = context.packageManager
                 val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
                 val seenPackages = HashSet<String>()
+
                 @Suppress("DEPRECATION")
                 val activities = packageManager.queryIntentActivities(intent, 0)
                 val entries = activities.mapNotNullTo(ArrayList()) { result ->
                     currentCoroutineContext().ensureActive()
                     val activity = result.activityInfo
-                    if (!activity.enabled || !activity.exported || !activity.applicationInfo.enabled ||
+                    if (!activity.enabled ||
+                        !activity.exported ||
+                        !activity.applicationInfo.enabled ||
                         activity.packageName == context.packageName ||
                         !seenPackages.add(activity.packageName)
                     ) {
@@ -88,8 +91,11 @@ class AppsFragment : Fragment() {
                 val collator = Collator.getInstance()
                 entries.sortWith { first, second ->
                     val labelOrder = collator.compare(first.label, second.label)
-                    if (labelOrder != 0) labelOrder else
+                    if (labelOrder != 0) {
+                        labelOrder
+                    } else {
                         first.component.packageName.compareTo(second.component.packageName)
+                    }
                 }
                 entries
             }
@@ -106,7 +112,9 @@ class AppsFragment : Fragment() {
 
     private fun launchApp(app: AppAdapter.App) {
         try {
-            startActivity(Intent.makeMainActivity(app.component).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            startActivity(
+                Intent.makeMainActivity(app.component).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
             (requireActivity() as MainActivity).homeFragment()?.handoffHome()
         } catch (_: ActivityNotFoundException) {
             showLaunchFailure(app.label)
@@ -116,21 +124,34 @@ class AppsFragment : Fragment() {
     }
 
     private fun showLaunchFailure(label: String) {
-        Toast.makeText(requireContext(), getString(R.string.home_app_launch_failed, label), Toast.LENGTH_SHORT)
+        Toast.makeText(
+            requireContext(),
+            getString(R.string.home_app_launch_failed, label),
+            Toast.LENGTH_SHORT
+        )
             .show()
     }
 
-    private fun setInsets() = ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
+    private fun setInsets() = ViewCompat.setOnApplyWindowInsetsListener(binding.root) {
+            view,
+            insets
+        ->
         val bars = insets.getInsets(
             WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
         )
         val spacing = resources.getDimensionPixelSize(R.dimen.spacing_med)
         val headingSpacing = resources.getDimensionPixelSize(R.dimen.spacing_chip)
         val dual = (requireActivity() as MainActivity).isDualHome
-        val navigation = if (dual) 0 else
+        val navigation = if (dual) {
+            0
+        } else {
             resources.getDimensionPixelSize(R.dimen.spacing_navigation)
-        val rail = if (dual) 0 else
+        }
+        val rail = if (dual) {
+            0
+        } else {
             resources.getDimensionPixelSize(R.dimen.spacing_navigation_rail)
+        }
         val leftRail = if (view.layoutDirection == View.LAYOUT_DIRECTION_LTR) rail else 0
         val rightRail = if (view.layoutDirection == View.LAYOUT_DIRECTION_RTL) rail else 0
         view.updatePadding(

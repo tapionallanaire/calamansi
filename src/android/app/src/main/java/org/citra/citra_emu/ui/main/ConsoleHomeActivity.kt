@@ -53,10 +53,16 @@ class ConsoleHomeActivity : MainActivity() {
 
         fun roleRequest(context: Context): Intent {
             val home = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
-            val resolved = context.packageManager.resolveActivity(home, PackageManager.MATCH_DEFAULT_ONLY)
+            val resolved = context.packageManager.resolveActivity(
+                home,
+                PackageManager.MATCH_DEFAULT_ONLY
+            )
             resolved?.activityInfo?.takeIf { it.packageName != context.packageName }?.let {
                 PreferenceManager.getDefaultSharedPreferences(context).edit {
-                    putString(PREVIOUS_LAUNCHER, ComponentName(it.packageName, it.name).flattenToString())
+                    putString(
+                        PREVIOUS_LAUNCHER,
+                        ComponentName(it.packageName, it.name).flattenToString()
+                    )
                 }
             }
             return context.getSystemService(RoleManager::class.java)
@@ -74,7 +80,9 @@ class ConsoleHomeActivity : MainActivity() {
             val available = component != null &&
                 context.packageManager.resolveActivity(launcher, 0)?.activityInfo?.exported == true
             // The system chooser is the recovery path if the previous launcher was removed.
-            context.startActivity(if (available) launcher else Intent(Settings.ACTION_HOME_SETTINGS))
+            context.startActivity(
+                if (available) launcher else Intent(Settings.ACTION_HOME_SETTINGS)
+            )
         }
     }
 }

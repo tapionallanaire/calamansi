@@ -608,22 +608,26 @@ class SettingsAdapter(private val fragmentView: SettingsFragmentView, public val
             .setPositiveButton(android.R.string.ok) { _: DialogInterface, _: Int ->
                 if (fragmentView.activityView!!.settings.isPerGame) {
                     fragmentView.activityView!!.settings.useGlobal(setting)
-                } else when (setting) {
-                    is AbstractBooleanSetting -> setting.boolean = setting.defaultValue as Boolean
+                } else {
+                    when (setting) {
+                        is AbstractBooleanSetting ->
+                            setting.boolean =
+                                setting.defaultValue as Boolean
 
-                    is AbstractFloatSetting -> {
-                        if (setting is ScaledFloatSetting) {
-                            setting.float = setting.defaultValue * setting.scale
-                        } else {
-                            setting.float = setting.defaultValue as Float
+                        is AbstractFloatSetting -> {
+                            if (setting is ScaledFloatSetting) {
+                                setting.float = setting.defaultValue * setting.scale
+                            } else {
+                                setting.float = setting.defaultValue as Float
+                            }
                         }
+
+                        is AbstractIntSetting -> setting.int = setting.defaultValue as Int
+
+                        is AbstractStringSetting -> setting.string = setting.defaultValue as String
+
+                        is AbstractShortSetting -> setting.short = setting.defaultValue as Short
                     }
-
-                    is AbstractIntSetting -> setting.int = setting.defaultValue as Int
-
-                    is AbstractStringSetting -> setting.string = setting.defaultValue as String
-
-                    is AbstractShortSetting -> setting.short = setting.defaultValue as Short
                 }
                 notifyItemChanged(position)
                 fragmentView.onSettingChanged()

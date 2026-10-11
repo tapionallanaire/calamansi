@@ -19,13 +19,20 @@ internal fun secondaryDisplayCandidates(context: Context): List<Display> {
     }
     val presentable = manager.getDisplays(DisplayManager.DISPLAY_CATEGORY_PRESENTATION)
     return manager.displays.filter { display ->
-        (display.displayId != Display.DEFAULT_DISPLAY || presentable.any { it.displayId == display.displayId }) &&
+        (
+            display.displayId != Display.DEFAULT_DISPLAY ||
+                presentable.any { it.displayId == display.displayId }
+            ) &&
             display.displayId != hostId && display.name != "HiddenDisplay" &&
             display.state != Display.STATE_OFF && display.isValid
     }
 }
 
-internal fun selectSecondaryDisplay(context: Context, candidates: List<Display>, preferredId: Int = -1): Display? {
+internal fun selectSecondaryDisplay(
+    context: Context,
+    candidates: List<Display>,
+    preferredId: Int = -1
+): Display? {
     candidates.firstOrNull { it.displayId == preferredId }?.let { return it }
     val defaultName = context.getSystemService(DisplayManager::class.java).displays
         .firstOrNull { it.displayId == Display.DEFAULT_DISPLAY }?.name

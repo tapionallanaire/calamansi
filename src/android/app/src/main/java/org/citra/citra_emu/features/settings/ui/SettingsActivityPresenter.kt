@@ -46,7 +46,11 @@ class SettingsActivityPresenter(private val activityView: SettingsActivityView) 
             if (!settings.isPerGame) updateAndroidImageVisibility()
             shouldSave = false
         }
-        val runningTitleId = if (NativeLibrary.isRunning()) NativeLibrary.getRunningTitleId() else 0L
+        val runningTitleId = if (NativeLibrary.isRunning()) {
+            NativeLibrary.getRunningTitleId()
+        } else {
+            0L
+        }
         Settings().loadSettings(
             if (runningTitleId != 0L) String.format("%016X", runningTitleId) else ""
         )
@@ -56,7 +60,6 @@ class SettingsActivityPresenter(private val activityView: SettingsActivityView) 
             TurboHelper.reloadTurbo(false)
         }
     }
-
 
     private fun loadSettingsUI() {
         settings.loadSettings(gameId, activityView)
@@ -100,7 +103,6 @@ class SettingsActivityPresenter(private val activityView: SettingsActivityView) 
             nomediaFileDocument!!.delete()
         }
     }
-
 
     fun onSettingChanged() {
         shouldSave = true

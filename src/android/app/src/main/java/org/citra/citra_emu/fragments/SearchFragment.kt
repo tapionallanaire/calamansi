@@ -24,8 +24,8 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.preference.PreferenceManager
 import androidx.navigation.fragment.findNavController
+import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.GridLayoutManager
 import info.debatty.java.stringsimilarity.Jaccard
 import info.debatty.java.stringsimilarity.JaroWinkler
@@ -37,8 +37,8 @@ import org.citra.citra_emu.R
 import org.citra.citra_emu.adapters.GameAdapter
 import org.citra.citra_emu.databinding.FragmentSearchBinding
 import org.citra.citra_emu.model.Game
-import org.citra.citra_emu.viewmodel.GamesViewModel
 import org.citra.citra_emu.ui.main.MainActivity
+import org.citra.citra_emu.viewmodel.GamesViewModel
 import org.citra.citra_emu.viewmodel.HomeViewModel
 
 class SearchFragment : Fragment() {
@@ -123,7 +123,11 @@ class SearchFragment : Fragment() {
             layoutManager = grid
             addOnLayoutChangeListener { view, _, _, _, _, _, _, _, _ ->
                 val width = view.width - view.paddingLeft - view.paddingRight
-                val columns = (width / resources.getDimensionPixelSize(R.dimen.home_tile_width)).coerceAtLeast(1)
+                val columns = (
+                    width / resources.getDimensionPixelSize(
+                        R.dimen.home_tile_width
+                    )
+                    ).coerceAtLeast(1)
                 if (grid.spanCount != columns) grid.spanCount = columns
             }
             adapter = this@SearchFragment.gameAdapter
@@ -267,10 +271,16 @@ class SearchFragment : Fragment() {
         )
         val extraListSpacing = resources.getDimensionPixelSize(R.dimen.spacing_med)
         val dual = (requireActivity() as MainActivity).isDualHome
-        val spacingNavigation = if (dual) 0 else
+        val spacingNavigation = if (dual) {
+            0
+        } else {
             resources.getDimensionPixelSize(R.dimen.spacing_navigation)
-        val spacingNavigationRail = if (dual) 0 else
+        }
+        val spacingNavigationRail = if (dual) {
+            0
+        } else {
             resources.getDimensionPixelSize(R.dimen.spacing_navigation_rail)
+        }
         val chipSpacing = resources.getDimensionPixelSize(R.dimen.spacing_chip)
 
         binding.constraintSearch.updatePadding(

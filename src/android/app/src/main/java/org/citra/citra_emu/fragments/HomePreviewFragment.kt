@@ -24,7 +24,7 @@ import org.citra.citra_emu.viewmodel.GamesViewModel
 import org.citra.citra_emu.viewmodel.HomeViewModel
 
 class HomePreviewFragment : Fragment() {
-    private var _binding: ViewHomePreviewBinding? = null
+    private var viewBinding: ViewHomePreviewBinding? = null
     private val gamesViewModel: GamesViewModel by activityViewModels()
     private val homeViewModel: HomeViewModel by activityViewModels()
 
@@ -34,13 +34,13 @@ class HomePreviewFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         val binding = ViewHomePreviewBinding.inflate(inflater, container, false)
-        _binding = binding
+        viewBinding = binding
         binding.root.layoutParams?.height = ViewGroup.LayoutParams.MATCH_PARENT
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        val binding = requireNotNull(_binding)
+        val binding = requireNotNull(viewBinding)
         val activity = requireActivity() as MainActivity
         ViewCompat.setOnApplyWindowInsetsListener(view) { root, insets ->
             val bars = insets.getInsets(
@@ -61,7 +61,7 @@ class HomePreviewFragment : Fragment() {
                     view.doOnAttach {
                         val home = activity.homeFragment() ?: return@doOnAttach
                         home.view?.doOnAttach {
-                            if (_binding === binding &&
+                            if (viewBinding === binding &&
                                 lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) &&
                                 gamesViewModel.selectedHomeGame.value === game
                             ) {
@@ -81,7 +81,7 @@ class HomePreviewFragment : Fragment() {
     }
 
     override fun onDestroyView() {
-        _binding = null
+        viewBinding = null
         super.onDestroyView()
     }
 }

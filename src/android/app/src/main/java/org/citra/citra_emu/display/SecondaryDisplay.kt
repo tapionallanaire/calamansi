@@ -55,7 +55,6 @@ class SecondaryDisplay(val context: Context) : DisplayManager.DisplayListener {
         NativeLibrary.secondarySurfaceDestroyed()
     }
 
-
     fun setActive(active: Boolean) {
         this.active = active
         if (active) updateDisplay() else releasePresentation()

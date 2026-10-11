@@ -125,8 +125,6 @@ class SettingsActivity :
         presenter.onResume()
     }
 
-
-
     override fun showSettingsFragment(menuTag: String, addToStack: Boolean, gameId: String) {
         if (!addToStack && settingsFragment != null) {
             return

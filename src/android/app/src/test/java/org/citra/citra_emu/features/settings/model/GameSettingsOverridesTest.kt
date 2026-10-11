@@ -41,6 +41,8 @@ fun main() {
 
     // Values absent from the global INI still differ from the supplied model-default snapshot.
     check(gameOverrides(emptyMap(), listOf(shader)) == listOf(shader))
-    check(gameOverrides(global, listOf(Value("Audio", "pp_shader_name", "None (builtin)"))).size == 1)
+    check(
+        gameOverrides(global, listOf(Value("Audio", "pp_shader_name", "None (builtin)"))).size == 1
+    )
     println("Per-game override inheritance checks passed")
 }

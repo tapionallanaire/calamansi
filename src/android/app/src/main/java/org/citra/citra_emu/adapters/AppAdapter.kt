@@ -12,10 +12,8 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import org.citra.citra_emu.databinding.CardAppBinding
 
-class AppAdapter(
-    private val apps: List<App>,
-    private val onLaunch: (App) -> Unit
-) : RecyclerView.Adapter<AppAdapter.AppViewHolder>() {
+class AppAdapter(private val apps: List<App>, private val onLaunch: (App) -> Unit) :
+    RecyclerView.Adapter<AppAdapter.AppViewHolder>() {
     data class App(val component: ComponentName, val label: String, val icon: Drawable)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AppViewHolder =

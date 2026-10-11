@@ -130,8 +130,12 @@ class SettingsFragmentPresenter(private val fragmentView: SettingsFragmentView) 
                     item.setting == BooleanSetting.CHECK_FOR_UPDATES ||
                     item.setting?.section == Settings.SECTION_NETWORK ||
                     (menuTag != SettingsFile.FILE_NAME_CONFIG && item is RunnableSetting) ||
-                    (item is SubmenuSetting && (item.menuKey == Settings.SECTION_CONTROLS ||
-                        item.menuKey == Settings.SECTION_NETWORK))
+                    (
+                        item is SubmenuSetting && (
+                            item.menuKey == Settings.SECTION_CONTROLS ||
+                                item.menuKey == Settings.SECTION_NETWORK
+                            )
+                        )
             }
         }
         settingsList = sl
@@ -233,7 +237,11 @@ class SettingsFragmentPresenter(private val fragmentView: SettingsFragmentView) 
 
             add(
                 RunnableSetting(
-                    if (settings.isPerGame) R.string.use_global_settings else R.string.reset_to_default,
+                    if (settings.isPerGame) {
+                        R.string.use_global_settings
+                    } else {
+                        R.string.reset_to_default
+                    },
                     if (settings.isPerGame) R.string.game_settings_description else 0,
                     false,
                     R.drawable.ic_restore,

@@ -66,8 +66,10 @@ object SettingsFile {
                     current = sectionFromLine(line!!, isCustomGame)
                     sections[current.name] = current
                 } else if (current != null) {
-                    if (isCustomGame && (current.name == Settings.SECTION_CONTROLS ||
-                            current.name == Settings.SECTION_NETWORK)
+                    if (isCustomGame && (
+                            current.name == Settings.SECTION_CONTROLS ||
+                                current.name == Settings.SECTION_NETWORK
+                            )
                     ) {
                         continue
                     }
@@ -258,10 +260,7 @@ object SettingsFile {
         return configDirectory!!.findFile("$fileName.ini")!!
     }
 
-    private fun getCustomGameSettingsFile(
-        gameId: String,
-        create: Boolean = false
-    ): DocumentFile? {
+    private fun getCustomGameSettingsFile(gameId: String, create: Boolean = false): DocumentFile? {
         require(gameId.matches(Regex("[0-9A-Fa-f]{16}")))
         val root = DocumentFile.fromTreeUri(CitraApplication.appContext, Uri.parse(userDirectory))!!
         val directory = root.findFile("GameSettings")
@@ -311,7 +310,10 @@ object SettingsFile {
             return stringSetting
         }
         if (value.isEmpty()) {
-            IntListSetting.from(key)?.let { it.list = emptyList(); return it }
+            IntListSetting.from(key)?.let {
+                it.list = emptyList()
+                return it
+            }
             return null
         }
 
@@ -342,7 +344,6 @@ object SettingsFile {
             floatSetting.float = value.toFloat()
             return floatSetting
         }
-
 
         val intListSetting = IntListSetting.from(key)
         if (intListSetting != null) {
