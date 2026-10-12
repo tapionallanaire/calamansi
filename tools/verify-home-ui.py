@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exercise HOME through adb; never edits a save, native config, theme or ROM.
 
+Requires adb, Pillow and NumPy for device control and painted-cursor verification.
 Requires an awake-capable charging device with at least two visible library games,
 multi-window accessibility display ancestry, and a lower HOME on logical display 4.
 Selected fixture titles must be unique: device identity uses the selected tile/title,
@@ -20,6 +21,36 @@ import subprocess
 import time
 import uuid
 import xml.etree.ElementTree as ET
+
+import numpy as np
+from PIL import Image
+
+
+def cursor_tiles(root, frames):
+    cursors = []
+    for display in root.iter('display'):
+        logical = int(display.get('id'))
+        if logical not in frames:
+            continue
+        for node in display.iter('node'):
+            if not node.get('resource-id', '').endswith((':id/card_game', ':id/card_app')):
+                continue
+            bounds = [int(v) for v in re.findall(r'-?\d+', node.get('bounds', ''))]
+            pixels = np.asarray(frames[logical].crop(bounds).convert('RGB'), dtype=np.int16)
+            green = (pixels[:, :, 1] > pixels[:, :, 0] + 30) & (
+                pixels[:, :, 1] > pixels[:, :, 2] + 10)
+            corners = 0
+            for turn in range(4):
+                corner = np.rot90(green, turn)
+                height, width = corner.shape
+                edge_y, edge_x = max(2, height // 16), max(2, width // 16)
+                ink = (corner[:height // 4, :edge_x].sum() +
+                       corner[:edge_y, :width // 4].sum() -
+                       corner[:edge_y, :edge_x].sum())
+                corners += ink > max(12, min(height, width) // 3)
+            if corners >= 2:
+                cursors.append((logical, node.get('content-desc'), node.get('resource-id')))
+    return cursors
 
 
 def main():
@@ -251,9 +282,10 @@ def main():
         wait_for(lambda: resumed('SettingsActivity'), 'Active game gear did not open settings')
         if home_count() != 0:
             raise AssertionError('HOME leaked during active-game configuration')
-        if not any('0004000000179600' in n.get('text', '').upper()
-                   for n in hierarchy().iter('node')):
-            raise AssertionError('Gear opened settings for the wrong title')
+        wait_for(lambda: any('0004000000179600' in
+                 (n.get('text', '') + n.get('content-desc', '')).upper()
+                 for n in hierarchy().iter('node')),
+                 'Gear opened settings for the wrong title')
         capture('05-active-game-settings')
         shell('input keyevent KEYCODE_BACK')
         wait_for(lambda: home_count() == 1, 'HOME failed to restore after active-game settings')
@@ -438,6 +470,13 @@ def main():
         def search_has_text(value):
             search = display_node('search_text', 0, hierarchy())
             return search is not None and search.get('text') == value
+        def search_input_ready():
+            search = display_node('search_text', 0, hierarchy())
+            ime = shell('dumpsys input_method')
+            return search is not None and search.get('focused') == 'true' and (
+                'mInputShown=true' in ime and 'mServedConnecting=false' in ime and
+                re.search(r'mServedInputConnection=.*finished=false.*app:id/search_text', ime)
+            )
         for destination, name in (('searchFragment', 'search'),
                                   ('homeSettingsFragment', 'options'), ('appsFragment', 'apps')):
             tap(required_node(destination), secondary)
@@ -446,6 +485,7 @@ def main():
             if destination == 'searchFragment':
                 initial_search_text = visible_node('search_text', 0, root).get('text', '')
                 tap(visible_node('search_text', 0, root), 0)
+                wait_for(search_input_ready, 'Upper Search editor input connection was not ready')
                 shell('input -d 0 text Fire%sEmblem')
                 wait_for(lambda: search_has_text('Fire Emblem'),
                          'Primary text input did not reach upper Search')
@@ -515,6 +555,18 @@ def main():
             raise AssertionError('Invalid visible target bounds: ' + str(n.attrib))
         shell(f'input -d {display_id} tap {(values[0] + values[2]) // 2} {(values[1] + values[3]) // 2}')
 
+    def controller_key(code):
+        controllers = [block.splitlines()[0] for block in
+                       re.split(r'add device \d+: ', shell('getevent -lp'))[1:]
+                       if 'BTN_GAMEPAD' in block and 'BTN_DPAD_RIGHT' in block]
+        if not controllers:
+            raise AssertionError('Need a physical controller with BTN_DPAD_RIGHT')
+        event = shlex.quote(controllers[0])
+        try:
+            shell(f'sendevent {event} 1 {code} 1 && sendevent {event} 0 0 0')
+        finally:
+            shell(f'sendevent {event} 1 {code} 0 && sendevent {event} 0 0 0')
+
     def launch_home():
         role_flags = '-a android.intent.action.MAIN -c android.intent.category.HOME ' if args.home_role else ''
         shell('am start -W -f 0x10020000 --ez ConsoleHome true ' + role_flags + '-n ' +
@@ -523,7 +575,8 @@ def main():
 
     def capture(label):
         dump = windows()
-        (args.evidence / (label + '-hierarchy.xml')).write_bytes(ET.tostring(hierarchy()))
+        root = hierarchy()
+        (args.evidence / (label + '-hierarchy.xml')).write_bytes(ET.tostring(root))
         (args.evidence / (label + '-activities.txt')).write_text(
             shell('dumpsys activity activities'), encoding='utf-8')
         (args.evidence / (label + '-windows.txt')).write_text(dump, encoding='utf-8')
@@ -532,24 +585,67 @@ def main():
             if not image.startswith(b'\x89PNG\r\n\x1a\n'):
                 raise AssertionError(f'No PNG capture for display {logical}/{physical}')
             (args.evidence / f'{label}-display-{logical}.png').write_bytes(image)
+        expected_cursor = {
+            '00-initial-home': secondary,
+            '00-lower-controller-selection': secondary,
+            '00-apps-controller-selection': 0,
+            '00-controller-lower-handoff': secondary,
+            '00-controller-upper-return': 0,
+        }.get(label)
+        if expected_cursor is not None:
+            cursors = cursor_tiles(root, {
+                logical: Image.open(args.evidence / f'{label}-display-{logical}.png')
+                for logical in displays
+            })
+            report.setdefault('cursors', {})[label] = cursors
+            if len(cursors) != 1 or cursors[0][0] != expected_cursor:
+                raise AssertionError(f'{label}: expected one cursor on display {expected_cursor}, got {cursors}')
         report['steps'].append(label)
 
     def selected_title():
         n = display_node('home_selected_title', secondary, hierarchy())
         return None if n is None else n.get('text')
 
+    def find_title_tile(title):
+        seen = set()
+        search_up = True
+        while True:
+            grid = wait_for(lambda: display_node('grid_games', secondary, hierarchy()),
+                            'Lower library was not ready for title selection')
+            cards = [n for n in grid.iter('node') if n.get('resource-id', '').endswith(':id/card_game')]
+            tile = next((n for n in cards if n.get('content-desc') == title), None)
+            if tile is not None:
+                break
+            page = tuple((n.get('content-desc'), n.get('bounds')) for n in cards)
+            if page in seen:
+                if not search_up:
+                    raise AssertionError('Required game tile absent from library: ' + title)
+                search_up = False
+                seen.clear()
+            seen.add(page)
+            bounds = [int(v) for v in re.findall(r'\d+', grid.get('bounds', ''))]
+            x = (bounds[0] + bounds[2]) // 2
+            height = bounds[3] - bounds[1]
+            start, end = bounds[1] + height // 4, bounds[1] + height * 3 // 4
+            if not search_up:
+                start, end = end, start
+            shell(f'input -d {secondary} swipe {x} {start} {x} {end} 400')
+        return tile
+
     def select_title(title):
-        root = hierarchy()
-        selected = display_node('home_selected_title', secondary, root)
-        if selected is not None and selected.get('text') == title:
+        if selected_title() == title:
             return
-        grid = wait_for(lambda: display_node('grid_games', secondary, hierarchy()),
-                        'Lower library was not ready for title selection')
-        tile = next((n for n in grid.iter('node') if n.get('resource-id', '').endswith(':id/card_game') and n.get('content-desc') == title), None)
-        if tile is None:
-            raise AssertionError('Required visible game tile absent: ' + title)
-        tap(tile, secondary)
-        wait_for(lambda: selected_title() == title, 'Selection did not update to ' + title)
+        tile = find_title_tile(title)
+        bounds = [int(v) for v in re.findall(r'\d+', tile.get('bounds', ''))]
+        x, y = (bounds[0] + bounds[2]) // 2, (bounds[1] + bounds[3]) // 2
+        # Long-press selects and opens Properties; a normal icon tap launches immediately.
+        shell(f'input -d {secondary} swipe {x} {y} {x} {y} 800')
+        wait_for(lambda: node('game_settings') is not None or node('alertTitle') is not None,
+                 'Long-press did not open Properties')
+        shell('input -d 0 keyevent KEYCODE_BACK')
+        wait_for(lambda: selected_title() == title and node('game_settings') is None and
+                 node('alertTitle') is None and resumed(home_activity),
+                 'Long-press selection did not retain ' + title)
 
     try:
         adb('get-state')
@@ -597,8 +693,93 @@ def main():
             raise AssertionError('This physical dual-screen check requires mapped upper 0 and lower 4')
         root = hierarchy()
         verify_home_page('gamesFragment', root=root)
-        verify_shoulder_navigation()
         grid = visible_node('grid_games', secondary, root)
+        tiles = [[int(v) for v in re.findall(r'-?\d+', n.get('bounds', ''))]
+                 for n in grid.iter('node') if n.get('resource-id', '').endswith(':id/card_game')]
+        first_top = min(b[1] for b in tiles)
+        report['initial_home_first_row'] = [b for b in tiles if b[1] == first_top]
+        for left, top, right, bottom in report['initial_home_first_row']:
+            if abs((right - left) - (bottom - top)) > 1:
+                raise AssertionError(f'Initial HOME tile is not square: {(left, top, right, bottom)}')
+        capture('00-initial-home')
+        before_direction = selected_identity(root)
+        tap(visible_node('home_selected_title', secondary, root), secondary)
+        controller_key(547)
+        controller_key(547)
+        wait_for(lambda: selected_identity(hierarchy()) != before_direction,
+                 'Lower-screen touch prevented gamepad navigation of the HOME grid')
+        capture('00-lower-controller-selection')
+        verify_shoulder_navigation()
+        tap(visible_node('appsFragment', secondary, hierarchy()), secondary)
+        root = wait_upper('appsFragment')
+        app_grid = visible_node('grid_apps', 0, root)
+        apps = [[int(v) for v in re.findall(r'-?\d+', n.get('bounds', ''))]
+                for n in app_grid.iter('node') if n.get('resource-id', '').endswith(':id/card_app')]
+        first_top = min(b[1] for b in apps)
+        report['initial_app_first_row'] = [b for b in apps if b[1] == first_top]
+        if len(report['initial_app_first_row']) < 2:
+            raise AssertionError('Upper All Apps incorrectly renders as a single column')
+        # Observe the real end row, then return to the start before controller navigation.
+        # ponytail: 40 scroll pages per fixture; derive a launcher count for larger app sets.
+        for toward_end in (True, False):
+            previous_page = None
+            for _ in range(40):
+                root = hierarchy()
+                app_grid = visible_node('grid_apps', 0, root)
+                cards = [n for n in app_grid.iter('node')
+                         if n.get('resource-id', '').endswith(':id/card_app')]
+                page = tuple((n.get('content-desc'), n.get('bounds')) for n in cards)
+                if page == previous_page:
+                    if toward_end:
+                        last_top = max(int(re.findall(r'\d+', n.get('bounds'))[1]) for n in cards)
+                        final_app_row = {n.get('content-desc') for n in cards
+                                         if int(re.findall(r'\d+', n.get('bounds'))[1]) == last_top}
+                        report['last_app_row'] = sorted(final_app_row)
+                    break
+                previous_page = page
+                bounds = [int(v) for v in re.findall(r'\d+', app_grid.get('bounds'))]
+                x = (bounds[0] + bounds[2]) // 2
+                height = bounds[3] - bounds[1]
+                start, end = bounds[1] + height * 3 // 4, bounds[1] + height // 4
+                if not toward_end:
+                    start, end = end, start
+                shell(f'input -d 0 swipe {x} {start} {x} {end} 400')
+            else:
+                raise AssertionError('Could not observe both All Apps scroll boundaries')
+        tap(visible_node('apps_title', 0, root), 0)
+        before_direction = selected_identity(root)
+        controller_key(547)
+        controller_key(547)
+        if selected_identity(hierarchy()) != before_direction:
+            raise AssertionError('All Apps handed off before reaching its last row')
+        capture('00-apps-controller-selection')
+        # ponytail: 40 app rows per fixture; derive a launcher count for larger app sets.
+        for _ in range(40):
+            previous_apps = visible_node('grid_apps', 0, hierarchy())
+            previous_cursor = next((n for n in previous_apps.iter('node')
+                                    if n.get('resource-id', '').endswith(':id/card_app') and
+                                    n.get('focused') == 'true'), None)
+            controller_key(545)
+            sample = hierarchy()
+            if selected_identity(sample) != before_direction:
+                raise AssertionError('Down or focus restoration changed the lower selection')
+            lower_grid = visible_node('grid_games', secondary, sample)
+            if any(n.get('resource-id', '').endswith(':id/card_game') and
+                   n.get('focused') == 'true' for n in lower_grid.iter('node')):
+                if previous_cursor is None or previous_cursor.get('content-desc') not in final_app_row:
+                    raise AssertionError('Down handed off before the observed final All Apps row')
+                break
+        else:
+            raise AssertionError('Last All Apps row did not hand directional focus to the lower grid')
+        capture('00-controller-lower-handoff')
+        transferred_identity = selected_identity(hierarchy())
+        controller_key(547)
+        wait_for(lambda: selected_identity(hierarchy()) != transferred_identity,
+                 'The transferred cursor did not navigate the 3DS grid')
+        controller_key(544)
+        capture('00-controller-upper-return')
+        tap(visible_node('gamesFragment', secondary, hierarchy()), secondary)
+        wait_upper('gamesFragment')
         titles = [n.get('content-desc') for n in grid.iter('node') if n.get('resource-id', '').endswith(':id/card_game')]
         fates = next((t for t in titles if t and args.game_title.casefold() in t.casefold()), None)
         other = next((t for t in titles if t and t != fates), None)
@@ -712,6 +893,26 @@ def main():
         wait_for(lambda: home_count() == 0, 'HOME leaked during controller handoff')
         capture('07-controller-handoff')
         report['controller_game'] = controller_title
+        shell('am force-stop ' + shlex.quote(package))
+        started_emulation = False
+        launch_home()
+        if selected_title() == fates:
+            shell('input -d 0 keyevent KEYCODE_DPAD_LEFT')
+        if selected_title() == fates:
+            raise AssertionError('Single-tap launch fixture must start on a different game')
+        tile = find_title_tile(fates)
+        started_emulation = True
+        tap(tile, secondary)
+        wait_for(lambda: resumed('EmulationActivity') and node('drawer_layout') is not None and
+                 node('loading_text') is None,
+                 'One tap on an unselected icon did not launch the 3DS game', seconds=90)
+        if text_node(r'^Warning: Savestates are NOT a replacement'):
+            tap(required_node('button1'), 0)
+        shell('input -d 0 keyevent KEYCODE_BACK')
+        if required_node('text_game_title').get('text') != fates:
+            raise AssertionError('Single icon tap launched the wrong ROM')
+        capture('08-single-tap-launch')
+        report['single_tap_game'] = fates
         shell('am force-stop ' + shlex.quote(package))
         started_emulation = False
         report['passed'] = True

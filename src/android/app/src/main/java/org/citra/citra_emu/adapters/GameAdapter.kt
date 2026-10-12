@@ -72,7 +72,7 @@ class GameAdapter(
         (inputPath: String, suggestedName: String, shouldCompress: Boolean) -> Unit
     )? = null,
     private val onHomeTileClick: ((Game) -> Unit)? = null,
-    private val onHomeTileFocus: ((Game) -> Unit)? = null,
+    private val onHomeTileLongClick: ((Game) -> Unit)? = null,
     private val onBeforeNavigate: (() -> Unit)? = null,
     private val onBeforeModal: (() -> Unit)? = null
 ) : ListAdapter<Game, GameViewHolder>(AsyncDifferConfig.Builder(DiffCallback()).build()),
@@ -118,7 +118,13 @@ class GameAdapter(
             binding.root.addOnLayoutChangeListener { view, left, _, right, _, _, _, _, _ ->
                 val size = right - left
                 if (size > 0 && view.layoutParams.height != size) {
-                    view.layoutParams = view.layoutParams.apply { height = size }
+                    // RecyclerView suppresses layout requests during its own layout pass.
+                    view.post {
+                        val height = view.width
+                        if (height > 0 && view.layoutParams.height != height) {
+                            view.layoutParams = view.layoutParams.apply { this.height = height }
+                        }
+                    }
                 }
             }
         }
@@ -167,16 +173,9 @@ class GameAdapter(
 
     override fun getItemCount(): Int = currentList.size
 
-    /** HOME selects first; other library consumers retain direct activation. */
     override fun onClick(view: View) {
         val game = (view.tag as GameViewHolder).game
-        val select = onHomeTileClick
-        if (select != null) {
-            select(game)
-            view.requestFocusFromTouch()
-        } else {
-            launchGame(game)
-        }
+        onHomeTileClick?.invoke(game) ?: launchGame(game)
     }
 
     fun launchGame(game: Game) {
@@ -211,7 +210,7 @@ class GameAdapter(
 
     override fun onLongClick(view: View): Boolean {
         val game = (view.tag as GameViewHolder).game
-        onHomeTileFocus?.invoke(game)
+        onHomeTileLongClick?.invoke(game)
         showGameProperties(game)
         return true
     }
@@ -269,9 +268,6 @@ class GameAdapter(
 
         init {
             binding.cardGame.tag = this
-            binding.cardGame.setOnFocusChangeListener { _, focused ->
-                if (focused && ::game.isInitialized) onHomeTileFocus?.invoke(game)
-            }
         }
 
         fun bind(game: Game) {

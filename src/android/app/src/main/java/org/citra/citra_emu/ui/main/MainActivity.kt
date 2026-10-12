@@ -13,7 +13,9 @@ import android.os.BatteryManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.view.InputDevice
 import android.view.KeyEvent
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup.MarginLayoutParams
 import android.view.WindowManager
@@ -56,6 +58,7 @@ import org.citra.citra_emu.features.settings.model.Settings
 import org.citra.citra_emu.features.settings.model.SettingsViewModel
 import org.citra.citra_emu.features.settings.ui.SettingsActivity
 import org.citra.citra_emu.features.settings.utils.SettingsFile
+import org.citra.citra_emu.fragments.AppsFragment
 import org.citra.citra_emu.fragments.GamesFragment
 import org.citra.citra_emu.fragments.GrantMissingFilesystemPermissionFragment
 import org.citra.citra_emu.fragments.SelectUserDirectoryDialogFragment
@@ -81,6 +84,11 @@ open class MainActivity :
     private var navigationIconTint: ColorStateList? = null
     private var navigationTextTint: ColorStateList? = null
     private var navigationIndicatorTint: ColorStateList? = null
+    private var controllerInHomeGrid = true
+        set(value) {
+            field = value
+            updateHomeControllerFocus(focus = false)
+        }
 
     private val homeViewModel: HomeViewModel by viewModels()
     private val gamesViewModel: GamesViewModel by viewModels()
@@ -165,8 +173,10 @@ open class MainActivity :
             supportFragmentManager.findFragmentById(R.id.fragment_container) as NavHostFragment
         setUpNavigation(savedInstanceState, navHostFragment.navController)
         homeNavController.addOnDestinationChangedListener { _, destination, _ ->
+            controllerInHomeGrid = destination.id != R.id.appsFragment
             homeFragment()?.onUpperDestinationChanged(destination.id)
             reconcileHomeLayout()
+            updateHomeControllerFocus()
         }
         (binding.navigationView as NavigationBarView).setOnItemReselectedListener {
             when (it.itemId) {
@@ -321,13 +331,75 @@ open class MainActivity :
         return false
     }
 
-    override fun dispatchKeyEvent(event: KeyEvent): Boolean = handleHomeNavigationKey(event) || (
-        (
-            !binding.fragmentContainer.hasFocus() ||
-                homeNavController.currentDestination?.id == R.id.gamesFragment
-            ) &&
-            homeFragment()?.handleHomeKeyEvent(event) == true
-        ) || super.dispatchKeyEvent(event)
+    private fun upperApps(): AppsFragment? =
+        (supportFragmentManager.findFragmentById(R.id.fragment_container) as? NavHostFragment)
+            ?.childFragmentManager?.primaryNavigationFragment as? AppsFragment
+
+    internal fun updateHomeControllerFocus(focus: Boolean = true) {
+        if (!::binding.isInitialized) return
+        val apps = upperApps()
+        if (controllerInHomeGrid) {
+            apps?.setControllerFocus(false)
+            homeFragment()?.setControllerFocus(true, focus)
+        } else {
+            homeFragment()?.setControllerFocus(false)
+            apps?.setControllerFocus(true, focus)
+        }
+    }
+
+    internal fun handoffControllerToApps(): Boolean {
+        if (homeNavController.currentDestination?.id != R.id.appsFragment) return false
+        controllerInHomeGrid = false
+        upperApps()?.setControllerFocus(true)
+        return true
+    }
+
+    internal fun onHomeGridTouched() {
+        controllerInHomeGrid = true
+    }
+
+    internal fun handoffControllerToHome(): Boolean {
+        controllerInHomeGrid = true
+        if (homeFragment()?.focusHomeGrid() != null) return true
+        controllerInHomeGrid = false
+        return false
+    }
+
+    internal fun handleHomeControllerKey(event: KeyEvent): Boolean {
+        if (!isDualHome || homeFragment()?.homeInputEnabled != true ||
+            (
+                !event.isFromSource(InputDevice.SOURCE_GAMEPAD) &&
+                    event.device?.supportsSource(InputDevice.SOURCE_GAMEPAD) != true
+                )
+        ) {
+            return false
+        }
+        if (!controllerInHomeGrid &&
+            homeNavController.currentDestination?.id == R.id.appsFragment
+        ) {
+            // Apps owns these inputs even while its list is loading.
+            upperApps()?.handleHomeControllerKey(event)
+            return true
+        }
+        return homeFragment()?.handleHomeKeyEvent(event) == true
+    }
+
+    override fun dispatchTouchEvent(event: MotionEvent): Boolean {
+        if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+            controllerInHomeGrid = homeNavController.currentDestination?.id != R.id.appsFragment
+        }
+        return super.dispatchTouchEvent(event)
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean =
+        handleHomeNavigationKey(event) || handleHomeControllerKey(event) ||
+            (
+                (
+                    (controllerInHomeGrid && !binding.fragmentContainer.hasFocus()) ||
+                        homeNavController.currentDestination?.id == R.id.gamesFragment
+                    ) &&
+                    homeFragment()?.handleHomeKeyEvent(event) == true
+                ) || super.dispatchKeyEvent(event)
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)

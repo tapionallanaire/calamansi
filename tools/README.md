@@ -67,8 +67,24 @@ stays below. LB/RB switch these pages in either direction with wraparound. Prope
 keeps the lower library visible but read-only until the last dialog closes; a separate
 settings or external application releases that presentation.
 
-`verify-home-ui.py` uses Python's standard library and adb. Run with Thor charging,
-with Fates and a second game visible, and no existing emulation session:
+HOME tiles stay square on their initial layout, and upper All Apps uses adaptive
+columns. Gamepad input works from either display: All Apps owns navigation until
+Down leaves its last row, then focus transfers to the lower game grid. Up from the
+first game row returns to All Apps. Exactly one green cursor marks the active tile
+across both screens; game selection remains available to the lower title panel.
+Touching either grid transfers cursor ownership without restoring focus or scrolling
+before the touch lands. Controller handoffs restore focus explicitly. Keyboard arrows
+remain available to upper Search and Apps controls.
+
+A game icon tap launches that ROM immediately, or resumes its active session.
+D-pad movement selects without launching; A opens the selected game. Long-press
+selects and opens Properties. Automatic view-focus restoration never selects a
+different game.
+
+`verify-home-ui.py` uses adb, Pillow and NumPy (also used by the rendering checker).
+Run with Thor charging,
+its physical D-pad available to `sendevent`, Fates and a second game visible,
+and no existing emulation session:
 
 ```sh
 python tools/verify-home-ui.py --serial d884f526 --home-role --state-slot 3 \
@@ -81,6 +97,11 @@ dialog and an installed Android Settings launcher. The check loads the existing 
 without saving, captures both physical displays, checks modal/navigation ownership,
 and verifies that HOME/gear/icon resume retains the activity, process and native thread.
 It hashes saves, savestates and native configuration before/after; any byte change fails.
+It checks initial square tiles, multiple upper app columns, physical D-pad input
+after lower touches, the last-row handoff and return without premature library movement,
+and exactly one painted cursor across both screenshots at each transfer.
+The launch checks exercise an unselected icon with one tap, controller A, and
+same-session icon resume; selection fixtures use long-press rather than launch taps.
 It never rewrites files to conceal a failure. Keep each run's screenshots and
 `home-smoke.json`; partial progress with `"passed": false` is not a full acceptance pass.
 
