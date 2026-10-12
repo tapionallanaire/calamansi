@@ -23,6 +23,7 @@ import androidx.appcompat.view.ContextThemeWrapper
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.doOnLayout
 import androidx.core.view.updatePadding
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
@@ -207,15 +208,10 @@ class GamesFragment : Fragment() {
                 this.shouldCompress = shouldCompress
             },
             onHomeTileClick = { game ->
-                if (gamesViewModel.selectedHomeGame.value?.path == game.path ||
-                    EmulationActivity.activeGame?.path == game.path
-                ) {
-                    gameAdapter.launchGame(game)
-                } else {
-                    gamesViewModel.selectHomeGame(game)
-                }
+                gamesViewModel.selectHomeGame(game)
+                gameAdapter.launchGame(game)
             },
-            onHomeTileFocus = gamesViewModel::selectHomeGame,
+            onHomeTileLongClick = gamesViewModel::selectHomeGame,
             onBeforeNavigate = ::handoffHome,
             onBeforeModal = ::suspendHomeForModal
         )
@@ -374,6 +370,7 @@ class GamesFragment : Fragment() {
                 gamesViewModel.reconcileHomeGames(gameAdapter.currentList)
                 refreshPanel()
                 updateSelection(selectedGame())
+                (requireActivity() as MainActivity).updateHomeControllerFocus()
             }
         }
     }
@@ -430,7 +427,7 @@ class GamesFragment : Fragment() {
                                     R.dimen.home_tile_width
                                 )
                                 ).coerceAtLeast(1)
-                            if (grid.spanCount != columns) grid.spanCount = columns
+                            if (grid.spanCount != columns) view.post { grid.spanCount = columns }
                         }
                     }
             adapter = gameAdapter
@@ -490,6 +487,7 @@ class GamesFragment : Fragment() {
         }
         refreshPanel()
         updateSelection(selectedGame())
+        (requireActivity() as MainActivity).updateHomeControllerFocus()
     }
 
     private fun refreshPanel() {
@@ -579,11 +577,13 @@ class GamesFragment : Fragment() {
         dismissHomePresentation()
         if (display == null) return
         val activity = requireActivity()
+        val owner = activity as MainActivity
         val presentation = HomePresentation(
             activity,
             display,
             { attachPanel(it, secondary = true) },
-            ::handleHomeKeyEvent
+            { owner.handleHomeControllerKey(it) || handleHomeKeyEvent(it) },
+            owner::onHomeGridTouched
         )
         homePresentation = presentation
         presentation.inputEnabled = !modalSuspended
@@ -659,6 +659,37 @@ class GamesFragment : Fragment() {
         }
     }
 
+    internal fun setControllerFocus(active: Boolean, focus: Boolean = true) {
+        val grid = activePanel?.gridGames ?: return
+        grid.descendantFocusability = if (active) {
+            ViewGroup.FOCUS_AFTER_DESCENDANTS
+        } else {
+            ViewGroup.FOCUS_BLOCK_DESCENDANTS
+        }
+        if (active && focus) {
+            grid.doOnLayout {
+                if (grid.descendantFocusability ==
+                    ViewGroup.FOCUS_AFTER_DESCENDANTS
+                ) {
+                    focusHomeGrid()
+                }
+            }
+        } else if (!active) {
+            grid.clearFocus()
+        }
+    }
+
+    internal fun focusHomeGrid(): View? {
+        if (!homeInputEnabled) return null
+        val grid = activePanel?.gridGames ?: return null
+        val path = gamesViewModel.selectedHomeGame.value?.path
+        val target = grid.layoutManager?.findViewByPosition(
+            gameAdapter.currentList.indexOfFirst { it.path == path }
+        ) ?: grid.focusedChild ?: grid.getChildAt(0)
+        // Each display has its own touch mode, regardless of the key's input display.
+        return target?.takeIf { it.requestFocusFromTouch() }
+    }
+
     fun handleHomeKeyEvent(event: KeyEvent): Boolean {
         if (!homeInputEnabled) return false
         if ((requireActivity() as MainActivity).handleHomeNavigationKey(event)) return true
@@ -669,14 +700,26 @@ class GamesFragment : Fragment() {
             KeyEvent.KEYCODE_DPAD_DOWN -> View.FOCUS_DOWN
             else -> null
         }
-        if (direction != null && homePresentation != null) {
+        if (direction != null) {
             if (event.action == KeyEvent.ACTION_DOWN) {
                 val panel = activePanel ?: return false
-                val focused = panel.root.findFocus()
-                if (focused == null) {
-                    panel.gridGames.restoreDefaultFocus()
-                } else {
-                    focused.focusSearch(direction)?.requestFocus()
+                val grid = panel.gridGames
+                val focused = focusHomeGrid() ?: return true
+                val position = grid.getChildAdapterPosition(focused)
+                val manager = grid.layoutManager as GridLayoutManager
+                if (position >= 0 &&
+                    (
+                        (direction == View.FOCUS_UP && position < manager.spanCount) ||
+                            (direction == View.FOCUS_LEFT && position == 0)
+                        ) &&
+                    (requireActivity() as MainActivity).handoffControllerToApps()
+                ) {
+                    return true
+                }
+                val next = focused.focusSearch(direction)
+                if (next?.parent === grid && next.requestFocus()) {
+                    gameAdapter.currentList.getOrNull(grid.getChildAdapterPosition(next))
+                        ?.let(gamesViewModel::selectHomeGame)
                 }
             }
             return true

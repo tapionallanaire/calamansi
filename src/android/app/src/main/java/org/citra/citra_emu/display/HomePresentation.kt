@@ -21,12 +21,17 @@ internal class HomePresentation(
     private val activity: Activity,
     display: Display,
     private val onReady: (ViewHomeLibraryBinding) -> Unit,
-    private val onKey: (KeyEvent) -> Boolean
+    private val onKey: (KeyEvent) -> Boolean,
+    private val onTouch: () -> Unit
 ) : Presentation(activity, display) {
     private var libraryRoot: View? = null
     var inputEnabled = true
         set(value) {
             field = value
+            window?.setFlags(
+                if (value) 0 else WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+            )
             libraryRoot?.importantForAccessibility =
                 if (value) {
                     View.IMPORTANT_FOR_ACCESSIBILITY_AUTO
@@ -38,7 +43,6 @@ internal class HomePresentation(
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window?.attributes?.setTitle("Calamansi HOME")
-        window?.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE)
         val displayContext = ContextThemeWrapper(context, R.style.Theme_Azahar_Home_Classic).apply {
             applyOverrideConfiguration(
                 Configuration().apply {
@@ -64,8 +68,11 @@ internal class HomePresentation(
         )
     }
 
-    override fun dispatchTouchEvent(event: MotionEvent): Boolean =
-        !inputEnabled || super.dispatchTouchEvent(event)
+    override fun dispatchTouchEvent(event: MotionEvent): Boolean {
+        if (!inputEnabled) return true
+        if (event.actionMasked == MotionEvent.ACTION_DOWN) onTouch()
+        return super.dispatchTouchEvent(event)
+    }
 
     override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean =
         !inputEnabled || super.dispatchGenericMotionEvent(event)

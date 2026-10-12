@@ -8,12 +8,14 @@ import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Intent
 import android.os.Bundle
+import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.doOnLayout
 import androidx.core.view.updatePadding
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -35,6 +37,7 @@ class AppsFragment : Fragment() {
     private var _binding: FragmentAppsBinding? = null
     private val binding get() = _binding!!
     private val homeViewModel: HomeViewModel by activityViewModels()
+    private var controllerPosition = 0
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -56,7 +59,7 @@ class AppsFragment : Fragment() {
                 val width = view.width - view.paddingLeft - view.paddingRight
                 val columns = (width / resources.getDimensionPixelSize(R.dimen.app_tile_width))
                     .coerceAtLeast(1)
-                if (grid.spanCount != columns) grid.spanCount = columns
+                if (grid.spanCount != columns) view.post { grid.spanCount = columns }
             }
         }
         setInsets()
@@ -101,6 +104,7 @@ class AppsFragment : Fragment() {
             }
             binding.gridApps.adapter = AppAdapter(apps, ::launchApp)
             binding.noAppsView.visibility = if (apps.isEmpty()) View.VISIBLE else View.GONE
+            (requireActivity() as MainActivity).updateHomeControllerFocus()
         }
     }
 
@@ -108,6 +112,78 @@ class AppsFragment : Fragment() {
         super.onResume()
         homeViewModel.setNavigationVisibility(visible = true, animated = true)
         homeViewModel.setStatusBarShadeVisibility(visible = true)
+    }
+
+    internal fun setControllerFocus(active: Boolean, focus: Boolean = true) {
+        val grid = _binding?.gridApps ?: return
+        if (!active) {
+            grid.focusedChild?.let {
+                val position = grid.getChildAdapterPosition(it)
+                if (position >= 0) controllerPosition = position
+            }
+        }
+        grid.descendantFocusability = if (active) {
+            ViewGroup.FOCUS_AFTER_DESCENDANTS
+        } else {
+            ViewGroup.FOCUS_BLOCK_DESCENDANTS
+        }
+        if (active && focus) {
+            grid.doOnLayout {
+                if (grid.descendantFocusability == ViewGroup.FOCUS_AFTER_DESCENDANTS) {
+                    (
+                        grid.focusedChild
+                            ?: grid.layoutManager?.findViewByPosition(controllerPosition)
+                            ?: grid.getChildAt(0)
+                        )?.requestFocusFromTouch()
+                }
+            }
+        } else if (!active) {
+            grid.clearFocus()
+        }
+    }
+
+    internal fun handleHomeControllerKey(event: KeyEvent): Boolean {
+        val owner = requireActivity() as MainActivity
+        if (owner.handleHomeNavigationKey(event)) return true
+        val grid = _binding?.gridApps ?: return false
+        val focused = grid.focusedChild ?: grid.getChildAt(0) ?: return false
+        val direction = when (event.keyCode) {
+            KeyEvent.KEYCODE_DPAD_LEFT -> View.FOCUS_LEFT
+            KeyEvent.KEYCODE_DPAD_RIGHT -> View.FOCUS_RIGHT
+            KeyEvent.KEYCODE_DPAD_UP -> View.FOCUS_UP
+            KeyEvent.KEYCODE_DPAD_DOWN -> View.FOCUS_DOWN
+            else -> null
+        }
+        if (direction != null) {
+            if (event.action == KeyEvent.ACTION_DOWN) {
+                val manager = grid.layoutManager as GridLayoutManager
+                val position = grid.getChildAdapterPosition(focused)
+                val count = grid.adapter?.itemCount ?: 0
+                if (position >= 0 && (
+                        (
+                            direction == View.FOCUS_DOWN &&
+                                position / manager.spanCount == (count - 1) / manager.spanCount
+                            ) ||
+                            (direction == View.FOCUS_RIGHT && position == count - 1)
+                        )
+                ) {
+                    return owner.handoffControllerToHome()
+                }
+                focused.requestFocusFromTouch()
+                val next = focused.focusSearch(direction)
+                if (next?.parent === grid) next.requestFocus()
+            }
+            return true
+        }
+        when (event.keyCode) {
+            KeyEvent.KEYCODE_BUTTON_B -> {
+                if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+                    owner.onBackPressedDispatcher.onBackPressed()
+                }
+                return true
+            }
+        }
+        return focused.dispatchKeyEvent(event)
     }
 
     private fun launchApp(app: AppAdapter.App) {
