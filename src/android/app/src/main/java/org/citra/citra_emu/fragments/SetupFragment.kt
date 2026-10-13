@@ -616,11 +616,7 @@ class SetupFragment : Fragment() {
             Intent.FLAG_GRANT_READ_URI_PERMISSION
         )
 
-        // When a new directory is picked, we currently will reset the existing games
-        // database. This effectively means that only one game directory is supported.
-        preferences.edit()
-            .putString(GameHelper.KEY_GAME_PATH, result.toString())
-            .apply()
+        GameHelper.addGameFolder(result)
 
         homeViewModel.setGamesDir(requireActivity(), result.path!!)
 

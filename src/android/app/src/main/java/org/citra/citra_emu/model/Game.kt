@@ -13,10 +13,12 @@ import java.io.IOException
 import java.util.HashSet
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
+import org.calamansi.engine.NintendoPlatform
 import org.citra.citra_emu.CitraApplication
 import org.citra.citra_emu.NativeLibrary
 import org.citra.citra_emu.activities.EmulationActivity
 import org.citra.citra_emu.utils.BuildUtil
+import org.citra.citra_emu.utils.NintendoLauncher
 
 @Parcelize
 @Serializable
@@ -36,13 +38,22 @@ class Game(
     val icon: IntArray? = null,
     val fileType: String = "",
     val isCompressed: Boolean = false,
-    val filename: String
+    val filename: String,
+    val platform: NintendoPlatform = NintendoPlatform.THREE_DS,
+    val iconWidth: Int = 48,
+    val iconHeight: Int = 48,
+    val iconArgb: Boolean = false
 ) : Parcelable {
-    val keyAddedToLibraryTime get() = "${filename}_AddedToLibraryTime"
-    val keyLastPlayedTime get() = "${filename}_LastPlayed"
+    private val historyKey get() =
+        if (platform == NintendoPlatform.THREE_DS) filename else "${platform.name}:$path"
+    val keyAddedToLibraryTime get() = "${historyKey}_AddedToLibraryTime"
+    val keyLastPlayedTime get() = "${historyKey}_LastPlayed"
 
     val launchIntent: Intent
         get() {
+            if (platform != NintendoPlatform.THREE_DS) {
+                return NintendoLauncher.launchIntent(CitraApplication.appContext, this)
+            }
             var appUri: Uri
             if (isInstalled) {
                 if (BuildUtil.isGooglePlayBuild) {
@@ -58,7 +69,11 @@ class Game(
                     appUri = Uri.fromFile(nativeFile)
                 }
             } else {
-                appUri = path.toUri()
+                appUri = if (path.startsWith("!") || path.startsWith("/")) {
+                    Uri.fromFile(File(path.removePrefix("!")))
+                } else {
+                    path.toUri()
+                }
             }
             return Intent(CitraApplication.appContext, EmulationActivity::class.java).apply {
                 action = Intent.ACTION_VIEW
@@ -82,6 +97,7 @@ class Game(
         result = 31 * result + titleId.hashCode()
         result = 31 * result + mediaType.hashCode()
         result = 31 * result + company.hashCode()
+        if (platform != NintendoPlatform.THREE_DS) result = 31 * result + platform.hashCode()
         return result
     }
 

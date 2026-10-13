@@ -1,0 +1,3 @@
+<resources>
+    <style name="RetroArchSettingsTheme" parent="Theme.AppCompat.DayNight.DarkActionBar" />
+</resources>

@@ -1,0 +1,31 @@
+diff --git a/src/android/MelonDSAudio.cpp b/src/android/MelonDSAudio.cpp
+--- a/src/android/MelonDSAudio.cpp
++++ b/src/android/MelonDSAudio.cpp
+@@ -63,13 +63,15 @@ namespace MelonDSAndroid
+         streamBuilder.setErrorCallback(stabilizedOutputCallback);
+ 
+         oboe::Result result = streamBuilder.openStream(audioStream);
+-        audioStream->setPerformanceHintEnabled(true);
+-        audioStream->setBufferSizeInFrames(std::min(audioStream->getBufferCapacityInFrames(), 2048));
+-        if (result != oboe::Result::OK) {
++        if (result != oboe::Result::OK || !audioStream) {
+             Log(Error, "Failed to init audio stream");
+             outputCallback = nullptr;
+             stabilizedOutputCallback = nullptr;
++            audioStream = nullptr;
++            return;
+         }
++        audioStream->setPerformanceHintEnabled(true);
++        audioStream->setBufferSizeInFrames(std::min(audioStream->getBufferCapacityInFrames(), 2048));
+     }
+ 
+     void cleanupAudioOutputStream()
+@@ -254,7 +256,7 @@ namespace MelonDSAndroid
+     void updateAudioSettings(AudioSettings audioSettings)
+     {
+-        if (audioSettings.soundEnabled && currentAudioSettings.volume > 0) {
++        if (audioSettings.soundEnabled && audioSettings.volume > 0) {
+             if (!audioStream) {
+                 setupAudioOutputStream(audioSettings.audioLatency, audioSettings.volume);
+             } else if (currentAudioSettings.audioLatency != audioSettings.audioLatency || currentAudioSettings.volume != audioSettings.volume) {
+                 // Recreate audio stream with new settings

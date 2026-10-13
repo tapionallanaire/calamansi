@@ -1,0 +1,541 @@
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/settings/ui/MenuTag.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/settings/ui/MenuTag.kt
+@@ -6,6 +6,8 @@
+ 
+ enum class MenuTag {
+     SETTINGS("settings"),
++    CONTROLS("controls"),
++    SYSTEM("system"),
+     CONFIG("config"),
+     CONFIG_GENERAL("config_general"),
+     CONFIG_INTERFACE("config_interface"),
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/settings/ui/SettingsFragmentPresenter.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/settings/ui/SettingsFragmentPresenter.kt
+@@ -288,6 +288,8 @@
+         try {
+             when (targetMenuTag) {
+                 MenuTag.SETTINGS -> addTopLevelSettings(sl)
++                MenuTag.CONTROLS -> addControlsSettings(sl)
++                MenuTag.SYSTEM -> addSystemSettings(sl)
+                 MenuTag.CONFIG -> addConfigSettings(sl)
+                 MenuTag.CONFIG_GENERAL -> addGeneralSettings(sl)
+                 MenuTag.CONFIG_INTERFACE -> addInterfaceSettings(sl)
+@@ -296,7 +298,11 @@
+                 MenuTag.CONFIG_GAME_CUBE -> addGameCubeSettings(sl)
+                 MenuTag.CONFIG_WII -> addWiiSettings(sl)
+                 MenuTag.CONFIG_ACHIEVEMENTS -> addAchievementSettings(sl)
+-                MenuTag.CONFIG_ADVANCED -> addAdvancedSettings(sl)
++                MenuTag.CONFIG_ADVANCED -> {
++                    addAdvancedSettings(sl)
++                    sl.add(SubmenuSetting(context, R.string.log_submenu, MenuTag.CONFIG_LOG))
++                    sl.add(SubmenuSetting(context, R.string.debug_submenu, MenuTag.DEBUG))
++                }
+                 MenuTag.GRAPHICS -> addGraphicsSettings(sl)
+                 MenuTag.CONFIG_SERIALPORT1 -> addSerialPortSubSettings(
+                     sl, extras.getInt(ARG_SERIALPORT1_TYPE)
+@@ -346,28 +352,33 @@
+     }
+ 
+     private fun addTopLevelSettings(sl: ArrayList<SettingsItem>) {
+-        sl.add(SubmenuSetting(context, R.string.config, MenuTag.CONFIG))
+-        sl.add(SubmenuSetting(context, R.string.graphics_settings, MenuTag.GRAPHICS))
+-
+-        sl.add(SubmenuSetting(context, R.string.gcpad_settings, MenuTag.GCPAD_TYPE))
+-        if (settings!!.isWii) {
+-            sl.add(SubmenuSetting(context, R.string.wiimote_settings, MenuTag.WIIMOTE))
+-        }
++        sl.add(SubmenuSetting(context, R.string.settings_category_general, MenuTag.CONFIG, R.string.settings_category_general_summary))
++        sl.add(SubmenuSetting(context, R.string.settings_category_graphics, MenuTag.GRAPHICS, R.string.settings_category_graphics_summary))
++        sl.add(SubmenuSetting(context, R.string.settings_category_audio, MenuTag.CONFIG_AUDIO, R.string.settings_category_audio_summary))
++        sl.add(SubmenuSetting(context, R.string.settings_category_controls, MenuTag.CONTROLS, R.string.settings_category_controls_summary))
++        sl.add(SubmenuSetting(context, R.string.settings_category_system, MenuTag.SYSTEM, R.string.settings_category_system_summary))
++        sl.add(SubmenuSetting(context, R.string.settings_category_advanced, MenuTag.CONFIG_ADVANCED, R.string.settings_category_advanced_summary))
+ 
+         sl.add(HeaderSetting(context, R.string.setting_clear_info, 0))
+     }
+ 
+     private fun addConfigSettings(sl: ArrayList<SettingsItem>) {
+-        sl.add(SubmenuSetting(context, R.string.general_submenu, MenuTag.CONFIG_GENERAL))
++        sl.add(SubmenuSetting(context, R.string.settings_emulation, MenuTag.CONFIG_GENERAL))
+         sl.add(SubmenuSetting(context, R.string.interface_submenu, MenuTag.CONFIG_INTERFACE))
+-        sl.add(SubmenuSetting(context, R.string.audio_submenu, MenuTag.CONFIG_AUDIO))
+         sl.add(SubmenuSetting(context, R.string.paths_submenu, MenuTag.CONFIG_PATHS))
++        sl.add(SubmenuSetting(context, R.string.achievements_submenu, MenuTag.CONFIG_ACHIEVEMENTS))
++    }
++
++    private fun addControlsSettings(sl: ArrayList<SettingsItem>) {
++        sl.add(SubmenuSetting(context, R.string.gcpad_settings, MenuTag.GCPAD_TYPE))
++        if (settings!!.isWii) {
++            sl.add(SubmenuSetting(context, R.string.wiimote_settings, MenuTag.WIIMOTE))
++        }
++    }
++
++    private fun addSystemSettings(sl: ArrayList<SettingsItem>) {
+         sl.add(SubmenuSetting(context, R.string.gamecube_submenu, MenuTag.CONFIG_GAME_CUBE))
+         sl.add(SubmenuSetting(context, R.string.wii_submenu, MenuTag.CONFIG_WII))
+-        sl.add(SubmenuSetting(context, R.string.achievements_submenu, MenuTag.CONFIG_ACHIEVEMENTS))
+-        sl.add(SubmenuSetting(context, R.string.advanced_submenu, MenuTag.CONFIG_ADVANCED))
+-        sl.add(SubmenuSetting(context, R.string.log_submenu, MenuTag.CONFIG_LOG))
+-        sl.add(SubmenuSetting(context, R.string.debug_submenu, MenuTag.DEBUG))
+     }
+ 
+     private fun addGeneralSettings(sl: ArrayList<SettingsItem>) {
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/settings/ui/SettingsFragment.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/settings/ui/SettingsFragment.kt
+@@ -102,7 +102,7 @@
+         if (titles.containsKey(menuTag)) {
+             activityView!!.setToolbarState(
+                 getString(titles[menuTag]!!),
+-                menuTag != MenuTag.SETTINGS,
++                true,
+                 menuTag == MenuTag.SETTINGS
+             )
+         }
+@@ -373,10 +373,12 @@
+ 
+         init {
+             titles[MenuTag.SETTINGS] = R.string.settings
+-            titles[MenuTag.CONFIG] = R.string.config
+-            titles[MenuTag.CONFIG_GENERAL] = R.string.general_submenu
++            titles[MenuTag.CONTROLS] = R.string.settings_category_controls
++            titles[MenuTag.SYSTEM] = R.string.settings_category_system
++            titles[MenuTag.CONFIG] = R.string.settings_category_general
++            titles[MenuTag.CONFIG_GENERAL] = R.string.settings_emulation
+             titles[MenuTag.CONFIG_INTERFACE] = R.string.interface_submenu
+-            titles[MenuTag.CONFIG_AUDIO] = R.string.audio_submenu
++            titles[MenuTag.CONFIG_AUDIO] = R.string.settings_category_audio
+             titles[MenuTag.CONFIG_PATHS] = R.string.paths_submenu
+             titles[MenuTag.CONFIG_GAME_CUBE] = R.string.gamecube_submenu
+             titles[MenuTag.CONFIG_SERIALPORT1] = R.string.serialport1_submenu
+@@ -384,7 +386,7 @@
+             titles[MenuTag.CONFIG_ACHIEVEMENTS] = R.string.achievements_submenu
+             titles[MenuTag.CONFIG_ADVANCED] = R.string.advanced_submenu
+             titles[MenuTag.DEBUG] = R.string.debug_submenu
+-            titles[MenuTag.GRAPHICS] = R.string.graphics_settings
++            titles[MenuTag.GRAPHICS] = R.string.settings_category_graphics
+             titles[MenuTag.ENHANCEMENTS] = R.string.enhancements_submenu
+             titles[MenuTag.COLOR_CORRECTION] = R.string.color_correction_submenu
+             titles[MenuTag.STEREOSCOPY] = R.string.stereoscopy_submenu
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/settings/ui/SettingsActivity.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/settings/ui/SettingsActivity.kt
+@@ -86,6 +86,18 @@
+         val revision = launcher.getIntExtra(ARG_REVISION, 0)
+         val isWii = launcher.getBooleanExtra(ARG_IS_WII, true)
+         val menuTag = launcher.serializable<MenuTag>(ARG_MENU_TAG)
++        val console = if (gameID.isEmpty()) {
++            getString(R.string.settings_scope_consoles)
++        } else {
++            getString(if (isWii) R.string.wii_submenu else R.string.gamecube_submenu)
++        }
++        binding!!.settingsScope.text = if (gameID.isEmpty()) {
++            getString(R.string.settings_scope_global, console)
++        } else {
++            val gameTitle = launcher.getStringExtra(Intent.EXTRA_TITLE)?.takeIf { it.isNotBlank() }
++            val gameLabel = if (gameTitle == null) gameID else "$gameTitle ($gameID)"
++            getString(R.string.settings_scope_game, console, gameLabel)
++        }
+ 
+         presenter = SettingsActivityPresenter(this, settings)
+         presenter!!.onCreate(savedInstanceState, menuTag, gameID, revision, isWii, this)
+--- a/Source/Android/app/src/main/res/layout/activity_settings.xml
++++ b/Source/Android/app/src/main/res/layout/activity_settings.xml
+@@ -58,6 +58,17 @@
+                 app:layout_collapseMode="pin" />
+ 
+         </com.google.android.material.appbar.CollapsingToolbarLayout>
++
++        <TextView
++            android:id="@+id/settings_scope"
++            android:layout_width="match_parent"
++            android:layout_height="wrap_content"
++            android:paddingHorizontal="@dimen/spacing_large"
++            android:paddingTop="@dimen/spacing_small"
++            android:paddingBottom="@dimen/spacing_large"
++            android:background="?attr/colorSurface"
++            android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
++            android:textColor="?attr/colorOnSurfaceVariant" />
+ 
+         <FrameLayout
+             android:id="@+id/settings_search_container"
+@@ -102,7 +113,7 @@
+                         android:layout_marginStart="@dimen/spacing_large"
+                         android:text="@string/search_settings"
+                         android:textColor="?android:attr/textColorSecondary"
+-                        android:textSize="18sp" />
++                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge" />
+ 
+                 </LinearLayout>
+ 
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/settings/model/view/SubmenuSetting.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/settings/model/view/SubmenuSetting.kt
+@@ -9,8 +9,9 @@
+ class SubmenuSetting(
+     context: Context,
+     titleId: Int,
+-    val menuKey: MenuTag
+-) : SettingsItem(context, titleId, 0) {
++    val menuKey: MenuTag,
++    descriptionId: Int = 0
++) : SettingsItem(context, titleId, descriptionId) {
+     override val type: Int = TYPE_SUBMENU
+ 
+     override val setting: AbstractSetting? = null
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/settings/ui/viewholder/SubmenuViewHolder.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/settings/ui/viewholder/SubmenuViewHolder.kt
+@@ -20,6 +20,9 @@
+     override fun bind(item: SettingsItem) {
+         setting = item as SubmenuSetting
+         mBinding.textSettingName.text = item.name
++        mBinding.textSettingDescription.text = item.description
++        mBinding.textSettingDescription.visibility =
++            if (item.description.isNullOrEmpty()) View.GONE else View.VISIBLE
+     }
+ 
+     override fun onClick(clicked: View) {
+--- a/Source/Android/app/src/main/res/layout/list_item_submenu.xml
++++ b/Source/Android/app/src/main/res/layout/list_item_submenu.xml
+@@ -6,11 +6,12 @@
+     android:background="?android:attr/selectableItemBackground"
+     android:clickable="true"
+     android:focusable="true"
+-    android:minHeight="54dp">
++    android:paddingBottom="@dimen/spacing_large"
++    android:minHeight="64dp">
+ 
+     <TextView
+         android:id="@+id/text_setting_name"
+-        style="@style/TextAppearance.MaterialComponents.Headline5"
++        style="@style/TextAppearance.Material3.BodyLarge"
+         android:layout_width="0dp"
+         android:layout_height="wrap_content"
+         android:layout_alignParentEnd="true"
+@@ -19,8 +20,18 @@
+         android:layout_marginEnd="@dimen/spacing_large"
+         android:layout_marginStart="@dimen/spacing_large"
+         android:layout_marginTop="@dimen/spacing_large"
+-        android:textSize="16sp"
+         android:textAlignment="viewStart"
+         tools:text="Setting Name" />
+ 
++    <TextView
++        android:id="@+id/text_setting_description"
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++        android:layout_below="@id/text_setting_name"
++        android:layout_marginHorizontal="@dimen/spacing_large"
++        android:layout_marginTop="@dimen/spacing_small"
++        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
++        android:textColor="?attr/colorOnSurfaceVariant"
++        android:visibility="gone" />
++
+ </RelativeLayout>
+--- a/Source/Android/app/src/main/res/layout/list_item_setting.xml
++++ b/Source/Android/app/src/main/res/layout/list_item_setting.xml
+@@ -5,6 +5,7 @@
+     xmlns:tools="http://schemas.android.com/tools"
+     android:layout_width="match_parent"
+     android:layout_height="wrap_content"
++    android:minHeight="64dp"
+     android:background="?android:attr/selectableItemBackground"
+     android:clickable="true"
+     android:focusable="true"
+@@ -12,7 +13,7 @@
+ 
+     <TextView
+         android:id="@+id/text_setting_name"
+-        style="@style/TextAppearance.MaterialComponents.Headline5"
++        style="@style/TextAppearance.Material3.BodyLarge"
+         android:layout_width="match_parent"
+         android:layout_height="wrap_content"
+         android:layout_alignParentStart="true"
+@@ -20,13 +21,14 @@
+         android:layout_marginEnd="@dimen/spacing_large"
+         android:layout_marginStart="@dimen/spacing_large"
+         android:layout_marginTop="@dimen/spacing_large"
+-        android:textSize="16sp"
+         android:textAlignment="viewStart"
+         android:layout_toStartOf="@+id/button_more_settings"
+         tools:text="Setting Name" />
+ 
+     <TextView
+         android:id="@+id/text_setting_description"
++        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
++        android:textColor="?attr/colorOnSurfaceVariant"
+         android:layout_width="match_parent"
+         android:layout_height="wrap_content"
+         android:layout_alignParentStart="true"
+@@ -46,6 +48,8 @@
+         android:contentDescription="@string/more_settings"
+         android:layout_width="wrap_content"
+         android:layout_height="wrap_content"
++        android:minWidth="48dp"
++        android:minHeight="48dp"
+         android:layout_alignParentEnd="true"
+         android:layout_centerVertical="true"
+         android:layout_marginEnd="@dimen/spacing_small"
+--- a/Source/Android/app/src/main/res/layout/list_item_setting_switch.xml
++++ b/Source/Android/app/src/main/res/layout/list_item_setting_switch.xml
+@@ -11,7 +11,7 @@
+ 
+     <TextView
+         android:id="@+id/text_setting_name"
+-        style="@style/TextAppearance.MaterialComponents.Headline5"
++        style="@style/TextAppearance.Material3.BodyLarge"
+         android:layout_width="0dp"
+         android:layout_height="wrap_content"
+         android:layout_alignParentStart="true"
+@@ -20,12 +20,13 @@
+         android:layout_marginStart="@dimen/spacing_large"
+         android:layout_marginTop="@dimen/spacing_large"
+         android:layout_toStartOf="@+id/setting_switch"
+-        android:textSize="16sp"
+         android:textAlignment="viewStart"
+         tools:text="@string/overclock_enable"/>
+ 
+     <TextView
+         android:id="@+id/text_setting_description"
++        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
++        android:textColor="?attr/colorOnSurfaceVariant"
+         android:layout_width="wrap_content"
+         android:layout_height="wrap_content"
+         android:layout_alignParentStart="true"
+@@ -47,7 +48,7 @@
+         android:layout_centerVertical="true"
+         android:layout_marginEnd="24dp"
+         android:focusable="false"
+-        android:minHeight="0dp"
++        android:minHeight="48dp"
+         android:minWidth="0dp" />
+ 
+ </RelativeLayout>
+--- a/Source/Android/app/src/main/res/layout/list_item_mapping.xml
++++ b/Source/Android/app/src/main/res/layout/list_item_mapping.xml
+@@ -5,6 +5,7 @@
+     xmlns:tools="http://schemas.android.com/tools"
+     android:layout_width="match_parent"
+     android:layout_height="wrap_content"
++    android:minHeight="64dp"
+     android:background="?android:attr/selectableItemBackground"
+     android:clickable="true"
+     android:focusable="true"
+@@ -12,7 +13,7 @@
+ 
+     <TextView
+         android:id="@+id/text_setting_name"
+-        style="@style/TextAppearance.MaterialComponents.Headline5"
++        style="@style/TextAppearance.Material3.BodyLarge"
+         android:layout_width="match_parent"
+         android:layout_height="wrap_content"
+         android:layout_alignParentStart="true"
+@@ -20,13 +21,14 @@
+         android:layout_marginEnd="@dimen/spacing_large"
+         android:layout_marginStart="@dimen/spacing_large"
+         android:layout_marginTop="@dimen/spacing_large"
+-        android:textSize="16sp"
+         android:textAlignment="viewStart"
+         android:layout_toStartOf="@id/control_state_bar"
+         tools:text="Setting Name" />
+ 
+     <TextView
+         android:id="@+id/text_setting_description"
++        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
++        android:textColor="?attr/colorOnSurfaceVariant"
+         android:layout_width="match_parent"
+         android:layout_height="wrap_content"
+         android:layout_alignParentStart="true"
+@@ -53,6 +55,8 @@
+         android:contentDescription="@string/advanced_settings"
+         android:layout_width="wrap_content"
+         android:layout_height="wrap_content"
++        android:minWidth="48dp"
++        android:minHeight="48dp"
+         android:layout_alignParentEnd="true"
+         android:layout_centerVertical="true"
+         android:layout_marginEnd="@dimen/spacing_small"
+--- a/Source/Android/app/src/main/res/layout/list_item_search_result.xml
++++ b/Source/Android/app/src/main/res/layout/list_item_search_result.xml
+@@ -15,22 +15,20 @@
+ 
+     <TextView
+         android:id="@+id/text_setting_name"
+-        style="@style/TextAppearance.MaterialComponents.Headline5"
++        style="@style/TextAppearance.Material3.BodyLarge"
+         android:layout_width="match_parent"
+         android:layout_height="wrap_content"
+         android:textAlignment="viewStart"
+-        android:textSize="16sp"
+         tools:text="Internal Resolution" />
+ 
+     <TextView
+         android:id="@+id/text_setting_description"
++        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+         android:layout_width="match_parent"
+         android:layout_height="wrap_content"
+         android:layout_marginTop="@dimen/spacing_small"
+-        android:ellipsize="end"
+-        android:maxLines="1"
+         android:textAlignment="viewStart"
+-        android:textColor="?android:attr/textColorSecondary"
++        android:textColor="?attr/colorOnSurfaceVariant"
+         tools:text="Graphics Settings › Enhancements" />
+ 
+ </LinearLayout>
+--- a/Source/Android/app/src/main/res/layout/list_item_header.xml
++++ b/Source/Android/app/src/main/res/layout/list_item_header.xml
+@@ -8,6 +8,7 @@
+ 
+     <TextView
+         android:id="@+id/text_header_name"
++        android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
+         android:layout_width="match_parent"
+         android:layout_height="wrap_content"
+         android:layout_alignParentEnd="true"
+--- /dev/null
++++ b/Source/Android/app/src/main/res/values/settings_presentation.xml
+@@ -0,0 +1,19 @@
++<?xml version="1.0" encoding="utf-8"?>
++<resources>
++    <string name="settings_category_general">General</string>
++    <string name="settings_category_graphics">Graphics</string>
++    <string name="settings_category_audio">Audio</string>
++    <string name="settings_category_controls">Controls</string>
++    <string name="settings_category_system">System</string>
++    <string name="settings_category_advanced">Advanced</string>
++    <string name="settings_category_general_summary">Emulation, interface, paths and achievements</string>
++    <string name="settings_category_graphics_summary">Rendering, enhancements, stereoscopy and drivers</string>
++    <string name="settings_category_audio_summary">Sound, volume and audio backend</string>
++    <string name="settings_category_controls_summary">Controllers, input mappings, extensions and profiles</string>
++    <string name="settings_category_system_summary">GameCube and Wii console options</string>
++    <string name="settings_category_advanced_summary">CPU, memory, logging and debugging</string>
++    <string name="settings_emulation">Emulation</string>
++    <string name="settings_scope_consoles">GameCube and Wii</string>
++    <string name="settings_scope_global">%1$s · Global defaults\nUsed by games without their own overrides.</string>
++    <string name="settings_scope_game">%1$s · Game overrides\n%2$s\nOverrides inherited defaults. Global-only options still apply to all games.</string>
++</resources>
+--- a/Source/Core/Core/HW/DVD/DVDInterface.cpp
++++ b/Source/Core/Core/HW/DVD/DVDInterface.cpp
+@@ -408,5 +408,5 @@
+       OSD::AddMessage("You are running a disc image with a very large block size.", 60000);
+       OSD::AddMessage("This will likely lead to performance problems.", 60000);
+-      OSD::AddMessage("You can use Dolphin's convert feature to reduce the block size.", 60000);
++      OSD::AddMessage("You can use the disc image conversion feature to reduce the block size.", 60000);
+     }
+   }
+--- a/Source/Core/Core/ActionReplay.cpp
++++ b/Source/Core/Core/ActionReplay.cpp
+@@ -975,3 +975,3 @@
+         LogInfo("ZCode: Unknown");
+-        PanicAlertFmtT("Zero code unknown to Dolphin: {0:08x}", zcode);
++        PanicAlertFmtT("Zero code unknown to GameCube/Wii emulation: {0:08x}", zcode);
+         return false;
+--- a/Source/Core/Core/Boot/ElfReader.cpp
++++ b/Source/Core/Core/Boot/ElfReader.cpp
+@@ -184,3 +184,3 @@
+   {
+-    PanicAlertFmt("Error: Dolphin doesn't know how to load a relocatable elf.");
++    PanicAlertFmt("Error: GameCube/Wii emulation doesn't know how to load a relocatable elf.");
+     return false;
+--- a/Source/Core/Core/HW/EXI/EXI_Device.cpp
++++ b/Source/Core/Core/HW/EXI/EXI_Device.cpp
+@@ -142,3 +142,3 @@
+ #else
+-    PanicAlertFmtT("Dolphin was built with Cubeb disabled. The Microphone device cannot be used.");
++    PanicAlertFmtT("GameCube/Wii emulation was built with Cubeb disabled. The Microphone device cannot be used.");
+     result = std::make_unique<IEXIDevice>(system);
+--- a/Source/Core/Core/HW/GCMemcard/GCMemcardDirectory.cpp
++++ b/Source/Core/Core/HW/GCMemcard/GCMemcardDirectory.cpp
+@@ -606,3 +606,3 @@
+     {
+-      PanicAlertFmtT("BAT incorrect. Dolphin will now exit");
++      PanicAlertFmtT("BAT incorrect. GameCube/Wii emulation will now exit");
+       exit(0);
+--- a/Source/Core/Core/IOS/USB/Bluetooth/BTStub.cpp
++++ b/Source/Core/Core/IOS/USB/Bluetooth/BTStub.cpp
+@@ -13,4 +13,4 @@
+ {
+-  PanicAlertFmtT("Bluetooth passthrough mode is enabled, but Dolphin was built without libusb."
++  PanicAlertFmtT("Bluetooth passthrough mode is enabled, but GameCube/Wii emulation was built without libusb."
+                  " Passthrough mode cannot be used.");
+   return IPCReply(IPC_ENOENT);
+--- a/Source/Core/Core/State.cpp
++++ b/Source/Core/Core/State.cpp
+@@ -735,3 +735,3 @@
+         loaded_str.empty() ?
+-            "This savestate was created using an incompatible version of Dolphin" :
++            "This savestate was created using an incompatible version of GameCube/Wii emulation" :
+             "This savestate was created using the incompatible version " + loaded_str;
+--- a/Source/Core/Core/AchievementManager.cpp
++++ b/Source/Core/Core/AchievementManager.cpp
+@@ -1016,5 +1016,5 @@
+     WARN_LOG_FMT(ACHIEVEMENTS, "Load data request rejected for old Dolphin version.");
+-    OSD::AddMessage("RetroAchievements no longer supports this version of Dolphin.",
++    OSD::AddMessage("RetroAchievements no longer supports this version of GameCube/Wii emulation.",
+                     OSD::Duration::VERY_LONG, OSD::Color::RED);
+-    OSD::AddMessage("Please update Dolphin to a newer version.", OSD::Duration::VERY_LONG,
++    OSD::AddMessage("Please update GameCube/Wii emulation to a newer version.", OSD::Duration::VERY_LONG,
+                     OSD::Color::RED);
+--- a/Source/Core/Core/HW/GCMemcard/GCMemcardRaw.cpp
++++ b/Source/Core/Core/HW/GCMemcard/GCMemcardRaw.cpp
+@@ -138,3 +138,3 @@
+           "Could not write memory card file {0}.\n\n"
+-          "Are you running Dolphin from a CD/DVD, or is the save file maybe write protected?\n\n"
++          "Are you running GameCube/Wii emulation from a CD/DVD, or is the save file maybe write protected?\n\n"
+           "Are you receiving this after moving the emulator directory?\nIf so, then you may "
+--- a/Source/Core/Core/HW/EXI/EXI_DeviceMemoryCard.cpp
++++ b/Source/Core/Core/HW/EXI/EXI_DeviceMemoryCard.cpp
+@@ -207,3 +207,3 @@
+       PanicAlertFmtT("{0} is not a directory, failed to move to *.original.\n Verify your "
+-                     "write permissions or move the file outside of Dolphin",
++                     "write permissions or move the file outside of GameCube/Wii emulation",
+                      dir_path);
+--- a/Source/Core/Core/IOS/USB/Bluetooth/LibUSBBluetoothAdapter.cpp
++++ b/Source/Core/Core/IOS/USB/Bluetooth/LibUSBBluetoothAdapter.cpp
+@@ -150,3 +150,3 @@
+           "Could not find any usable Bluetooth USB adapter for Bluetooth Passthrough.\n"
+-          "The following error occurred when Dolphin tried to use an adapter:\n{0}\n\n"
++          "The following error occurred when GameCube/Wii emulation tried to use an adapter:\n{0}\n\n"
+           "The emulated console will now stop.",
+--- a/Source/Core/Core/PowerPC/CachedInterpreter/CachedInterpreter.cpp
++++ b/Source/Core/Core/PowerPC/CachedInterpreter/CachedInterpreter.cpp
+@@ -337,3 +337,3 @@
+   PanicAlertFmtT("JIT failed to find code space after a cache clear. This should never happen. "
+-                 "Please report this incident on the bug tracker. Dolphin will now exit.");
++                 "Please report this incident on the bug tracker. GameCube/Wii emulation will now exit.");
+   std::exit(-1);
+--- a/Source/Core/Core/PowerPC/JitArm64/Jit.cpp
++++ b/Source/Core/Core/PowerPC/JitArm64/Jit.cpp
+@@ -1079,3 +1079,3 @@
+   PanicAlertFmtT("JIT failed to find code space after a cache clear. This should never happen. "
+-                 "Please report this incident on the bug tracker. Dolphin will now exit.");
++                 "Please report this incident on the bug tracker. GameCube/Wii emulation will now exit.");
+   exit(-1);
+--- a/Source/Core/Core/PowerPC/Jit64/Jit.cpp
++++ b/Source/Core/Core/PowerPC/Jit64/Jit.cpp
+@@ -887,3 +887,3 @@
+   PanicAlertFmtT("JIT failed to find code space after a cache clear. This should never happen. "
+-                 "Please report this incident on the bug tracker. Dolphin will now exit.");
++                 "Please report this incident on the bug tracker. GameCube/Wii emulation will now exit.");
+   std::exit(-1);
+--- a/Source/Core/VideoCommon/CommandProcessor.cpp
++++ b/Source/Core/VideoCommon/CommandProcessor.cpp
+@@ -711,3 +711,3 @@
+                    "Further errors will be sent to the Video Backend log and "
+-                   "Dolphin will now likely crash or hang.",
++                   "GameCube/Wii emulation will now likely crash or hang.",
+                    cmd_byte, fmt::ptr(buffer), preprocess, Common::GetStringT(advice));
+--- a/Source/Core/VideoBackends/OGL/OGLConfig.cpp
++++ b/Source/Core/VideoBackends/OGL/OGLConfig.cpp
+@@ -709,4 +709,4 @@
+     PanicAlertFmtT(
+-        "The graphics driver is forcibly enabling anti-aliasing for Dolphin. You need to "
+-        "turn this off in the graphics driver's settings in order for Dolphin to work.\n\n"
++        "The graphics driver is forcibly enabling anti-aliasing for GameCube/Wii emulation. You need to "
++        "turn this off in the graphics driver's settings in order for GameCube/Wii emulation to work.\n\n"
+         "(MSAA with {0} samples found on default framebuffer)",
+--- a/Source/Core/Common/Logging/LogManager.cpp
++++ b/Source/Core/Common/Logging/LogManager.cpp
+@@ -104,3 +104,3 @@
+   m_log[LogType::COMMON] = {"COMMON", "Common"};
+-  m_log[LogType::CONSOLE] = {"CONSOLE", "Dolphin Console"};
++  m_log[LogType::CONSOLE] = {"CONSOLE", "GameCube/Wii Console"};
+   m_log[LogType::CONTROLLERINTERFACE] = {"CI", "Controller Interface"};

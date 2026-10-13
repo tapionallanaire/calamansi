@@ -1,0 +1,17 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <application>
+        <activity android:name="org.calamansi.retroarch.RetroArchActivity"
+            android:exported="false" android:process=":engine_retroarch"
+            android:launchMode="singleTask" android:screenOrientation="sensorLandscape"
+            android:configChanges="mcc|mnc|locale|layoutDirection|fontScale|fontWeightAdjustment|grammaticalGender|touchscreen|orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|navigation|uiMode|density|colorMode"
+            android:theme="@android:style/Theme.Material.NoActionBar.Fullscreen">
+            <meta-data android:name="android.app.lib_name" android:value="retroarch-activity" />
+        </activity>
+        <activity android:name="org.calamansi.retroarch.RetroArchSettingsActivity"
+            android:exported="false" android:process=":engine_retroarch"
+            android:theme="@style/RetroArchSettingsTheme" />
+        <service android:name="org.calamansi.retroarch.RetroArchMetadataService"
+            android:exported="false" android:process=":engine_retroarch" />
+    </application>
+</manifest>

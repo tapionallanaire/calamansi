@@ -41,4 +41,12 @@
         <item name="cornerSize">8dp</item>
     </style>
 
+    <style name="Widget.Azahar.EmulationDrawer" parent="Widget.Material3.NavigationView">
+        <item name="android:background">?attr/colorSurface</item>
+        <item name="itemIconTint">?attr/colorPrimary</item>
+        <item name="itemShapeAppearance">@style/ShapeAppearance.Azahar.Home</item>
+        <item name="headerLayout">@layout/header_in_game</item>
+        <item name="menu">@menu/menu_in_game</item>
+    </style>
+
 </resources>

@@ -1,0 +1,393 @@
+--- a/Source/Android/jni/CMakeLists.txt
++++ b/Source/Android/jni/CMakeLists.txt
+@@ -63,12 +63,7 @@
+     ${CMAKE_SOURCE_DIR}/Externals/VulkanMemoryAllocator/include
+ )
+ 
+-file(MAKE_DIRECTORY ${CMAKE_SOURCE_DIR}/Source/Android/app/src/main/assets/)
+-file(REMOVE_RECURSE ${CMAKE_SOURCE_DIR}/Source/Android/app/src/main/assets/Sys/)
+-file(COPY ${CMAKE_SOURCE_DIR}/Data/Sys DESTINATION ${CMAKE_SOURCE_DIR}/Source/Android/app/src/main/assets/)
+-
+-# Delete folders that aren't used by the Android version of Dolphin
+-file(REMOVE_RECURSE ${CMAKE_SOURCE_DIR}/Source/Android/app/src/main/assets/Sys/Themes/)
++set_target_properties(main PROPERTIES OUTPUT_NAME calamansi_dolphin)
+ 
+ set(CPACK_PACKAGE_EXECUTABLES ${CPACK_PACKAGE_EXECUTABLES} main)
+ 
+--- a/Source/Android/jni/MainAndroid.cpp
++++ b/Source/Android/jni/MainAndroid.cpp
+@@ -1,5 +1,7 @@
+ // Copyright 2003 Dolphin Emulator Project
+ // SPDX-License-Identifier: GPL-2.0-or-later
++
++#include <atomic>
+ 
+ #include <condition_variable>
+ #include <cstdio>
+@@ -257,8 +259,12 @@
+   Core::System::GetInstance().GetProcessorInterface().ResetButton_Tap();
+ }
+ 
++static std::atomic<bool> s_stop_requested{false};
++
+ JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_StopEmulation(JNIEnv*, jclass)
+ {
++  s_stop_requested.store(true);
++  s_surface_cv.notify_all();
+   Core::Stop(Core::System::GetInstance());
+ 
+   // Kick the waiting event
+@@ -267,6 +273,7 @@
+ 
+ JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_SetIsBooting(JNIEnv*, jclass)
+ {
++  s_stop_requested.store(false);
+   s_is_booting.Set();
+ }
+ 
+@@ -555,7 +562,7 @@
+ 
+ static void Run(JNIEnv* env, std::unique_ptr<BootParameters>&& boot, bool riivolution)
+ {
+-  if (riivolution && std::holds_alternative<BootParameters::Disc>(boot->parameters))
++  if (boot && riivolution && std::holds_alternative<BootParameters::Disc>(boot->parameters))
+   {
+     const std::string& riivolution_dir = File::GetUserPath(D_RIIVOLUTION_IDX);
+     const DiscIO::Volume& volume = *std::get<BootParameters::Disc>(boot->parameters).volume;
+@@ -568,17 +575,21 @@
+   s_need_nonblocking_alert_msg = true;
+   std::unique_lock<std::mutex> surface_guard(s_surface_lock);
+ 
+-  s_surface_cv.wait(surface_guard, []() { return s_surf != nullptr; });
++  s_surface_cv.wait(surface_guard, []() { return s_surf != nullptr || s_stop_requested.load(); });
+ 
+   WindowSystemInfo wsi(WindowSystemType::Android, nullptr, s_surf, s_surf);
+   wsi.render_surface_scale = GetRenderSurfaceScale(env);
+ 
+-  if (BootManager::BootCore(Core::System::GetInstance(), std::move(boot), wsi))
++  if (!s_stop_requested.load() && boot &&
++      BootManager::BootCore(Core::System::GetInstance(), std::move(boot), wsi))
+   {
+     static constexpr int WAIT_STEP = 25;
+     while (Core::GetState(Core::System::GetInstance()) == Core::State::Starting)
+       std::this_thread::sleep_for(std::chrono::milliseconds(WAIT_STEP));
+   }
++
++  if (s_stop_requested.load())
++    Core::Stop(Core::System::GetInstance());
+ 
+   s_is_booting.Clear();
+   s_need_nonblocking_alert_msg = false;
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/activities/EmulationActivity.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/activities/EmulationActivity.kt
+@@ -59,7 +59,6 @@
+ import org.dolphinemu.dolphinemu.fragments.SaveLoadStateFragment.SaveOrLoad
+ import org.dolphinemu.dolphinemu.overlay.InputOverlay
+ import org.dolphinemu.dolphinemu.overlay.InputOverlayPointer
+-import org.dolphinemu.dolphinemu.ui.main.MainPresenter
+ import org.dolphinemu.dolphinemu.ui.main.ThemeProvider
+ import org.dolphinemu.dolphinemu.utils.AfterDirectoryInitializationRunner
+ import org.dolphinemu.dolphinemu.utils.DirectoryInitialization
+@@ -68,7 +67,7 @@
+ import org.dolphinemu.dolphinemu.utils.ThemeHelper
+ import kotlin.math.roundToInt
+ 
+-class EmulationActivity : AppCompatActivity(), ThemeProvider {
++open class EmulationActivity : AppCompatActivity(), ThemeProvider {
+     private var emulationFragment: EmulationFragment? = null
+ 
+     private lateinit var settings: Settings
+@@ -193,7 +192,6 @@
+ 
+         super.onCreate(savedInstanceState)
+ 
+-        MainPresenter.skipRescanningLibrary()
+ 
+         if (savedInstanceState == null) {
+             // Get params we were passed
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/settings/ui/SettingsActivity.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/settings/ui/SettingsActivity.kt
+@@ -29,7 +29,6 @@
+ import org.dolphinemu.dolphinemu.features.input.model.ControllerInterface
+ import org.dolphinemu.dolphinemu.features.settings.model.Settings
+ import org.dolphinemu.dolphinemu.features.settings.ui.SettingsFragment.Companion.newInstance
+-import org.dolphinemu.dolphinemu.ui.main.MainPresenter
+ import org.dolphinemu.dolphinemu.ui.main.ThemeProvider
+ import org.dolphinemu.dolphinemu.utils.InsetsHelper
+ import org.dolphinemu.dolphinemu.utils.SerializableHelper.serializable
+@@ -37,7 +36,7 @@
+ import org.dolphinemu.dolphinemu.utils.ThemeHelper.setCorrectTheme
+ import org.dolphinemu.dolphinemu.utils.ThemeHelper.setTheme
+ 
+-class SettingsActivity : AppCompatActivity(), SettingsActivityView, ThemeProvider {
++open class SettingsActivity : AppCompatActivity(), SettingsActivityView, ThemeProvider {
+     private var presenter: SettingsActivityPresenter? = null
+     private var dialog: AlertDialog? = null
+     private var toolbarLayout: CollapsingToolbarLayout? = null
+@@ -69,11 +68,7 @@
+ 
+         super.onCreate(savedInstanceState)
+ 
+-        // If we came here from the game list, we don't want to rescan when returning to the game list.
+-        // But if we came here after UserDataActivity restarted the app, we do want to rescan.
+-        if (savedInstanceState == null) {
+-            MainPresenter.skipRescanningLibrary()
+-        } else {
++        if (savedInstanceState != null) {
+             isMappingAllDevices = savedInstanceState.getBoolean(KEY_MAPPING_ALL_DEVICES)
+         }
+ 
+@@ -441,7 +436,7 @@
+         fun launch(
+             context: Context, menuTag: MenuTag?, gameId: String?, revision: Int, isWii: Boolean
+         ) {
+-            val settings = Intent(context, SettingsActivity::class.java)
++            val settings = Intent(context, org.calamansi.dolphin.DolphinSettingsActivity::class.java)
+             settings.putExtra(ARG_MENU_TAG, menuTag)
+             settings.putExtra(ARG_GAME_ID, gameId)
+             settings.putExtra(ARG_REVISION, revision)
+@@ -451,7 +446,7 @@
+ 
+         @JvmStatic
+         fun launch(context: Context, menuTag: MenuTag?) {
+-            val settings = Intent(context, SettingsActivity::class.java)
++            val settings = Intent(context, org.calamansi.dolphin.DolphinSettingsActivity::class.java)
+             settings.putExtra(ARG_MENU_TAG, menuTag)
+             settings.putExtra(
+                 ARG_IS_WII, !NativeLibrary.IsRunning() || NativeLibrary.IsEmulatingWii()
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/fragments/EmulationFragment.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/fragments/EmulationFragment.kt
+@@ -172,7 +172,7 @@
+ 
+     fun stopEmulation() {
+         Log.debug("[EmulationFragment] Stopping emulation.")
+-        NativeLibrary.StopEmulation()
++        org.calamansi.dolphin.DolphinRuntime.stop()
+     }
+ 
+     fun startConfiguringControls() {
+@@ -215,7 +215,7 @@
+         runWhenSurfaceIsValid = false
+         if (NativeLibrary.IsUninitialized()) {
+             NativeLibrary.SetIsBooting()
+-            val emulationThread = Thread({
++            org.calamansi.dolphin.DolphinRuntime.startRun {
+                 // Don't load temporary saves when launching Netplay, this path can trigger
+                 // when a game starts due to orientation changes caused by a mismatch in menu
+                 // vs emulation activity orientations.
+@@ -256,8 +256,7 @@
+                     NativeLibrary.Run(paths, riivolution)
+                 }
+                 EmulationActivity.stopIgnoringLaunchRequests()
+-            }, "NativeEmulation")
+-            emulationThread.start()
++            }
+         } else {
+             if (!EmulationActivity.hasUserPausedEmulation && !NativeLibrary.IsShowingAlertMessage()) {
+                 Log.debug("[EmulationFragment] Resuming emulation.")
+@@ -269,7 +268,7 @@
+     fun saveTemporaryState() = NativeLibrary.SaveStateAs(temporaryStateFilePath)
+ 
+     private val temporaryStateFilePath: String
+-        get() = "${requireContext().filesDir}${File.separator}temp.sav"
++        get() = "${org.calamansi.engine.EngineFiles.root(requireContext(), org.calamansi.engine.EngineId.DOLPHIN)}${File.separator}temp.sav"
+ 
+     companion object {
+         private const val KEY_GAMEPATHS = "gamepaths"
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/cheats/ui/CheatsActivity.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/cheats/ui/CheatsActivity.kt
+@@ -33,7 +33,6 @@
+ import org.dolphinemu.dolphinemu.features.cheats.model.GeckoCheat.Companion.downloadCodes
+ import org.dolphinemu.dolphinemu.features.settings.model.Settings
+ import org.dolphinemu.dolphinemu.ui.TwoPaneOnBackPressedCallback
+-import org.dolphinemu.dolphinemu.ui.main.MainPresenter
+ import org.dolphinemu.dolphinemu.utils.InsetsHelper
+ import org.dolphinemu.dolphinemu.utils.ThemeHelper
+ 
+@@ -55,7 +54,6 @@
+ 
+         super.onCreate(savedInstanceState)
+ 
+-        MainPresenter.skipRescanningLibrary()
+ 
+         gameId = intent.getStringExtra(ARG_GAME_ID)
+         gameTdbId = intent.getStringExtra(ARG_GAMETDB_ID)
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/utils/GCAdapter.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/utils/GCAdapter.kt
+@@ -34,7 +34,7 @@
+     private var usbOut: UsbEndpoint? = null
+ 
+     private val ACTION_GC_ADAPTER_PERMISSION_GRANTED =
+-        BuildConfig.APPLICATION_ID + ".GC_ADAPTER_PERMISSION_GRANTED"
++        DolphinApplication.getAppContext().packageName + ".GC_ADAPTER_PERMISSION_GRANTED"
+ 
+     private val hotplugCallbackLock = Any()
+     private var hotplugCallbackEnabled = false
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/utils/DirectoryInitialization.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/utils/DirectoryInitialization.kt
+@@ -50,15 +50,21 @@
+     }
+ 
+     @JvmStatic
++    @Synchronized
++    fun ensureReady(context: Context) {
++        if (!areDirectoriesAvailable) init(context)
++    }
++
++    @JvmStatic
+     fun start(context: Context) {
+         if (directoryState.value != DirectoryInitializationState.NOT_YET_INITIALIZED) {
+             return
+         }
+ 
+-        directoryState.value = DirectoryInitializationState.INITIALIZING
++        directoryState.postValue(DirectoryInitializationState.INITIALIZING)
+ 
+         // Can take a few seconds to run, so don't block UI thread.
+-        thread { init(context) }
++        thread { ensureReady(context) }
+     }
+ 
+     private fun init(context: Context) {
+@@ -96,18 +102,7 @@
+             return null
+         }
+ 
+-        if (Environment.getExternalStorageState() != Environment.MEDIA_MOUNTED) {
+-            return null
+-        }
+-
+-        usingLegacyUserDirectory =
+-            preferLegacyUserDirectory(context) && PermissionsHandler.hasWriteAccess(context)
+-
+-        return if (usingLegacyUserDirectory) {
+-            getLegacyUserDirectoryPath()
+-        } else {
+-            context.getExternalFilesDir(null)
+-        }
++        return org.calamansi.engine.EngineFiles.root(context, org.calamansi.engine.EngineId.DOLPHIN)
+     }
+ 
+     private fun setDolphinUserDirectory(context: Context): Boolean {
+@@ -118,12 +113,7 @@
+         Log.debug("[DirectoryInitialization] User Dir: $userPath")
+         NativeLibrary.SetUserDirectory(userPath)
+ 
+-        var cacheDir = context.externalCacheDir
+-        if (cacheDir == null) {
+-            // In some custom ROMs getExternalCacheDir might return null for some reason. If that
+-            // is the case, fallback to getCacheDir which seems to work just fine.
+-            cacheDir = context.cacheDir ?: return false
+-        }
++        val cacheDir = File(context.cacheDir, "engines/dolphin").apply { check(mkdirs() || isDirectory) }
+ 
+         Log.debug("[DirectoryInitialization] Cache Dir: ${cacheDir.path}")
+         NativeLibrary.SetCacheDirectory(cacheDir.path)
+@@ -132,15 +122,18 @@
+     }
+ 
+     private fun extractSysDirectory(context: Context) {
+-        val sysDirectory = File(context.filesDir, "Sys")
++        val sysDirectory = File(org.calamansi.engine.EngineFiles.root(context, org.calamansi.engine.EngineId.DOLPHIN), "Sys")
+ 
+         val preferences = PreferenceManager.getDefaultSharedPreferences(context)
+         val revision = NativeLibrary.GetGitRevision()
+         if (preferences.getString("sysDirectoryVersion", "") != revision) {
+             // There is no extracted Sys directory, or there is a Sys directory from another
+             // version of Dolphin that might contain outdated files. Let's (re-)extract Sys.
+-            deleteDirectoryRecursively(sysDirectory)
+-            copyAssetFolder("Sys", sysDirectory, context)
++            val staged = File(sysDirectory.parentFile, "Sys.extracting")
++            if (staged.exists()) check(staged.deleteRecursively())
++            copyAssetFolder("dolphin/Sys", staged, context)
++            if (sysDirectory.exists()) check(sysDirectory.deleteRecursively())
++            check(staged.renameTo(sysDirectory))
+ 
+             preferences.edit {
+                 putString("sysDirectoryVersion", revision)
+@@ -150,7 +143,7 @@
+         // Let the native code know where the Sys directory is.
+         SetSysDirectory(sysDirectory.path)
+ 
+-        val driverDirectory = File(context.filesDir, "GPUDrivers")
++        val driverDirectory = File(org.calamansi.engine.EngineFiles.root(context, org.calamansi.engine.EngineId.DOLPHIN), "GPUDrivers")
+         driverDirectory.mkdirs()
+         val driverExtractedDir = File(driverDirectory, "Extracted")
+         driverExtractedDir.mkdirs()
+@@ -220,56 +213,19 @@
+         return File(NativeLibrary.GetCacheDirectory(), "gamelist.cache")
+     }
+ 
+-    private fun copyAsset(asset: String, output: File, context: Context) {
+-        Log.verbose("[DirectoryInitialization] Copying File $asset to $output")
+-
+-        try {
+-            context.assets.open(asset).use { input ->
+-                FileOutputStream(output).use { outputStream ->
+-                    copyFile(input, outputStream)
++    private fun copyAssetFolder(assetFolder: String, outputFolder: File, context: Context) {
++        check(outputFolder.mkdirs() || outputFolder.isDirectory)
++        val children = context.assets.list(assetFolder) ?: throw IOException("Missing Dolphin assets: $assetFolder")
++        for (child in children) {
++            val asset = "$assetFolder/$child"
++            val output = File(outputFolder, child)
++            if (context.assets.list(asset)?.isNotEmpty() == true) {
++                copyAssetFolder(asset, output, context)
++            } else {
++                context.assets.open(asset).use { input ->
++                    output.outputStream().use { input.copyTo(it) }
+                 }
+             }
+-        } catch (e: IOException) {
+-            Log.error("[DirectoryInitialization] Failed to copy asset file: $asset${e.message}")
+-        }
+-    }
+-
+-    private fun copyAssetFolder(assetFolder: String, outputFolder: File, context: Context) {
+-        Log.verbose("[DirectoryInitialization] Copying Folder $assetFolder to $outputFolder")
+-
+-        try {
+-            val assetList = context.assets.list(assetFolder) ?: return
+-
+-            var createdFolder = false
+-            for (file in assetList) {
+-                if (!createdFolder) {
+-                    if (!outputFolder.mkdir()) {
+-                        Log.error(
+-                            "[DirectoryInitialization] Failed to create folder " + outputFolder.absolutePath
+-                        )
+-                    }
+-                    createdFolder = true
+-                }
+-
+-                val childAsset = assetFolder + File.separator + file
+-                val childOutput = File(outputFolder, file)
+-                copyAssetFolder(childAsset, childOutput, context)
+-                copyAsset(childAsset, childOutput, context)
+-            }
+-        } catch (e: IOException) {
+-            Log.error(
+-                "[DirectoryInitialization] Failed to copy asset folder: $assetFolder${e.message}"
+-            )
+-        }
+-    }
+-
+-    @Throws(IOException::class)
+-    private fun copyFile(input: InputStream, output: OutputStream) {
+-        val buffer = ByteArray(1024)
+-        var read: Int
+-
+-        while (input.read(buffer).also { read = it } != -1) {
+-            output.write(buffer, 0, read)
+         }
+     }
+ 
+@@ -335,7 +291,7 @@
+             return false
+         }
+ 
+-        return preferLegacyUserDirectory(context) && !PermissionsHandler.hasWriteAccess(context)
++        return false
+     }
+ 
+     private fun checkThemeSettings(context: Context) {

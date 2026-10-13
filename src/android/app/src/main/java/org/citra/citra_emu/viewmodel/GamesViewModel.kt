@@ -4,14 +4,15 @@
 
 package org.citra.citra_emu.viewmodel
 
-import android.net.Uri
-import androidx.documentfile.provider.DocumentFile
+import android.widget.Toast
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
+import java.io.IOException
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -21,6 +22,7 @@ import kotlinx.serialization.json.Json
 import org.citra.citra_emu.CitraApplication
 import org.citra.citra_emu.model.Game
 import org.citra.citra_emu.model.resolveHomeSelection
+import org.citra.citra_emu.utils.FileUtil
 import org.citra.citra_emu.utils.GameHelper
 
 class GamesViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel() {
@@ -32,6 +34,8 @@ class GamesViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel
 
     val isReloading get() = _isReloading.asStateFlow()
     private val _isReloading = MutableStateFlow(false)
+    private var reloadPending = false
+    private var directoryChangePending = false
 
     val shouldSwapData get() = _shouldSwapData.asStateFlow()
     private val _shouldSwapData = MutableStateFlow(false)
@@ -69,16 +73,12 @@ class GamesViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel
                     return@forEach
                 }
 
-                val gameExists =
-                    DocumentFile.fromSingleUri(CitraApplication.appContext, Uri.parse(game.path))
-                        ?.exists()
-                if (gameExists == true) {
-                    deserializedGames.add(game)
-                } else if (game.isInstalled) {
+                if (game.isInstalled || FileUtil.exists(game.path)) {
                     deserializedGames.add(game)
                 }
             }
-            setGames(deserializedGames.toList())
+            GameHelper.cachedGameList = GameHelper.distinctGames(deserializedGames).toMutableList()
+            setGames(GameHelper.cachedGameList)
         }
         reloadGames(false)
     }
@@ -118,19 +118,34 @@ class GamesViewModel(private val savedStateHandle: SavedStateHandle) : ViewModel
     }
 
     fun reloadGames(directoryChanged: Boolean) {
-        if (isReloading.value) {
-            return
-        }
+        reloadPending = true
+        directoryChangePending = directoryChangePending || directoryChanged
+        if (isReloading.value) return
         _isReloading.value = true
 
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                setGames(GameHelper.getGames())
+            try {
+                do {
+                    reloadPending = false
+                    val scanned = withContext(Dispatchers.IO) { GameHelper.getGames() }
+                    if (scanned == null) {
+                        // ponytail: 4 deferred-scan checks/sec; use an observer if polling matters.
+                        reloadPending = true
+                        delay(250)
+                    } else if (!reloadPending) {
+                        setGames(scanned)
+                    }
+                } while (reloadPending)
+                if (directoryChangePending) setShouldSwapData(true)
+                directoryChangePending = false
+            } catch (error: IOException) {
+                Toast.makeText(
+                    CitraApplication.appContext,
+                    error.message,
+                    Toast.LENGTH_LONG
+                ).show()
+            } finally {
                 _isReloading.value = false
-
-                if (directoryChanged) {
-                    setShouldSwapData(true)
-                }
             }
         }
     }

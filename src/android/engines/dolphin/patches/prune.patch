@@ -1,0 +1,150 @@
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/settings/ui/SettingsFragmentPresenter.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/settings/ui/SettingsFragmentPresenter.kt
+@@ -20,7 +20,6 @@
+ import kotlinx.coroutines.withContext
+ import org.dolphinemu.dolphinemu.NativeLibrary
+ import org.dolphinemu.dolphinemu.R
+-import org.dolphinemu.dolphinemu.activities.UserDataActivity
+ import org.dolphinemu.dolphinemu.features.input.model.ControlGroupEnabledSetting
+ import org.dolphinemu.dolphinemu.features.input.model.InputMappingBooleanSetting
+ import org.dolphinemu.dolphinemu.features.input.model.InputMappingDoubleSetting
+@@ -368,10 +367,6 @@
+         sl.add(SubmenuSetting(context, R.string.advanced_submenu, MenuTag.CONFIG_ADVANCED))
+         sl.add(SubmenuSetting(context, R.string.log_submenu, MenuTag.CONFIG_LOG))
+         sl.add(SubmenuSetting(context, R.string.debug_submenu, MenuTag.DEBUG))
+-        sl.add(
+-            RunRunnable(
+-                context, R.string.user_data_submenu, 0, 0, 0, false
+-            ) { UserDataActivity.launch(context) })
+     }
+ 
+     private fun addGeneralSettings(sl: ArrayList<SettingsItem>) {
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/utils/DirectoryInitialization.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/utils/DirectoryInitialization.kt
+@@ -6,10 +6,7 @@
+ package org.dolphinemu.dolphinemu.utils
+ 
+ import android.content.Context
+-import android.os.Build
+-import android.widget.Toast
+ import androidx.appcompat.app.AppCompatDelegate
+-import androidx.core.content.ContextCompat
+ import androidx.core.content.edit
+ import androidx.lifecycle.LiveData
+ import androidx.lifecycle.MutableLiveData
+@@ -19,12 +16,8 @@
+ import org.dolphinemu.dolphinemu.features.settings.model.BooleanSetting
+ import org.dolphinemu.dolphinemu.features.settings.model.IntSetting
+ import java.io.File
+-import java.io.FileOutputStream
+ import java.io.IOException
+-import java.io.InputStream
+-import java.io.OutputStream
+ import kotlin.concurrent.thread
+-import kotlin.system.exitProcess
+ 
+ /**
+  * A class that spawns its own thread in order perform initialization.
+@@ -70,14 +63,7 @@
+             return
+         }
+ 
+-        if (!setDolphinUserDirectory(context)) {
+-            ContextCompat.getMainExecutor(context).execute {
+-                Toast.makeText(context, R.string.external_storage_not_mounted, Toast.LENGTH_LONG)
+-                    .show()
+-                exitProcess(1)
+-            }
+-            return
+-        }
++        setDolphinUserDirectory(context)
+ 
+         extractSysDirectory(context)
+         NativeLibrary.Initialize()
+@@ -89,17 +75,8 @@
+         directoryState.postValue(DirectoryInitializationState.DOLPHIN_DIRECTORIES_INITIALIZED)
+     }
+ 
+-    @JvmStatic
+-    fun getUserDirectoryPath(context: Context?): File? {
+-        if (context == null) {
+-            return null
+-        }
+-
+-        return org.calamansi.engine.EngineFiles.root(context, org.calamansi.engine.EngineId.DOLPHIN)
+-    }
+-
+-    private fun setDolphinUserDirectory(context: Context): Boolean {
+-        val path = getUserDirectoryPath(context) ?: return false
++    private fun setDolphinUserDirectory(context: Context) {
++        val path = org.calamansi.engine.EngineFiles.root(context, org.calamansi.engine.EngineId.DOLPHIN)
+ 
+         userPath = path.absolutePath
+ 
+@@ -111,7 +88,6 @@
+         Log.debug("[DirectoryInitialization] Cache Dir: ${cacheDir.path}")
+         NativeLibrary.SetCacheDirectory(cacheDir.path)
+ 
+-        return true
+     }
+ 
+     private fun extractSysDirectory(context: Context) {
+@@ -160,13 +136,6 @@
+         if (!file.delete()) {
+             Log.error("[DirectoryInitialization] Failed to delete ${file.absolutePath}")
+         }
+-    }
+-
+-    @JvmStatic
+-    fun shouldStart(context: Context): Boolean {
+-        return getDolphinDirectoriesState().value == DirectoryInitializationState.NOT_YET_INITIALIZED && !isWaitingForWriteAccess(
+-            context
+-        )
+     }
+ 
+     @JvmStatic
+@@ -223,44 +192,6 @@
+         }
+     }
+ 
+-    @JvmStatic
+-    fun preferOldFolderPicker(context: Context): Boolean {
+-        // As of January 2021, ACTION_OPEN_DOCUMENT_TREE seems to be broken on the Nvidia Shield TV
+-        // (the activity can't be navigated correctly with a gamepad). We can use the old folder
+-        // picker for the time being - Android 11 hasn't been released for this device. We have an
+-        // explicit check for Android 11 below in hopes that Nvidia will fix this before releasing
+-        // Android 11.
+-        //
+-        // No Android TV device other than the Nvidia Shield TV is known to have an implementation
+-        // of ACTION_OPEN_DOCUMENT or ACTION_OPEN_DOCUMENT_TREE that even launches, but
+-        // "fortunately", no Android TV device other than the Shield TV is known to be able to run
+-        // Dolphin (either due to the 64-bit requirement or due to the GLES 3.0 requirement), so
+-        // we can ignore this problem.
+-        //
+-        // All phones which are running a compatible version of Android support ACTION_OPEN_DOCUMENT
+-        // and ACTION_OPEN_DOCUMENT_TREE, as this is required by the mobile Android CTS (unlike
+-        // Android TV).
+-
+-        return Build.VERSION.SDK_INT < Build.VERSION_CODES.R && PermissionsHandler.isExternalStorageLegacy() && TvUtil.isLeanback(
+-            context
+-        )
+-    }
+-
+-    @JvmStatic
+-    fun isUsingLegacyUserDirectory(): Boolean {
+-        return false
+-    }
+-
+-    @JvmStatic
+-    fun isWaitingForWriteAccess(context: Context): Boolean {
+-        // This first check is only for performance, not correctness
+-        if (directoryState.value != DirectoryInitializationState.NOT_YET_INITIALIZED) {
+-            return false
+-        }
+-
+-        return false
+-    }
+-
+     private fun checkThemeSettings(context: Context) {
+         val preferences = PreferenceManager.getDefaultSharedPreferences(context)
+         if (IntSetting.MAIN_INTERFACE_THEME.int != preferences.getInt(

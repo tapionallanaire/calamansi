@@ -5,6 +5,7 @@
 package org.citra.citra_emu.fragments
 
 import android.annotation.SuppressLint
+import android.database.ContentObserver
 import android.hardware.display.DisplayManager
 import android.net.Uri
 import android.os.Bundle
@@ -41,11 +42,12 @@ import com.google.android.material.transition.MaterialFadeThrough
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import org.calamansi.engine.EngineSession
+import org.calamansi.engine.NintendoPlatform
 import org.citra.citra_emu.BuildConfig
 import org.citra.citra_emu.CitraApplication
 import org.citra.citra_emu.NativeLibrary
 import org.citra.citra_emu.R
-import org.citra.citra_emu.activities.EmulationActivity
 import org.citra.citra_emu.adapters.GameAdapter
 import org.citra.citra_emu.databinding.FragmentGamesBinding
 import org.citra.citra_emu.databinding.ViewHomeLibraryBinding
@@ -56,13 +58,12 @@ import org.citra.citra_emu.display.selectSecondaryDisplay
 import org.citra.citra_emu.features.settings.model.BooleanSetting
 import org.citra.citra_emu.features.settings.model.IntSetting
 import org.citra.citra_emu.features.settings.model.Settings
-import org.citra.citra_emu.features.settings.ui.SettingsActivity
-import org.citra.citra_emu.features.settings.utils.SettingsFile
 import org.citra.citra_emu.features.updatechecker.UpdateChecker
 import org.citra.citra_emu.model.Game
 import org.citra.citra_emu.ui.main.MainActivity
 import org.citra.citra_emu.utils.BuildUtil
 import org.citra.citra_emu.utils.GameIconUtils
+import org.citra.citra_emu.utils.NintendoLauncher
 import org.citra.citra_emu.viewmodel.CompressProgressDialogViewModel
 import org.citra.citra_emu.viewmodel.GamesViewModel
 import org.citra.citra_emu.viewmodel.HomeViewModel
@@ -97,6 +98,11 @@ class GamesFragment : Fragment() {
     private val modalListener = object : FragmentManager.FragmentLifecycleCallbacks() {
         override fun onFragmentStarted(fm: FragmentManager, f: Fragment) {
             if (f is DialogFragment) suspendHomeForModal()
+        }
+    }
+    private val sessionObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
+        override fun onChange(selfChange: Boolean) {
+            if (_binding != null && homeResumed) updateActiveGame()
         }
     }
 
@@ -291,6 +297,11 @@ class GamesFragment : Fragment() {
             isAppearanceLightNavigationBars = true
         }
         homeResumed = true
+        requireContext().contentResolver.registerContentObserver(
+            EngineSession.uri(requireContext()),
+            false,
+            sessionObserver
+        )
         handingOff = false
         modalSuspended = modalSuspended || requireActivity().supportFragmentManager.fragments.any {
             it is DialogFragment && it.dialog?.isShowing == true
@@ -336,6 +347,7 @@ class GamesFragment : Fragment() {
     }
 
     override fun onPause() {
+        requireContext().contentResolver.unregisterContentObserver(sessionObserver)
         homeResumed = false
         stopHomeDisplay()
         (requireActivity() as MainActivity).setClassicHomeChrome(false)
@@ -447,17 +459,17 @@ class GamesFragment : Fragment() {
             selectedGame()?.let(gameAdapter::showGameProperties)
         }
         panel.homeResumeActive.setOnClickListener {
-            EmulationActivity.activeGame?.let(gameAdapter::launchGame)
+            NintendoLauncher.activeGame(requireContext())?.let(gameAdapter::launchGame)
         }
         panel.homeActiveSettings.setOnClickListener {
-            val game = EmulationActivity.activeGame ?: return@setOnClickListener
-            if (game.titleId == 0L) return@setOnClickListener
+            val game = NintendoLauncher.activeGame(requireContext()) ?: return@setOnClickListener
+            if (game.platform == NintendoPlatform.THREE_DS &&
+                game.titleId == 0L
+            ) {
+                return@setOnClickListener
+            }
             suspendHomeForModal()
-            SettingsActivity.launch(
-                requireActivity(),
-                SettingsFile.FILE_NAME_CONFIG,
-                String.format("%016X", game.titleId)
-            )
+            NintendoLauncher.openSettings(requireActivity(), game.platform, game)
         }
         panel.homeNavigation.visibility = if (secondary) View.VISIBLE else View.GONE
         panel.homeNavigation.menu.findItem(
@@ -505,7 +517,16 @@ class GamesFragment : Fragment() {
     internal fun bindPreview(preview: ViewHomePreviewBinding, game: Game?) {
         preview.homePreviewTitle.text = game?.title ?: getString(R.string.home_select_game)
         preview.homePreviewMetadata.text = game?.let {
-            listOf(it.company, gameAdapter.translateRegions(it.regions))
+            listOf(
+                it.company,
+                if (it.platform ==
+                    NintendoPlatform.THREE_DS
+                ) {
+                    gameAdapter.translateRegions(it.regions)
+                } else {
+                    it.platform.label
+                }
+            )
                 .filter(String::isNotBlank).joinToString(" · ")
         } ?: ""
         if (game == null) {
@@ -526,6 +547,8 @@ class GamesFragment : Fragment() {
         bindPreview(binding.homePreview, game)
         activePanel?.apply {
             homeSelectedTitle.text = game?.title ?: getString(R.string.home_select_game)
+            homeSelectedEmulator.text = game?.platform?.label.orEmpty()
+            homeSelectedEmulator.visibility = if (game == null) View.GONE else View.VISIBLE
             homeOpen.isEnabled = game != null
             homeProperties.isEnabled = game != null
             homeOpen.contentDescription = game?.let { getString(R.string.home_open_game, it.title) }
@@ -536,18 +559,43 @@ class GamesFragment : Fragment() {
     }
 
     private fun updateActiveGame() {
-        val game = EmulationActivity.activeGame
+        val game = NintendoLauncher.activeGame(requireContext())
         gameAdapter.setActiveHomePath(game?.path)
         activePanel?.apply {
             homeActiveSession.visibility = if (game == null) View.GONE else View.VISIBLE
             if (game != null) {
-                homeActiveTitle.text = game.title
+                val state = if (game.platform == NintendoPlatform.THREE_DS) {
+                    null
+                } else {
+                    EngineSession.snapshot(requireContext())?.getString("state")
+                }
+                homeActiveTitle.text = when {
+                    state == "stopping" -> getString(R.string.engine_stopping_title, game.title)
+
+                    state == "error" -> getString(R.string.engine_error_title, game.title)
+
+                    game.platform == NintendoPlatform.WII_U && state == "running" ->
+                        getString(R.string.engine_running_background_title, game.title)
+
+                    else -> game.title
+                }
+                homeResumeActive.isEnabled = state != "stopping"
                 GameIconUtils.loadGameIcon(game, homeResumeActive)
                 homeResumeActive.contentDescription =
-                    getString(R.string.home_resume_game, game.title)
+                    getString(
+                        if (state ==
+                            "error"
+                        ) {
+                            R.string.engine_open_session
+                        } else {
+                            R.string.home_resume_game
+                        },
+                        game.title
+                    )
                 homeActiveSettings.contentDescription =
                     getString(R.string.home_active_settings, game.title)
-                homeActiveSettings.isEnabled = game.titleId != 0L
+                homeActiveSettings.isEnabled =
+                    game.platform != NintendoPlatform.THREE_DS || game.titleId != 0L
             }
         }
     }

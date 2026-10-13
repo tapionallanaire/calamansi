@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <application>
+        <activity android:name="org.calamansi.dolphin.DolphinActivity" android:exported="false" android:process=":engine_dolphin" android:launchMode="singleTask" android:configChanges="orientation|screenSize|screenLayout|keyboard|keyboardHidden|navigation|uiMode" android:theme="@style/dolphin_Theme.Dolphin.Main" />
+        <activity android:name="org.calamansi.dolphin.DolphinSettingsActivity" android:exported="false" android:process=":engine_dolphin" android:theme="@style/dolphin_Theme.Dolphin.Main" />
+        <activity android:name="org.dolphinemu.dolphinemu.features.settings.ui.SettingsActivity" android:exported="false" android:process=":engine_dolphin" android:configChanges="orientation|screenSize" android:theme="@style/dolphin_Theme.Dolphin.Main" />
+        <service android:name="org.calamansi.dolphin.DolphinMetadataService" android:exported="false" android:process=":engine_dolphin" />
+        <activity android:name="org.dolphinemu.dolphinemu.activities.CustomFilePickerActivity" android:exported="false" android:process=":engine_dolphin" android:theme="@style/dolphin_Theme.Dolphin.FilePicker" />
+        <provider android:name="org.calamansi.dolphin.DolphinFileProvider" android:authorities="${applicationId}.dolphin.filesprovider" android:exported="false" android:grantUriPermissions="true" android:process=":engine_dolphin">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/dolphin_picker_paths" />
+        </provider>
+        <activity android:name="org.dolphinemu.dolphinemu.features.cheats.ui.CheatsActivity" android:exported="false" android:process=":engine_dolphin" android:theme="@style/dolphin_Theme.Dolphin.Main" />
+        <activity android:name="org.dolphinemu.dolphinemu.features.riivolution.ui.RiivolutionBootActivity" android:exported="false" android:process=":engine_dolphin" android:theme="@style/dolphin_Theme.Dolphin.Main" />
+        <activity android:name="org.dolphinemu.dolphinemu.activities.ConvertActivity" android:exported="false" android:process=":engine_dolphin" android:theme="@style/dolphin_Theme.Dolphin.Main" />
+        <service android:name="org.dolphinemu.dolphinemu.services.USBPermService" android:exported="false" android:process=":engine_dolphin" />
+    </application>
+</manifest>

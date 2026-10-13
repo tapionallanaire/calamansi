@@ -49,7 +49,7 @@
     <!-- About screen strings -->
     <string name="copied_to_clipboard">Panoya kopyalandı</string>
     <string name="contributors">Katkıda Bulunanlar</string>
-    <string name="contributors_description">Azahar\'ı mümkün kılan kişiler</string>
+    <string name="contributors_description">Temel 3DS motoruna katkıda bulunanlar</string>
     <string name="licenses_description">Android için Calamansi tarafından kullanılan projeler</string>
     <string name="build">Yapı</string>
     <string name="licenses">Lisanslar</string>
@@ -86,9 +86,9 @@
     <string name="warning_skip">Atla</string>
     <string name="warning_cancel">İptal et</string>
     <string name="select_citra_user_folder">Kullanıcı Dosyası Seç</string>
-    <string name="select_which_user_directory_to_use">Hem Lime3DS hem de Azahar için ayarlanmış kullanıcı dizinleriniz var gibi görünüyor. Bunun nedeni muhtemelen Azahar\'a geçmiş olmanız ve sorulduğunda Lime3DS için kullanılandan farklı bir kullanıcı dizini seçmiş olmanızdır.\n\nBu, kayıtları veya diğer ayarları kaybettiğinizi düşünmenize neden olmuş olabilir - böyle bir şey olduysa özür dileriz. \n\nOrijinal Lime3DS kullanıcı dizininizi kullanmaya geri dönmek, Lime3DS\'deki ayarları ve oyun kayıtlarını geri yüklemek mi istersiniz; yoksa mevcut Calamansi kullanıcı dizininizi korumak mı? \n\nSeçiminiz ne olursa olsun her iki dizin de silinmeyecektir ve Kullanıcı Klasörü Seç seçeneğini kullanarak aralarında serbestçe geçiş yapabilirsiniz.</string>
+    <string name="select_which_user_directory_to_use">İki kullanıcı klasörü yapılandırılmış: önceki uygulamanın orijinal klasörü ve mevcut Calamansi klasörü. Ayarlar ve oyun kayıtları için kullanılacak klasörü seçin.\n\nHiçbir klasör silinmeyecek. Daha sonra Kullanıcı Klasörü Seç ile klasörü değiştirebilirsiniz.</string>
     <string name="keep_current_azahar_directory">Şimdiki Calamansi Dizinini Koru</string>
-    <string name="use_prior_lime3ds_directory">Eski Lime3DS Dizinini Kullan</string>
+    <string name="use_prior_lime3ds_directory">Orijinal Kullanıcı Klasörünü Kullan</string>
     <string name="select">Seç</string>
     <string name="cannot_skip">Kullanıcı klasörü ayarlamayı atlayamazsınız</string>
     <string name="cannot_skip_directory_description">Bu adım Calamansi\'ın çalışması için gereklidir. Lütfen devam etmek için bir dizin seçin.</string>

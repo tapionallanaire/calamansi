@@ -103,3 +103,27 @@
 [submodule "externals/cryptopp"]
 	path = externals/cryptopp
 	url = https://github.com/cryptopp-modern/cryptopp-modern.git
+[submodule "calamansi-nds"]
+	path = externals/nintendo/melonds-android
+	url = https://github.com/rafaelvcaetano/melonDS-android.git
+[submodule "calamansi-retroarch"]
+	path = externals/nintendo/retroarch
+	url = https://github.com/libretro/RetroArch.git
+[submodule "calamansi-dolphin"]
+	path = externals/nintendo/dolphin
+	url = https://github.com/dolphin-emu/dolphin.git
+[submodule "calamansi-cemu"]
+	path = externals/nintendo/cemu-android
+	url = https://github.com/Producdevity/Cemu-Android.git
+[submodule "calamansi-gambatte"]
+	path = externals/nintendo/gambatte-libretro
+	url = https://github.com/libretro/gambatte-libretro.git
+[submodule "calamansi-mgba"]
+	path = externals/nintendo/mgba
+	url = https://github.com/libretro/mgba.git
+[submodule "calamansi-snes9x"]
+	path = externals/nintendo/snes9x
+	url = https://github.com/libretro/snes9x.git
+[submodule "calamansi-fceumm"]
+	path = externals/nintendo/libretro-fceumm
+	url = https://github.com/libretro/libretro-fceumm.git

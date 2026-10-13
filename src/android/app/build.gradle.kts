@@ -126,6 +126,7 @@ android {
         // Attaches 'debug' suffix to version and package name, allowing installation alongside the release build.
         register("relWithDebInfo") {
             initWith(getByName("release"))
+            matchingFallbacks += listOf("release")
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
             signingConfig = signingConfigs.getByName("debug")
@@ -147,6 +148,7 @@ android {
         // allow other work to be done on these devices.
         register("relWithDebInfoLite") {
             initWith(getByName("relWithDebInfo"))
+            matchingFallbacks += listOf("release")
             signingConfig = signingConfigs.getByName("debug")
             isDebuggable = false
             installation {
@@ -208,6 +210,11 @@ android {
 }
 
 dependencies {
+    implementation(project(":engine-common"))
+    implementation(project(":engine-nds"))
+    implementation(project(":engine-retroarch"))
+    implementation(project(":engine-dolphin"))
+    implementation(project(":engine-cemu"))
     implementation("androidx.activity:activity-ktx:1.9.2")
     implementation("androidx.appcompat:appcompat:1.7.0")
     implementation("androidx.core:core-splashscreen:1.0.1")

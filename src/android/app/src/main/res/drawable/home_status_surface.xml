@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape>
+            <gradient android:angle="270" android:startColor="@color/home_tile_highlight"
+                android:endColor="@color/home_silver_deep" />
+        </shape>
+    </item>
+    <item android:height="1dp" android:gravity="bottom">
+        <shape>
+            <solid android:color="@color/home_outline" />
+        </shape>
+    </item>
+</layer-list>

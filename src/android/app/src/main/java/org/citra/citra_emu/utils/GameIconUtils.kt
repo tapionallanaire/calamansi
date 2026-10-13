@@ -30,7 +30,11 @@ class GameIconFetcher(private val game: Game, private val options: Options) : Fe
     )
 
     private fun getGameIcon(vector: IntArray?): Bitmap? {
-        val bitmap = Bitmap.createBitmap(48, 48, Bitmap.Config.RGB_565)
+        val bitmap = Bitmap.createBitmap(
+            game.iconWidth,
+            game.iconHeight,
+            if (game.iconArgb) Bitmap.Config.ARGB_8888 else Bitmap.Config.RGB_565
+        )
         bitmap.copyPixelsFromBuffer(IntBuffer.wrap(vector))
         return bitmap
     }

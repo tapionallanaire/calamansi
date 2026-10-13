@@ -1,0 +1,6 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <activity android:name="org.calamansi.nds.NdsSettingsActivity" android:exported="false" android:process=":engine_nds" android:theme="@android:style/Theme.Material" />
+        <service android:name="org.calamansi.nds.NdsMetadataService" android:exported="false" android:process=":engine_nds" />
+    </application>
+</manifest>

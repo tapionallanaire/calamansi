@@ -10,6 +10,7 @@ chmod +x ./gradlew
     --no-configuration-cache --no-build-cache \
     '-Dorg.gradle.jvmargs=-Xmx3072m -XX:MaxMetaspaceSize=768m -XX:ActiveProcessorCount=2' \
     -Pkotlin.compiler.execution.strategy=in-process \
+    -Pcalamansi.cmakeVersion=3.31.4 \
     assembleVanillaRelease assembleVanillaFatesFix
 
 ccache -s

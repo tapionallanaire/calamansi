@@ -32,7 +32,7 @@
     <string name="installing_driver">ドライバーをインストール中…</string>
 
     <string name="contributors">貢献者</string>
-    <string name="contributors_description">Azaharにコントリビューターたち</string>
+    <string name="contributors_description">上流の3DSエンジンへの貢献者</string>
     <string name="licenses_description">Android用Calamansiが使うプロジェクト</string>
     <string name="build">ビルド</string>
     <string name="licenses">ライセンス</string>

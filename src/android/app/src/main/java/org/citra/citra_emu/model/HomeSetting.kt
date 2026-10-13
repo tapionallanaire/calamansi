@@ -7,6 +7,10 @@ package org.citra.citra_emu.model
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
+sealed interface HomeSettingsItem
+
+data class HomeSettingsHeader(val titleId: Int) : HomeSettingsItem
+
 data class HomeSetting(
     val titleId: Int,
     val descriptionId: Int,
@@ -16,4 +20,4 @@ data class HomeSetting(
     val disabledTitleId: Int = 0,
     val disabledMessageId: Int = 0,
     val details: StateFlow<String> = MutableStateFlow("")
-)
+) : HomeSettingsItem

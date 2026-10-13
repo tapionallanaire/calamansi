@@ -296,6 +296,7 @@ static Core::System::ResultStatus RunCitra(const std::string& filepath) {
         break;
     }
 
+    SCOPE_EXIT({ TryShutdown(); });
     system.ApplySettings();
     Settings::LogSettings();
 
@@ -346,8 +347,6 @@ static Core::System::ResultStatus RunCitra(const std::string& filepath) {
                                                                    &LoadDiskCacheProgress);
 
     LoadDiskCacheProgress(VideoCore::LoadCallbackStage::Complete, 0, 0, "");
-
-    SCOPE_EXIT({ TryShutdown(); });
 
     system.RegisterCoreLoopThreadId();
 
@@ -1158,7 +1157,9 @@ JNIEXPORT void JNICALL Java_org_citra_citra_1emu_utils_NetPlayManager_netPlayKic
 
 JNIEXPORT void JNICALL Java_org_citra_citra_1emu_utils_NetPlayManager_netPlayLeaveRoom(
     [[maybe_unused]] JNIEnv* env, [[maybe_unused]] jobject obj) {
-    multiplayer->NetPlayLeaveRoom();
+    if (multiplayer) {
+        multiplayer->NetPlayLeaveRoom();
+    }
 }
 
 JNIEXPORT jboolean JNICALL Java_org_citra_citra_1emu_utils_NetPlayManager_netPlayIsModerator(

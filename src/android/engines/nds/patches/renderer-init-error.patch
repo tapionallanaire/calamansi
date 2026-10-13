@@ -1,0 +1,78 @@
+diff --git a/src/android/MelonInstance.cpp b/src/android/MelonInstance.cpp
+--- a/src/android/MelonInstance.cpp
++++ b/src/android/MelonInstance.cpp
+@@ -17,6 +17,7 @@
+ #include "NDSCart.h"
+ #include "net/Net_Slirp.h"
+ #include "Platform.h"
+ #include "SDCardArgsBuilder.h"
++#include <stdexcept>
+ 
+ using namespace std;
+@@ -626,8 +627,23 @@
+             case Renderer::OpenGl:
+-                nds->GPU.SetRenderer3D(GLRenderer::New());
++            {
++                GLint major = 0, minor = 0;
++                glGetIntegerv(GL_MAJOR_VERSION, &major);
++                glGetIntegerv(GL_MINOR_VERSION, &minor);
++                if (major < 3 || (major == 3 && minor < 2))
++                    throw std::runtime_error("DS OpenGL renderer requires OpenGL ES 3.2; select Software in DS settings");
++                auto renderer = GLRenderer::New();
++                if (!renderer)
++                    throw std::runtime_error("DS OpenGL shader initialization failed; select Software in DS settings");
++                nds->GPU.SetRenderer3D(std::move(renderer));
+                 break;
++            }
+             case Renderer::Compute:
+-                nds->GPU.SetRenderer3D(ComputeRenderer::New());
++            {
++                auto renderer = ComputeRenderer::New();
++                if (!renderer)
++                    throw std::runtime_error("DS compute shader initialization failed");
++                nds->GPU.SetRenderer3D(std::move(renderer));
+                 break;
++            }
+             default: __builtin_unreachable();
+         }
+diff --git a/src/android/OpenGLContext.cpp b/src/android/OpenGLContext.cpp
+--- a/src/android/OpenGLContext.cpp
++++ b/src/android/OpenGLContext.cpp
+@@ -1,4 +1,5 @@
+ #include "OpenGLContext.h"
+ #include "MelonLog.h"
+ #include "Platform.h"
++#include <EGL/eglext.h>
+ 
+@@ -174,4 +175,5 @@
+     int contextAttributes[] = {
+         EGL_CONTEXT_CLIENT_VERSION, 3,
++        EGL_CONTEXT_MINOR_VERSION_KHR, 2,
+         EGL_NONE
+     };
+@@ -185,2 +187,7 @@
+     glContext = eglCreateContext(display, configs[selectedConfigNumber], sharedContext, contextAttributes);
++    if (glContext == EGL_NO_CONTEXT)
++    {
++        const EGLint softwareAttributes[] = { EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE };
++        glContext = eglCreateContext(display, configs[selectedConfigNumber], sharedContext, softwareAttributes);
++    }
+     if (glContext == EGL_NO_CONTEXT)
+diff --git a/src/android/MelonDS.cpp b/src/android/MelonDS.cpp
+--- a/src/android/MelonDS.cpp
++++ b/src/android/MelonDS.cpp
+@@ -1,3 +1,4 @@
+ #include <cstring>
+ #include <utility>
++#include <stdexcept>
+ #include <android/asset_manager.h>
+@@ -185,7 +186,8 @@
+     void start()
+     {
+         startAudio();
+-        setupOpenGlContext();
++        if (!setupOpenGlContext())
++            throw std::runtime_error("DS EGL context could not be made current");
+ 
+         instance->start();
+     }

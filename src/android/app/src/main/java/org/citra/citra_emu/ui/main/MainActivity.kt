@@ -56,8 +56,6 @@ import org.citra.citra_emu.databinding.ActivityMainBinding
 import org.citra.citra_emu.dialogs.NetPlayDialog
 import org.citra.citra_emu.features.settings.model.Settings
 import org.citra.citra_emu.features.settings.model.SettingsViewModel
-import org.citra.citra_emu.features.settings.ui.SettingsActivity
-import org.citra.citra_emu.features.settings.utils.SettingsFile
 import org.citra.citra_emu.fragments.AppsFragment
 import org.citra.citra_emu.fragments.GamesFragment
 import org.citra.citra_emu.fragments.GrantMissingFilesystemPermissionFragment
@@ -192,11 +190,8 @@ open class MainActivity :
 
                 R.id.searchFragment -> gamesViewModel.setSearchFocused(true)
 
-                R.id.homeSettingsFragment -> SettingsActivity.launch(
-                    this,
-                    SettingsFile.FILE_NAME_CONFIG,
-                    ""
-                )
+                R.id.homeSettingsFragment ->
+                    findViewById<View>(R.id.scroll_view_settings)?.scrollTo(0, 0)
             }
         }
 
@@ -274,6 +269,7 @@ open class MainActivity :
         }
         WindowCompat.getInsetsController(window, window.decorView)
             .hide(WindowInsetsCompat.Type.statusBars())
+        updateHomeStatusVisibility()
 
         super.onResume()
     }
@@ -407,6 +403,7 @@ open class MainActivity :
             WindowCompat.getInsetsController(window, window.decorView)
                 .hide(WindowInsetsCompat.Type.statusBars())
         }
+        updateHomeStatusVisibility(hasFocus = hasFocus)
         homeFragment()?.onHomeOwnerFocusChanged(hasFocus)
     }
     fun setClassicHomeChrome(classic: Boolean) {
@@ -623,12 +620,28 @@ open class MainActivity :
         }.start()
     }
 
+    private fun updateHomeStatusVisibility(
+        hasFocus: Boolean = window.decorView.hasWindowFocus(),
+        windowInsets: WindowInsetsCompat? = null
+    ) {
+        if (!::binding.isInitialized) return
+        val insets = windowInsets ?: ViewCompat.getRootWindowInsets(binding.root)
+        // Focus loss includes the notification shade and other windows, such as dialogs.
+        binding.homeStatus.root.visibility =
+            if (hasFocus && insets?.isVisible(WindowInsetsCompat.Type.statusBars()) != true) {
+                View.VISIBLE
+            } else {
+                View.INVISIBLE
+            }
+    }
+
     private fun setInsets() {
         val status = binding.homeStatus.root
         val left = status.paddingLeft
         val top = status.paddingTop
         val right = status.paddingRight
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, windowInsets ->
+            updateHomeStatusVisibility(windowInsets = windowInsets)
             val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
             val safe = windowInsets.getInsets(
                 WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
@@ -648,6 +661,7 @@ open class MainActivity :
             binding.navigationBarShade.layoutParams = mlpNavShade
             windowInsets
         }
+        updateHomeStatusVisibility()
     }
 
     private fun createOpenCitraDirectoryLauncher(

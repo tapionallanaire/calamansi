@@ -29,19 +29,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: recursive
           fetch-depth: 0
           persist-credentials: false
+      - name: Initialize pinned public dependencies
+        run: |
+          git -c core.longpaths=true submodule update --init
+          git -C externals/nintendo/cemu-android config submodule.dependencies/ZArchive.url https://github.com/Exzap/ZArchive.git
+          git -c core.longpaths=true submodule update --init --recursive
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
       - name: Install Android toolchain
         run: |
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-35' 'build-tools;35.0.0' 'cmake;3.30.3' 'ndk;27.3.13750724'
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-35' 'build-tools;35.0.0' 'cmake;3.31.4' 'ndk;27.3.13750724'
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y ccache ninja-build
-          printf 'sdk.dir=%s\ncmake.dir=%s\n' "$ANDROID_HOME" "$ANDROID_HOME/cmake/3.30.3" > src/android/local.properties
+          printf 'sdk.dir=%s\ncmake.dir=%s\n' "$ANDROID_HOME" "$ANDROID_HOME/cmake/3.31.4" > src/android/local.properties
       - name: Cache Gradle dependencies
         uses: actions/cache@v4
         with:
@@ -54,8 +58,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: android-native-${{ runner.os }}-ndk27.3-cmake3.30.3-${{ github.sha }}
-          restore-keys: android-native-${{ runner.os }}-ndk27.3-cmake3.30.3-
+          key: android-native-${{ runner.os }}-ndk27.3-cmake3.31.4-${{ github.sha }}
+          restore-keys: android-native-${{ runner.os }}-ndk27.3-cmake3.31.4-
       - name: Build signed main or release APKs
         if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
         env:

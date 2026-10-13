@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="148dp" android:height="156dp"
+    android:viewportWidth="148" android:viewportHeight="156">
+    <!-- Notched face with a light bevel rather than a flat square tile. -->
+    <path android:strokeColor="@color/home_outline" android:strokeWidth="1"
+        android:pathData="M8,12 Q8,4 16,4 L124,4 Q130,4 130,10 L130,16 L136,16 L136,26 L130,26 L130,138 Q130,146 122,146 L16,146 Q8,146 8,138 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="8" android:startY="4"
+                android:endX="130" android:endY="146"
+                android:startColor="@color/home_tile_highlight" android:endColor="@color/home_tile_base" />
+        </aapt:attr>
+    </path>
+    <path android:fillColor="@color/home_tile_highlight"
+        android:pathData="M12,14 Q12,8 18,8 L124,8 L124,11 L18,11 Q15,11 15,16 L15,136 L12,136 Z" />
+    <path android:fillColor="@color/home_outline" android:fillAlpha="0.6"
+        android:pathData="M123,30 L127,30 L127,137 Q127,143 121,143 L18,143 L18,140 L119,140 Q123,140 123,136 Z" />
+    <!-- Recessed label; the selected game's real ImageView sits inside it. -->
+    <path android:fillColor="@color/home_outline"
+        android:pathData="M24,28 L114,28 Q120,28 120,34 L120,120 Q120,126 114,126 L24,126 Q18,126 18,120 L18,34 Q18,28 24,28 Z" />
+    <path android:fillColor="@color/home_tile_highlight"
+        android:pathData="M24,31 L114,31 Q117,31 117,34 L117,120 Q117,123 114,123 L24,123 Q21,123 21,120 L21,34 Q21,31 24,31 Z" />
+    <path android:fillColor="@color/home_silver"
+        android:pathData="M25,33 L113,33 L113,121 L25,121 Z" />
+    <!-- Connector recess and static metallic contacts. -->
+    <path android:fillColor="@color/home_secondary_ink"
+        android:pathData="M28,132 L110,132 L110,146 L28,146 Z" />
+    <path android:fillColor="#C5B88C"
+        android:pathData="M32,135 L39,135 L39,145 L32,145 Z M43,135 L50,135 L50,145 L43,145 Z M54,135 L61,135 L61,145 L54,145 Z M65,135 L72,135 L72,145 L65,145 Z M76,135 L83,135 L83,145 L76,145 Z M87,135 L94,135 L94,145 L87,145 Z M98,135 L105,135 L105,145 L98,145 Z" />
+    <path android:fillColor="@color/home_tile_highlight" android:fillAlpha="0.45"
+        android:pathData="M32,135 L105,135 L105,137 L32,137 Z" />
+    <!-- Subtle molded grip lines, kept outside the actual icon label. -->
+    <path android:strokeColor="@color/home_outline" android:strokeWidth="1"
+        android:pathData="M30,18 L108,18 M30,21 L108,21 M13,40 L13,108" />
+</vector>

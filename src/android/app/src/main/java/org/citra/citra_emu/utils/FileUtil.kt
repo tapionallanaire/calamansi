@@ -161,14 +161,17 @@ object FileUtil {
     /**
      * Check whether given path exists.
      *
-     * @param path Native content uri path
+     * @param path Content URI, file URI, or filesystem path with an optional ! prefix
      * @return bool
      */
     @JvmStatic
     fun exists(path: String): Boolean {
+        val nativePath = path.removePrefix("!")
+        if (nativePath.startsWith("/")) return File(nativePath).exists()
         var c: Cursor? = null
         try {
             val uri = Uri.parse(path)
+            if (uri.scheme == "file") return uri.path?.let { File(it).exists() } == true
             val columns = arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID)
             c = context.contentResolver.query(
                 uri,

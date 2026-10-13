@@ -50,6 +50,9 @@ class CitraApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         application = this
+        if (getProcessName().startsWith("$packageName:engine_")) {
+            return
+        }
         documentsTree = DocumentsTree()
         if (PermissionsHandler.hasWriteAccess(applicationContext)) {
             DirectoryInitialization.start()

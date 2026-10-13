@@ -46,7 +46,7 @@
     <!-- About screen strings -->
     <string name="copied_to_clipboard">已复制到剪贴板</string>
     <string name="contributors">贡献者</string>
-    <string name="contributors_description">使 Azahar 得以实现的贡献者</string>
+    <string name="contributors_description">上游 3DS 引擎的贡献者</string>
     <string name="licenses_description">Calamansi 安卓版使用的项目</string>
     <string name="build">构建版本</string>
     <string name="licenses">许可证</string>
@@ -80,9 +80,9 @@
     <string name="warning_skip">跳过</string>
     <string name="warning_cancel">取消</string>
     <string name="select_citra_user_folder">选择用户文件夹</string>
-    <string name="select_which_user_directory_to_use">您似乎同时为 Lime3DS 和 Azahar 设置了用户目录。这可能是因为您升级到了 Azahar，并在系统提示时选择了与 Lime3DS 不同的用户目录。\n\n这可能导致您误以为丢失了存档或其他设置 - 如果发生这种情况，我们深表歉意。\n\n您想恢复原来的 Lime3DS 用户目录、Lime3DS 设置和游戏存档，还是保持当前的 ​​Calamansi 用户目录？\n\n无论您选择哪种方式，这两个目录都不会被删除，您可以使用“选择用户文件夹”选项在它们之间自由切换。</string>
+    <string name="select_which_user_directory_to_use">已配置两个用户文件夹：以前应用的原始文件夹和当前 Calamansi 文件夹。请选择用于设置和游戏存档的文件夹。\n\n两个文件夹都不会被删除。您可以稍后通过“选择用户文件夹”切换文件夹。</string>
     <string name="keep_current_azahar_directory">保持当前的 Calamansi 目录</string>
-    <string name="use_prior_lime3ds_directory">使用先前的 Lime3DS 目录</string>
+    <string name="use_prior_lime3ds_directory">使用原始用户文件夹</string>
     <string name="select">选择</string>
     <string name="cannot_skip">您不能跳过设置用户文件夹</string>
     <string name="cannot_skip_directory_description">此步骤是 Calamansi 正常运行所必需的。请选择一个目录，然后才可继续。</string>
@@ -127,7 +127,7 @@
     <string name="setup_system_files">系统文件</string>
     <string name="setup_system_files_description">执行系统文件操作，如安装系统文件或启动 HOME 菜单</string>
     <string name="setup_tool_connect">连接到 Artic 设置工具</string>
-    <string name="setup_system_files_preamble"><![CDATA[Calamansi 需要来自真实掌机的独有数据和固件文件才能使用其部分功能。此类文件和数据可通过 <a href=https://github.com/azahar-emu/ArticSetupTool>Azahar Artic 设置工具</a>进行设置。<br>注意：<ul><li><b>此操作会将掌机独有数据安装到 Calamansi，执行设置过程后请勿共享您的用户或 nand 文件夹！</b></li><li>在执行设置过程时，Calamansi 将关联到运行设置工具的掌机。您可以随时从模拟器配置菜单的“系统”选项卡中取消关联掌机。</li><li>设置系统文件后，请勿同时使用 Calamansi 和 3DS 掌机联网，因为这可能会导致问题。</li><li>新 3DS 设置需要先进行老 3DS 设置才能运作（建议两种设置模式都执行）。</li><li>无论运行设置工具的掌机型号如何，两种设置模式均可运作。</li></ul>]]></string>
+    <string name="setup_system_files_preamble"><![CDATA[Calamansi 需要来自真实掌机的独有数据和固件文件才能使用其部分功能。此类文件和数据可通过 <a href=https://github.com/azahar-emu/ArticSetupTool>Artic 设置工具</a>进行设置。<br>注意：<ul><li><b>此操作会将掌机独有数据安装到 Calamansi，执行设置过程后请勿共享您的用户或 nand 文件夹！</b></li><li>在执行设置过程时，Calamansi 将关联到运行设置工具的掌机。您可以随时从模拟器配置菜单的“系统”选项卡中取消关联掌机。</li><li>设置系统文件后，请勿同时使用 Calamansi 和 3DS 掌机联网，因为这可能会导致问题。</li><li>新 3DS 设置需要先进行老 3DS 设置才能运作（建议两种设置模式都执行）。</li><li>无论运行设置工具的掌机型号如何，两种设置模式均可运作。</li></ul>]]></string>
     <string name="setup_system_files_detect">正在获取当前系统文件状态，请稍候...</string>
     <string name="delete_system_files">取消关联掌机独有数据</string>
     <string name="delete_system_files_description"><![CDATA[此操作将取消您真实掌机与 Calamansi 的关联，并产生以下后果：<br><ul><li>您的 OTP、SecureInfo 和 LocalFriendCodeSeed 文件将从 Calamansi 中删除。</li><li>您的好友列表将被重置，并且注销 NNID/PNID 帐户。</li><li>通过 Calamansi 获得的系统文件和 eshop 数字版应用将变得无法访问，直到再次关联同一掌机（保存的数据不会丢失）。</ul><br>是否继续？]]></string>
@@ -460,7 +460,7 @@
     <string name="lock_drawer">锁定侧滑菜单</string>
     <string name="unlock_drawer">解锁侧滑菜单</string>
 
-    <string name="write_permission_needed">您需要允许 Lime3DS 对外部存储器进行读写访问，以便模拟器正常工作。</string>
+    <string name="write_permission_needed">您需要允许 Calamansi 对外部存储器进行读写访问，以便模拟器正常工作。</string>
     <string name="load_settings">正在加载设置…</string>
 
     <string name="external_storage_not_mounted">需要可用的外部存储才能使用 Calamansi</string>

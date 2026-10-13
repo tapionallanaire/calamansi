@@ -29,12 +29,10 @@
 
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/text_setting_name"
-            style="@style/TextAppearance.Material3.HeadlineMedium"
+            style="@style/TextAppearance.Material3.TitleMedium"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textAlignment="viewStart"
-            android:textSize="17sp"
-            app:lineHeight="22dp"
             tools:text="@string/frame_limit_enable" />
 
         <com.google.android.material.textview.MaterialTextView

@@ -23,9 +23,10 @@ import androidx.fragment.app.activityViewModels
 import androidx.navigation.findNavController
 import androidx.navigation.fragment.findNavController
 import androidx.preference.PreferenceManager
-import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.transition.MaterialSharedAxis
+import org.calamansi.engine.NintendoPlatform
 import org.citra.citra_emu.CitraApplication
 import org.citra.citra_emu.R
 import org.citra.citra_emu.activities.EmulationActivity
@@ -38,13 +39,16 @@ import org.citra.citra_emu.features.settings.ui.SettingsActivity
 import org.citra.citra_emu.features.settings.utils.SettingsFile
 import org.citra.citra_emu.model.Game
 import org.citra.citra_emu.model.HomeSetting
+import org.citra.citra_emu.model.HomeSettingsHeader
 import org.citra.citra_emu.ui.main.ConsoleHomeActivity
 import org.citra.citra_emu.ui.main.MainActivity
 import org.citra.citra_emu.utils.GameHelper
 import org.citra.citra_emu.utils.GpuDriverHelper
 import org.citra.citra_emu.utils.Log
+import org.citra.citra_emu.utils.NintendoLauncher
 import org.citra.citra_emu.utils.PermissionsHandler
 import org.citra.citra_emu.viewmodel.DriverViewModel
+import org.citra.citra_emu.viewmodel.GamesViewModel
 import org.citra.citra_emu.viewmodel.HomeViewModel
 
 class HomeSettingsFragment : Fragment() {
@@ -55,6 +59,7 @@ class HomeSettingsFragment : Fragment() {
 
     private val homeViewModel: HomeViewModel by activityViewModels()
     private val driverViewModel: DriverViewModel by activityViewModels()
+    private val gamesViewModel: GamesViewModel by activityViewModels()
 
     private val preferences
         get() =
@@ -85,13 +90,124 @@ class HomeSettingsFragment : Fragment() {
         mainActivity = requireActivity() as MainActivity
 
         val optionsList = listOf(
+            HomeSettingsHeader(R.string.settings_emulators),
             HomeSetting(
-                R.string.grid_menu_core_settings,
+                R.string.console_3ds_settings,
                 R.string.settings_description,
                 R.drawable.ic_settings,
                 {
                     mainActivity.homeFragment()?.handoffHome()
                     SettingsActivity.launch(requireContext(), SettingsFile.FILE_NAME_CONFIG, "")
+                }
+            ),
+            HomeSetting(
+                R.string.console_nds_settings,
+                R.string.console_nds_settings_description,
+                R.drawable.ic_settings,
+                {
+                    mainActivity.homeFragment()?.handoffHome()
+                    NintendoLauncher.openSettings(requireContext(), NintendoPlatform.NDS)
+                }
+            ),
+            HomeSetting(
+                R.string.console_retroarch_settings,
+                R.string.console_retroarch_settings_description,
+                R.drawable.ic_settings,
+                {
+                    mainActivity.homeFragment()?.handoffHome()
+                    NintendoLauncher.openSettings(requireContext(), NintendoPlatform.GB)
+                }
+            ),
+            HomeSetting(
+                R.string.console_dolphin_settings,
+                R.string.console_dolphin_settings_description,
+                R.drawable.ic_settings,
+                {
+                    mainActivity.homeFragment()?.handoffHome()
+                    NintendoLauncher.openSettings(requireContext(), NintendoPlatform.GAMECUBE)
+                }
+            ),
+            HomeSetting(
+                R.string.console_cemu_settings,
+                R.string.console_cemu_settings_description,
+                R.drawable.ic_settings,
+                {
+                    mainActivity.homeFragment()?.handoffHome()
+                    NintendoLauncher.openSettings(requireContext(), NintendoPlatform.WII_U)
+                }
+            ),
+            HomeSetting(
+                R.string.settings_3ds_driver,
+                R.string.install_gpu_driver_description,
+                R.drawable.ic_install_driver,
+                {
+                    binding.root.findNavController()
+                        .navigate(R.id.action_homeSettingsFragment_to_driverManagerFragment)
+                },
+                { GpuDriverHelper.supportsCustomDriverLoading() },
+                R.string.custom_driver_not_supported,
+                R.string.custom_driver_not_supported_description,
+                driverViewModel.selectedDriverMetadata
+            ),
+            HomeSettingsHeader(R.string.settings_library_files),
+            HomeSetting(
+                R.string.settings_3ds_user_folder,
+                R.string.select_citra_user_folder_home_description,
+                R.drawable.ic_home,
+                { PermissionsHandler.compatibleSelectDirectory(mainActivity.openCitraDirectory) },
+                details = homeViewModel.userDir
+            ),
+            HomeSetting(
+                R.string.settings_3ds_game_folder,
+                R.string.select_games_folder_description,
+                R.drawable.ic_add,
+                { getGamesDirectory.launch(Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).data) },
+                details = homeViewModel.gamesDir
+            ),
+            HomeSetting(
+                R.string.select_nintendo_folder,
+                R.string.select_nintendo_folder_description,
+                R.drawable.ic_add,
+                { getNintendoDirectory.launch(null) }
+            ),
+            HomeSetting(
+                R.string.install_game_content,
+                R.string.install_game_content_description,
+                R.drawable.ic_install,
+                { mainActivity.ciaFileInstaller.launch(true) }
+            ),
+            HomeSetting(
+                R.string.settings_3ds_system_files,
+                R.string.setup_system_files_description,
+                R.drawable.ic_system_update,
+                {
+                    exitTransition = MaterialSharedAxis(MaterialSharedAxis.X, true)
+                    parentFragmentManager.primaryNavigationFragment?.findNavController()
+                        ?.navigate(R.id.action_homeSettingsFragment_to_systemFilesFragment)
+                }
+            ),
+            HomeSettingsHeader(R.string.settings_application),
+            HomeSetting(
+                R.string.preferences_theme,
+                R.string.theme_and_color_description,
+                R.drawable.ic_palette,
+                {
+                    mainActivity.homeFragment()?.handoffHome()
+                    SettingsActivity.launch(requireContext(), Settings.SECTION_THEME, "")
+                }
+            ),
+            HomeSetting(
+                R.string.settings_picture_filter,
+                R.string.settings_picture_filter_hub_summary,
+                R.drawable.ic_graphics,
+                {
+                    mainActivity.homeFragment()?.handoffHome()
+                    startActivity(
+                        Intent(
+                            requireContext(),
+                            org.calamansi.settings.PictureFilterSettingsActivity::class.java
+                        )
+                    )
                 }
             ),
             HomeSetting(
@@ -109,6 +225,7 @@ class HomeSettingsFragment : Fragment() {
                 R.drawable.ic_home,
                 { ConsoleHomeActivity.openAndroidLauncher(requireContext()) }
             ),
+            HomeSettingsHeader(R.string.settings_tools_support),
             HomeSetting(
                 R.string.artic_base_connect,
                 R.string.artic_base_connect_description,
@@ -157,7 +274,7 @@ class HomeSettingsFragment : Fragment() {
                 }
             ),
             HomeSetting(
-                R.string.multiplayer,
+                R.string.settings_3ds_multiplayer,
                 R.string.multiplayer_description,
                 R.drawable.ic_multiplayer,
                 {
@@ -166,62 +283,10 @@ class HomeSettingsFragment : Fragment() {
                 }
             ),
             HomeSetting(
-                R.string.install_game_content,
-                R.string.install_game_content_description,
-                R.drawable.ic_install,
-                { mainActivity.ciaFileInstaller.launch(true) }
-            ),
-            HomeSetting(
-                R.string.setup_system_files,
-                R.string.setup_system_files_description,
-                R.drawable.ic_system_update,
-                {
-                    exitTransition = MaterialSharedAxis(MaterialSharedAxis.X, true)
-                    parentFragmentManager.primaryNavigationFragment?.findNavController()
-                        ?.navigate(R.id.action_homeSettingsFragment_to_systemFilesFragment)
-                }
-            ),
-            HomeSetting(
                 R.string.share_log,
                 R.string.share_log_description,
                 R.drawable.ic_share,
                 { shareLog() }
-            ),
-            HomeSetting(
-                R.string.gpu_driver_manager,
-                R.string.install_gpu_driver_description,
-                R.drawable.ic_install_driver,
-                {
-                    binding.root.findNavController()
-                        .navigate(R.id.action_homeSettingsFragment_to_driverManagerFragment)
-                },
-                { GpuDriverHelper.supportsCustomDriverLoading() },
-                R.string.custom_driver_not_supported,
-                R.string.custom_driver_not_supported_description,
-                driverViewModel.selectedDriverMetadata
-            ),
-            HomeSetting(
-                R.string.select_citra_user_folder,
-                R.string.select_citra_user_folder_home_description,
-                R.drawable.ic_home,
-                { PermissionsHandler.compatibleSelectDirectory(mainActivity.openCitraDirectory) },
-                details = homeViewModel.userDir
-            ),
-            HomeSetting(
-                R.string.select_games_folder,
-                R.string.select_games_folder_description,
-                R.drawable.ic_add,
-                { getGamesDirectory.launch(Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).data) },
-                details = homeViewModel.gamesDir
-            ),
-            HomeSetting(
-                R.string.preferences_theme,
-                R.string.theme_and_color_description,
-                R.drawable.ic_palette,
-                {
-                    mainActivity.homeFragment()?.handoffHome()
-                    SettingsActivity.launch(requireContext(), Settings.SECTION_THEME, "")
-                }
             ),
             HomeSetting(
                 R.string.about,
@@ -236,10 +301,7 @@ class HomeSettingsFragment : Fragment() {
         )
 
         binding.homeSettingsList.apply {
-            layoutManager = GridLayoutManager(
-                requireContext(),
-                resources.getInteger(R.integer.game_grid_columns)
-            )
+            layoutManager = LinearLayoutManager(requireContext())
             adapter = HomeSettingAdapter(
                 requireActivity() as AppCompatActivity,
                 viewLifecycleOwner,
@@ -273,11 +335,7 @@ class HomeSettingsFragment : Fragment() {
                 Intent.FLAG_GRANT_READ_URI_PERMISSION
             )
 
-            // When a new directory is picked, we currently will reset the existing games
-            // database. This effectively means that only one game directory is supported.
-            preferences.edit()
-                .putString(GameHelper.KEY_GAME_PATH, result.toString())
-                .apply()
+            GameHelper.addGameFolder(result)
 
             Toast.makeText(
                 CitraApplication.appContext,
@@ -286,6 +344,18 @@ class HomeSettingsFragment : Fragment() {
             ).show()
 
             homeViewModel.setGamesDir(requireActivity(), result.path!!)
+        }
+
+    private val getNintendoDirectory =
+        registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { result ->
+            if (result == null) return@registerForActivityResult
+            requireContext().contentResolver.takePersistableUriPermission(
+                result,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+            GameHelper.addGameFolder(result)
+            homeViewModel.setGamesDir(requireActivity(), result.path!!)
+            Toast.makeText(requireContext(), R.string.games_dir_selected, Toast.LENGTH_LONG).show()
         }
 
     private fun shareLog() {

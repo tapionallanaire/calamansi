@@ -1,0 +1,130 @@
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/utils/DirectoryInitialization.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/utils/DirectoryInitialization.kt
+@@ -7,7 +7,6 @@
+ 
+ import android.content.Context
+ import android.os.Build
+-import android.os.Environment
+ import android.widget.Toast
+ import androidx.appcompat.app.AppCompatDelegate
+ import androidx.core.content.ContextCompat
+@@ -43,7 +42,6 @@
+ 
+     private lateinit var userPath: String
+     private lateinit var driverPath: String
+-    private var usingLegacyUserDirectory = false
+ 
+     enum class DirectoryInitializationState {
+         NOT_YET_INITIALIZED, INITIALIZING, DOLPHIN_DIRECTORIES_INITIALIZED
+@@ -91,11 +89,6 @@
+         directoryState.postValue(DirectoryInitializationState.DOLPHIN_DIRECTORIES_INITIALIZED)
+     }
+ 
+-    private fun getLegacyUserDirectoryPath(): File? {
+-        val externalPath = Environment.getExternalStorageDirectory() ?: return null
+-        return File(externalPath, "dolphin-emu")
+-    }
+-
+     @JvmStatic
+     fun getUserDirectoryPath(context: Context?): File? {
+         if (context == null) {
+@@ -126,7 +119,7 @@
+ 
+         val preferences = PreferenceManager.getDefaultSharedPreferences(context)
+         val revision = NativeLibrary.GetGitRevision()
+-        if (preferences.getString("sysDirectoryVersion", "") != revision) {
++        if (preferences.getString("sysDirectoryVersion", "") != revision || !sysDirectory.isDirectory) {
+             // There is no extracted Sys directory, or there is a Sys directory from another
+             // version of Dolphin that might contain outdated files. Let's (re-)extract Sys.
+             val staged = File(sysDirectory.parentFile, "Sys.extracting")
+@@ -216,6 +209,7 @@
+     private fun copyAssetFolder(assetFolder: String, outputFolder: File, context: Context) {
+         check(outputFolder.mkdirs() || outputFolder.isDirectory)
+         val children = context.assets.list(assetFolder) ?: throw IOException("Missing Dolphin assets: $assetFolder")
++        if (children.isEmpty()) throw IOException("Empty Dolphin asset directory: $assetFolder")
+         for (child in children) {
+             val asset = "$assetFolder/$child"
+             val output = File(outputFolder, child)
+@@ -252,36 +246,9 @@
+         )
+     }
+ 
+-    private fun isExternalFilesDirEmpty(context: Context): Boolean {
+-        val dir =
+-            context.getExternalFilesDir(null) ?: return false // External storage not available
+-        val contents = dir.listFiles()
+-        return contents == null || contents.isEmpty()
+-    }
+-
+-    private fun legacyUserDirectoryExists(): Boolean {
+-        return try {
+-            getLegacyUserDirectoryPath()?.exists() == true
+-        } catch (_: SecurityException) {
+-            // Most likely we don't have permission to read external storage.
+-            // Return true so that external storage permissions will be requested.
+-            //
+-            // Strangely, we don't seem to trigger this case in practice, even with no
+-            // permissions... But this only makes things more convenient for users, so no harm
+-            // done.
+-            true
+-        }
+-    }
+-
+-    private fun preferLegacyUserDirectory(context: Context): Boolean {
+-        return PermissionsHandler.isExternalStorageLegacy() && !PermissionsHandler.isWritePermissionDenied() && isExternalFilesDirEmpty(
+-            context
+-        ) && legacyUserDirectoryExists()
+-    }
+-
+     @JvmStatic
+     fun isUsingLegacyUserDirectory(): Boolean {
+-        return usingLegacyUserDirectory
++        return false
+     }
+ 
+     @JvmStatic
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/settings/ui/SettingsActivity.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/settings/ui/SettingsActivity.kt
+@@ -36,7 +36,7 @@
+ import org.dolphinemu.dolphinemu.utils.ThemeHelper.setCorrectTheme
+ import org.dolphinemu.dolphinemu.utils.ThemeHelper.setTheme
+ 
+-open class SettingsActivity : AppCompatActivity(), SettingsActivityView, ThemeProvider {
++class SettingsActivity : AppCompatActivity(), SettingsActivityView, ThemeProvider {
+     private var presenter: SettingsActivityPresenter? = null
+     private var dialog: AlertDialog? = null
+     private var toolbarLayout: CollapsingToolbarLayout? = null
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/activities/EmulationActivity.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/activities/EmulationActivity.kt
+@@ -496,11 +496,13 @@
+             MENU_ACTION_PAUSE_EMULATION -> {
+                 hasUserPausedEmulation = true
+                 NativeLibrary.PauseEmulation(false)
++                org.calamansi.dolphin.DolphinRuntime.update(true)
+             }
+ 
+             MENU_ACTION_UNPAUSE_EMULATION -> {
+                 hasUserPausedEmulation = false
+                 NativeLibrary.UnPauseEmulation()
++                org.calamansi.dolphin.DolphinRuntime.update(false)
+             }
+ 
+             MENU_ACTION_TAKE_SCREENSHOT -> NativeLibrary.SaveScreenShot()
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/fragments/EmulationFragment.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/fragments/EmulationFragment.kt
+@@ -162,6 +162,7 @@
+     override fun surfaceDestroyed(holder: SurfaceHolder) {
+         Log.debug("[EmulationFragment] Surface destroyed.")
+         NativeLibrary.SurfaceDestroyed()
++        org.calamansi.dolphin.DolphinRuntime.update(true)
+         runWhenSurfaceIsValid = true
+     }
+ 
+@@ -260,6 +261,7 @@
+             if (!EmulationActivity.hasUserPausedEmulation && !NativeLibrary.IsShowingAlertMessage()) {
+                 Log.debug("[EmulationFragment] Resuming emulation.")
+                 NativeLibrary.UnPauseEmulation()
++                org.calamansi.dolphin.DolphinRuntime.update(false)
+             }
+         }
+     }

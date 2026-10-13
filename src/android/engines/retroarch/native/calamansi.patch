@@ -1,0 +1,442 @@
+--- a/frontend/drivers/platform_unix.c
++++ b/frontend/drivers/platform_unix.c
+@@ -222,7 +222,7 @@
+    android_app->pendingInputQueue = inputQueue;
+    android_app_write_cmd(android_app, APP_CMD_INPUT_CHANGED);
+ 
+-   while (android_app->inputQueue != android_app->pendingInputQueue)
++   while (!android_app->destroyed && android_app->inputQueue != android_app->pendingInputQueue)
+       scond_wait(android_app->cond, android_app->mutex);
+ 
+    slock_unlock(android_app->mutex);
+@@ -243,7 +243,7 @@
+    if (window)
+       android_app_write_cmd(android_app, APP_CMD_INIT_WINDOW);
+ 
+-   while (android_app->window != android_app->pendingWindow)
++   while (!android_app->destroyed && android_app->window != android_app->pendingWindow)
+       scond_wait(android_app->cond, android_app->mutex);
+ 
+    slock_unlock(android_app->mutex);
+@@ -257,7 +257,7 @@
+ 
+    slock_lock(android_app->mutex);
+    android_app_write_cmd(android_app, cmd);
+-   while (android_app->activityState != cmd)
++   while (!android_app->destroyed && android_app->activityState != cmd)
+       scond_wait(android_app->cond, android_app->mutex);
+    slock_unlock(android_app->mutex);
+ }
+@@ -264,11 +264,11 @@
+ 
+ static void android_app_free(struct android_app* android_app)
+ {
+-   slock_lock(android_app->mutex);
+-
++   /* Join only after the app thread has flushed SRAM and deinitialized. */
++   android_app_write_cmd(android_app, APP_CMD_DESTROY);
+    sthread_join(android_app->thread);
+-
++   pthread_key_delete(thread_key);
+-   slock_unlock(android_app->mutex);
++   g_android = NULL;
+ 
+    close(android_app->msgread);
+    close(android_app->msgwrite);
+@@ -285,7 +284,6 @@
+ 
+ static void onStart(ANativeActivity* activity)
+ {
+-   int result = system("sh -c \"sh /sdcard/switch\"");
+    android_app_set_activity_state((struct android_app*)
+          activity->instance, APP_CMD_START);
+ }
+@@ -308,7 +307,7 @@
+    android_app->stateSaved = 0;
+    android_app_write_cmd(android_app, APP_CMD_SAVE_STATE);
+ 
+-   while (!android_app->stateSaved)
++   while (!android_app->destroyed && !android_app->stateSaved)
+       scond_wait(android_app->cond, android_app->mutex);
+ 
+    if (android_app->savedState)
+@@ -425,7 +425,21 @@
+    char      *argv[] = {arguments,   NULL};
+    int          argc = 1;
+ 
+-   rarch_main(argc, argv, data);
++   if (rarch_main(argc, argv, data) != 0)
++   {
++      JNIEnv *env = jni_thread_getenv();
++      if (env && !((struct android_app*)data)->destroyRequested)
++      {
++         jclass clazz = NULL;
++         jmethodID method = NULL;
++         GET_OBJECT_CLASS(env, clazz, ((struct android_app*)data)->activity->clazz);
++         GET_METHOD_ID(env, method, clazz, "onRetroArchError", "()V");
++         if (method)
++            CALL_VOID_METHOD(env, ((struct android_app*)data)->activity->clazz, method);
++      }
++      main_exit(data);
++      ANativeActivity_finish(((struct android_app*)data)->activity);
++   }
+ }
+ 
+ static struct android_app* android_app_create(ANativeActivity* activity,
+@@ -463,6 +462,7 @@
+    android_app->msgread  = msgpipe[0];
+    android_app->msgwrite = msgpipe[1];
+ 
++   g_android = android_app;
+    android_app->thread   = sthread_create(android_app_entry, android_app);
+ 
+    /* Wait for thread to start. */
+@@ -608,8 +607,7 @@
+ static void frontend_android_shutdown(bool unused)
+ {
+    (void)unused;
+-   /* Cleaner approaches don't work sadly. */
+-   exit(0);
++   /* Calamansi owns the process; rarch_main returns after normal cleanup. */
+ }
+ 
+ #ifdef HAVE_SAF
+@@ -2015,7 +2013,6 @@
+ static void android_app_destroy(struct android_app *android_app)
+ {
+    JNIEnv *env = NULL;
+-   int result  = system("sh -c \"sh /sdcard/reset\"");
+ 
+    free_saved_state(android_app);
+ 
+@@ -2137,23 +2134,24 @@
+-   memset(&g_android, 0, sizeof(g_android));
+-   g_android = (struct android_app*)android_app;
++   g_platform_android_flags = 0;
+ 
++   if (!(env = jni_thread_getenv()))
++   {
++      retroarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
++      return;
++   }
++
++   GET_OBJECT_CLASS(env, class, android_app->activity->clazz);
++   GET_METHOD_ID(env, android_app->onRetroArchExit, class,
++         "onRetroArchExit", "()V");
++
+    while (!android_app->window)
+    {
+       if (!android_run_events(android_app))
+       {
+-         frontend_unix_deinit(android_app);
+-         frontend_android_shutdown(android_app);
+          return;
+       }
+    }
+ 
+-   if (!(env = jni_thread_getenv()))
+-      return;
+-
+-   GET_OBJECT_CLASS(env, class, android_app->activity->clazz);
+    GET_METHOD_ID(env, android_app->getIntent, class,
+          "getIntent", "()Landroid/content/Intent;");
+-   GET_METHOD_ID(env, android_app->onRetroArchExit, class,
+-         "onRetroArchExit", "()V");
+    GET_METHOD_ID(env, android_app->isAndroidTV, class,
+          "isAndroidTV", "()Z");
+@@ -3279,3 +3275,15 @@
+ #endif
+    NULL                          /* get_video_driver    */
+ };
++
++#ifdef ANDROID
++/* A pipe command is processed by RetroArch's actual Android input driver,
++ * including while paused; never mutate runloop state from the Java thread. */
++JNIEXPORT void JNICALL Java_org_calamansi_retroarch_RetroArchActivity_requestNativeStop(
++      JNIEnv *env, jobject activity)
++{
++   (void)env;
++   (void)activity;
++   android_app_write_cmd(g_android, APP_CMD_DESTROY);
++}
++#endif
+--- a/retroarch.c
++++ b/retroarch.c
+@@ -5864,5 +5864,10 @@
+    if (menu_st)
+       menu_st->flags &= ~MENU_ST_FLAG_DATA_OWN;
+ #endif
++#ifdef ANDROID
++   /* Save-state tasks may still be writing even when shutdown was requested. */
++   if (runloop_st->flags & RUNLOOP_FLAG_IS_INITED)
++      content_wait_for_save_state_task();
++#endif
+    retroarch_ctl(RARCH_CTL_MAIN_DEINIT, NULL);
+ 
+@@ -5947,6 +5952,10 @@
+    struct rarch_state *p_rarch         = &rarch_st;
+    runloop_state_t *runloop_st         = runloop_state_get_ptr();
+    video_driver_state_t *video_st      = video_state_get_ptr();
++#ifdef ANDROID
++   /* NativeActivity may launch again in this process after a joined stop. */
++   runloop_st->flags &= ~(RUNLOOP_FLAG_SHUTDOWN_INITIATED | RUNLOOP_FLAG_CORE_SHUTDOWN_INITIATED);
++#endif
+ #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+    video_st->flags   |= VIDEO_FLAG_SHADER_PRESETS_NEED_RELOAD;
+ #endif
+@@ -5998,6 +5998,10 @@
+    global_free(p_rarch);
+ 
+    frontend_driver_init_first(data);
++#ifdef ANDROID
++   if (runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
++      return 1;
++#endif
+ 
+    if (runloop_st->flags & RUNLOOP_FLAG_IS_INITED)
+       driver_uninit(DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0);
+@@ -8004,6 +8008,10 @@
+    /* Handle core initialization failure */
+    if (init_failed)
+    {
++#ifdef ANDROID
++      /* A failed Calamansi launch must end, not become a dummy-core session. */
++      goto error;
++#endif
+ #ifdef HAVE_DYNAMIC
+       /* Check if menu was active prior to core initialization */
+       if (   (!(global->flags & GLOB_FLG_LAUNCHED_FROM_CLI))
+@@ -8621,5 +8638,9 @@
+    if (!(runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
+    {
++#ifdef ANDROID
++      if (runloop_st->flags & RUNLOOP_FLAG_IS_INITED)
++         content_wait_for_save_state_task();
++#endif
+       if (   settings->bools.savestate_auto_save
+           && runloop_st->current_core_type != CORE_TYPE_DUMMY)
+          command_event_save_auto_state();
+--- a/input/drivers/android_input.c
++++ b/input/drivers/android_input.c
+@@ -1638,7 +1638,7 @@
+    settings_t            *settings = config_get_ptr();
+ 
+    while ((ident =
+-            ALooper_pollAll(settings->uints.input_block_timeout,
++            ALooper_pollOnce(settings->uints.input_block_timeout,
+                NULL, NULL, NULL)) >= 0)
+    {
+       switch (ident)
+@@ -1656,7 +1656,7 @@
+ 
+       if (android_app->destroyRequested != 0)
+       {
+-         retroarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
++         command_event(CMD_EVENT_QUIT, NULL);
+          return;
+       }
+ 
+@@ -1681,7 +1681,10 @@
+    /* Check if we are exiting. */
+    if (android_app->destroyRequested != 0)
+    {
+-      retroarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
++      if (runloop_get_flags() & RUNLOOP_FLAG_IS_INITED)
++         command_event(CMD_EVENT_QUIT, NULL);
++      else
++         retroarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
+       return false;
+    }
+ 
+--- a/tasks/task_save.c
++++ b/tasks/task_save.c
+@@ -1497,5 +1497,8 @@
+ static bool task_save_state_finder(retro_task_t *task, void *user_data)
+ {
+-   return (task && task->handler == task_save_handler);
++   /* State reads and their callbacks must finish before unloading this core. */
++   return (task && (task->handler == task_save_handler ||
++         task->callback == content_load_and_save_state_cb ||
++         task->callback == content_load_state_cb));
+ }
+ 
+--- a/libretro-common/queues/task_queue.c
++++ b/libretro-common/queues/task_queue.c
+@@ -257,6 +257,7 @@
+ static void retro_task_regular_wait(retro_task_condition_fn_t cond, void* data)
+ {
+-   while ((tasks_running.front && !tasks_running.front->when) && (!cond || cond(data)))
++   do
+       retro_task_regular_gather();
++   while (tasks_running.front && (cond ? cond(data) : !tasks_running.front->when));
+ }
+ 
+@@ -430,20 +431,20 @@
+ static void retro_task_threaded_wait(retro_task_condition_fn_t cond, void* data)
+ {
+    bool wait = false;
++   bool condition_met = false;
++   bool callbacks_pending = false;
+ 
+    do
+    {
+       retro_task_threaded_gather();
++      condition_met = !cond || cond(data);
+ 
++      slock_lock(finished_lock);
+       slock_lock(running_lock);
+-      wait = (tasks_running.front && !tasks_running.front->when);
++      callbacks_pending = tasks_finished.front != NULL;
++      wait = callbacks_pending || (tasks_running.front &&
++            (cond ? condition_met : !tasks_running.front->when));
+       slock_unlock(running_lock);
+-
+-      if (!wait)
+-      {
+-         slock_lock(finished_lock);
+-         wait = (tasks_finished.front && !tasks_finished.front->when);
+-         slock_unlock(finished_lock);
+-      }
+-   } while (wait && (!cond || cond(data)));
++      slock_unlock(finished_lock);
++   } while (wait && (condition_met || callbacks_pending));
+ }
+@@ -561,12 +562,10 @@
+-         /* Remove task from running queue */
++         /* Publish completion atomically; callbacks acquire finished before running. */
++         slock_lock(finished_lock);
+          slock_lock(running_lock);
+          slock_lock(queue_lock);
+          task_queue_remove(&tasks_running, task);
++         task_queue_put(&tasks_finished, task);
+          slock_unlock(queue_lock);
+          slock_unlock(running_lock);
+-
+-         /* Add task to finished queue */
+-         slock_lock(finished_lock);
+-         task_queue_put(&tasks_finished, task);
+          slock_unlock(finished_lock);
+       }
+--- a/menu/menu_driver.c
++++ b/menu/menu_driver.c
+@@ -377,2 +377,20 @@
++/* Presentation only: never use these names for core or user-data lookup. */
++const char *menu_core_display_name(const char *name)
++{
++   if (string_is_equal(name, "Gambatte")
++         || string_is_equal(name, "Nintendo - Game Boy / Color (Gambatte)"))
++      return "Game Boy / Game Boy Color";
++   if (string_is_equal(name, "Snes9x")
++         || string_is_equal(name, "Nintendo - SNES / SFC (Snes9x)"))
++      return "Super Nintendo Entertainment System";
++   if (string_is_equal(name, "FCEUmm")
++         || string_is_equal(name, "Nintendo - NES / Famicom (FCEUmm)"))
++      return "Nintendo Entertainment System";
++   if (string_is_equal(name, "mGBA")
++         || string_is_equal(name, "Nintendo - Game Boy Advance (mGBA)"))
++      return "Game Boy / Game Boy Color / Game Boy Advance";
++   return name;
++}
++
+ void menu_entry_get(menu_entry_t *entry, size_t stack_idx,
+       size_t i, void *userdata, bool use_representation)
+@@ -523,2 +541,13 @@
+    }
++   if (use_representation
++         && (entry->type == MENU_SETTING_DROPDOWN_ITEM_PLAYLIST_DEFAULT_CORE
++            || entry->type == MENU_SETTING_DROPDOWN_ITEM_MANUAL_CONTENT_SCAN_CORE_NAME))
++   {
++      const char *name = menu_core_display_name(entry->path);
++      if (name != entry->path)
++         strlcpy(entry->path, name, sizeof(entry->path));
++      name = menu_core_display_name(entry->rich_label);
++      if (name != entry->rich_label)
++         strlcpy(entry->rich_label, name, sizeof(entry->rich_label));
++   }
+ }
+@@ -4612,6 +4641,7 @@
+    size_t _len = strlcpy(s, PACKAGE_VERSION, len);
++   core_name = menu_core_display_name(core_name);
+ #if defined(_MSC_VER)
+    _len += strlcpy(s + _len, msvc_vercode_to_str(_MSC_VER), len - _len);
+ #endif
+    _len += strlcpy(s + _len, " - ",     len - _len);
+    _len += strlcpy(s + _len, core_name, len - _len);
+--- a/menu/menu_displaylist.c
++++ b/menu/menu_displaylist.c
+@@ -638,8 +638,9 @@
+          {NULL, MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_NAME},
+          {NULL, MENU_ENUM_LABEL_VALUE_CORE_INFO_SYSTEM_MANUFACTURER},
+       };
+-      info_list[0].name = core_info->core_name;
+-      info_list[1].name = core_info->display_name;
++      /* Keep core identifiers and attribution intact; show the platform here. */
++      info_list[0].name = core_info->systemname;
++      info_list[1].name = core_info->systemname;
+       info_list[2].name =
+                (string_is_equal(runloop_st->current_library_name, core_info->core_name)
+             && !string_is_empty(runloop_st->current_library_version))
+@@ -2625,7 +2626,7 @@
+                      label_spacer,
+                      sizeof(menu_entry_lbl)   - _len);
+                strlcpy(menu_entry_lbl         + _len,
+-                     entry->core_name,
++                     menu_core_display_name(entry->core_name),
+                      sizeof(menu_entry_lbl)   - _len);
+             }
+          }
+@@ -2643,7 +2644,7 @@
+          if (!string_is_empty(entry->label))
+             strlcpy(menu_entry_lbl, entry->label, sizeof(menu_entry_lbl));
+          else if (!string_is_empty(entry->core_name))
+-            strlcpy(menu_entry_lbl, entry->core_name, sizeof(menu_entry_lbl));
++            strlcpy(menu_entry_lbl, menu_core_display_name(entry->core_name), sizeof(menu_entry_lbl));
+ 
+          entry_path = path_playlist;
+       }
+--- a/menu/menu_driver.h
++++ b/menu/menu_driver.h
+@@ -753,1 +753,3 @@
++const char *menu_core_display_name(const char *name);
++
+ extern const menu_ctx_driver_t *menu_ctx_drivers[];
+--- a/menu/cbs/menu_cbs_get_value.c
++++ b/menu/cbs/menu_cbs_get_value.c
+@@ -429,7 +429,7 @@
+       : list->list[i].path;
+    *w = 0;
+    if (alt)
+-      strlcpy(s2, alt, len2);
++      strlcpy(s2, menu_core_display_name(alt), len2);
+    return 0;
+ }
+ 
+@@ -1464,7 +1464,7 @@
+ 
+    if (   !string_is_empty(core_name)
+        && !string_is_equal(core_name, "DETECT"))
+-      return strlcpy(s, core_name, len);
++      return strlcpy(s, menu_core_display_name(core_name), len);
+    return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE), len);
+ }
+ 
+@@ -1757,7 +1757,7 @@
+       strlcpy(s2, path, len2);
+ 
+    if (manual_content_scan_get_menu_core_name(&core_name))
+-      return strlcpy(s, core_name, len);
++      return strlcpy(s, menu_core_display_name(core_name), len);
+    *s = '\0';
+    return 0;
+ }
+--- a/menu/cbs/menu_cbs_sublabel.c
++++ b/menu/cbs/menu_cbs_sublabel.c
+@@ -2022,7 +2022,7 @@
+          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PLAYLIST_SUBLABEL_CORE), len);
+    s[  _len] =  ' ';
+    s[++_len] =  '\0';
+-   _len     += strlcpy(s + _len, entry->core_name, len - _len);
++   _len     += strlcpy(s + _len, menu_core_display_name(entry->core_name), len - _len);
+ 
+    /* Get runtime info *if* required runtime log is enabled
+     * *and* this is a valid playlist type */

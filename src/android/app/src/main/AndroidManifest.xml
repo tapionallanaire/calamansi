@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <uses-feature
         android:name="android.hardware.touchscreen"
         android:required="false"/>
@@ -90,11 +91,42 @@
             android:label="@string/preferences_settings"/>
 
         <activity
+            android:name="org.calamansi.nds.NdsSettingsActivity"
+            android:theme="@style/Theme.Citra.Main"
+            tools:replace="android:theme" />
+        <activity
+            android:name="org.calamansi.retroarch.RetroArchSettingsActivity"
+            android:theme="@style/Theme.Citra.Main"
+            tools:replace="android:theme" />
+        <activity
+            android:name="org.calamansi.cemu.CemuSettingsActivity"
+            android:theme="@style/Theme.Citra.Main"
+            tools:replace="android:theme" />
+        <activity
+            android:name="org.calamansi.settings.PictureFilterSettingsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Citra.Main" />
+
+        <activity
             android:name="org.citra.citra_emu.activities.EmulationActivity"
             android:exported="true"
             android:theme="@style/Theme.Citra.Main"
             android:launchMode="singleTop">
 
+        </activity>
+
+        <activity
+            android:name="org.calamansi.nds.NdsActivity"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:process=":engine_nds"
+            android:theme="@style/Theme.Citra.Main"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout|uiMode|density" />
+
+        <activity
+            android:name="org.citra.citra_emu.activities.NintendoLaunchActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Citra.Main">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -102,8 +134,8 @@
                     android:mimeType="application/octet-stream"
                     android:scheme="content" />
             </intent-filter>
-
         </activity>
+
 
         <activity
             android:name="org.citra.citra_emu.features.cheats.ui.CheatsActivity"

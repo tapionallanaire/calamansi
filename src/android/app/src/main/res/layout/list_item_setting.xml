@@ -38,8 +38,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textAlignment="viewStart"
-                android:textSize="17sp"
-                app:lineHeight="22dp"
                 tools:text="Setting Name" />
 
             <com.google.android.material.textview.MaterialTextView
@@ -60,7 +58,6 @@
                 android:textAlignment="viewStart"
                 android:textColor="?attr/colorPrimary"
                 android:textStyle="bold"
-                android:textSize="13sp"
                 tools:text="1x" />
 
         </LinearLayout>

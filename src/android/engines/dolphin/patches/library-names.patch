@@ -1,0 +1,61 @@
+--- a/Externals/libadrenotools/src/driver.cpp
++++ b/Externals/libadrenotools/src/driver.cpp
+@@ -63,7 +63,7 @@
+         return nullptr;
+ 
+     // Preload the hook implementation, otherwise we get a weird issue where despite being in NEEDED of the hook lib the hook's symbols will overwrite ours and cause an infinite loop
+-    auto hookImpl{linkernsbypass_namespace_dlopen("libhook_impl.so", RTLD_NOW, hookNs)};
++    auto hookImpl{linkernsbypass_namespace_dlopen("libcalamansi_dolphin_hook_impl.so", RTLD_NOW, hookNs)};
+     if (!hookImpl)
+         return nullptr;
+ 
+@@ -87,7 +87,7 @@
+     initHookParam(new HookImplParams(featureFlags, tmpLibDir, hookLibDir, customDriverDir, customDriverName, fileRedirectDir, importMapping));
+ 
+     // Load the libvulkan hook into the isolated namespace
+-    if (!linkernsbypass_namespace_dlopen("libmain_hook.so", RTLD_GLOBAL, hookNs))
++    if (!linkernsbypass_namespace_dlopen("libcalamansi_dolphin_main_hook.so", RTLD_GLOBAL, hookNs))
+         return nullptr;
+ 
+     return linkernsbypass_namespace_dlopen_unique("/system/lib64/libvulkan.so", tmpLibDir, dlopenFlags, hookNs);
+--- a/Externals/libadrenotools/src/hook/hook_impl.cpp
++++ b/Externals/libadrenotools/src/hook/hook_impl.cpp
+@@ -66,7 +66,7 @@
+ 
+     // Preload ourself, a new instance will be created since we have different linker ancestory
+     // If we don't preload we get a weird issue where despite being in NEEDED of the hook lib the hook's symbols will overwrite ours and cause an infinite loop
+-    auto hookImpl{linkernsbypass_namespace_dlopen("libhook_impl.so", RTLD_NOW, driverNs)};
++    auto hookImpl{linkernsbypass_namespace_dlopen("libcalamansi_dolphin_hook_impl.so", RTLD_NOW, driverNs)};
+     if (!hookImpl)
+         return nullptr;
+ 
+@@ -78,7 +78,7 @@
+     initHookParam(hook_params);
+ 
+     if (hook_params->featureFlags & ADRENOTOOLS_DRIVER_FILE_REDIRECT) {
+-        if (!linkernsbypass_namespace_dlopen("libfile_redirect_hook.so", RTLD_GLOBAL, driverNs)) {
++        if (!linkernsbypass_namespace_dlopen("libcalamansi_dolphin_file_redirect_hook.so", RTLD_GLOBAL, driverNs)) {
+             LOGI("hook_android_dlopen_ext: hook failed: failed to apply libfopen_redirect_hook!");
+             return fallback();
+         }
+@@ -91,7 +91,7 @@
+     newExtinfo.library_namespace = driverNs;
+ 
+     if (hook_params->featureFlags & ADRENOTOOLS_DRIVER_GPU_MAPPING_IMPORT) {
+-        if (!linkernsbypass_namespace_dlopen("libgsl_alloc_hook.so", RTLD_GLOBAL, driverNs)) {
++        if (!linkernsbypass_namespace_dlopen("libcalamansi_dolphin_gsl_alloc_hook.so", RTLD_GLOBAL, driverNs)) {
+             LOGI("hook_android_dlopen_ext: hook failed: failed to apply libgsl_alloc_hook!");
+             return fallback();
+         }
+--- a/Externals/libadrenotools/src/hook/CMakeLists.txt
++++ b/Externals/libadrenotools/src/hook/CMakeLists.txt
+@@ -25,3 +25,9 @@
+ target_link_options(gsl_alloc_hook PRIVATE -z global)
+ target_link_libraries(gsl_alloc_hook hook_impl)
+ set_target_properties(gsl_alloc_hook PROPERTIES CXX_VISIBILITY_PRESET hidden)
++
++# Calamansi packages multiple backends; their driver hooks must have distinct SONAMEs.
++set_target_properties(hook_impl PROPERTIES OUTPUT_NAME calamansi_dolphin_hook_impl)
++set_target_properties(main_hook PROPERTIES OUTPUT_NAME calamansi_dolphin_main_hook)
++set_target_properties(file_redirect_hook PROPERTIES OUTPUT_NAME calamansi_dolphin_file_redirect_hook)
++set_target_properties(gsl_alloc_hook PROPERTIES OUTPUT_NAME calamansi_dolphin_gsl_alloc_hook)

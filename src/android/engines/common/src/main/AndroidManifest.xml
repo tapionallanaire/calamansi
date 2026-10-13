@@ -1,0 +1,12 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <provider
+            android:name="org.calamansi.engine.EngineSessionProvider"
+            android:authorities="${applicationId}.engine-session"
+            android:exported="false" />
+        <provider
+            android:name="org.calamansi.engine.PictureFilterProvider"
+            android:authorities="${applicationId}.picture-filter"
+            android:exported="false" />
+    </application>
+</manifest>

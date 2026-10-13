@@ -1,0 +1,21 @@
+# Stable melonDS JNI names, field layouts and callback descriptors.
+-keep class me.magnum.melonds.MelonEmulator { *; }
+-keep class me.magnum.melonds.MelonDSAndroidInterface { *; }
+-keep class me.magnum.melonds.common.UriFileHandler { *; }
+-keep class me.magnum.melonds.common.camera.DSiCameraSource { *; }
+-keep class me.magnum.melonds.domain.model.EmulatorConfiguration { *; }
+-keep class me.magnum.melonds.domain.model.FirmwareConfiguration { *; }
+-keep class me.magnum.melonds.domain.model.RendererConfiguration { *; }
+-keep class me.magnum.melonds.domain.model.ConsoleType { *; }
+-keep class me.magnum.melonds.domain.model.VideoRenderer { *; }
+-keep class me.magnum.melonds.domain.model.Audio* { *; }
+-keep class me.magnum.melonds.domain.model.MicSource { *; }
+-keep class me.magnum.melonds.domain.model.Cheat { *; }
+-keep class me.magnum.melonds.domain.model.DSiWareTitle { *; }
+-keep class me.magnum.melonds.domain.model.retroachievements.RASimple* { *; }
+-keep class me.magnum.melonds.ui.emulator.rewind.model.** { *; }
+-keep class me.magnum.melonds.ui.emulator.render.GlContext { *; }
+-keep interface me.magnum.melonds.ui.emulator.render.FrameRenderCallback { *; }
+-keepclassmembers class * implements me.magnum.melonds.ui.emulator.render.FrameRenderCallback { public void renderFrame(boolean,int); }
+-keep class me.magnum.melonds.impl.emulator.EmulatorMessageQueue { *; }
+-keep class me.magnum.melonds.impl.emulator.EmulatorMessageQueue$Companion { *; }
