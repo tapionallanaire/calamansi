@@ -1,0 +1,72 @@
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/settings/ui/SettingsActivity.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/settings/ui/SettingsActivity.kt
+@@ -63,6 +63,7 @@
+         get() = supportFragmentManager.findFragmentByTag(FRAGMENT_TAG) as SettingsFragment?
+ 
+     override fun onCreate(savedInstanceState: Bundle?) {
++        org.calamansi.dolphin.DolphinRuntime.initialize(this)
+         setTheme(this)
+         enableEdgeToEdge()
+ 
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/cheats/ui/CheatsActivity.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/cheats/ui/CheatsActivity.kt
+@@ -49,6 +49,7 @@
+     private lateinit var binding: ActivityCheatsBinding
+ 
+     override fun onCreate(savedInstanceState: Bundle?) {
++        org.calamansi.dolphin.DolphinRuntime.initialize(this)
+         ThemeHelper.setTheme(this)
+         enableEdgeToEdge()
+ 
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/riivolution/ui/RiivolutionBootActivity.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/riivolution/ui/RiivolutionBootActivity.kt
+@@ -29,6 +29,7 @@
+     private lateinit var binding: ActivityRiivolutionBootBinding
+ 
+     override fun onCreate(savedInstanceState: Bundle?) {
++        org.calamansi.dolphin.DolphinRuntime.initialize(this)
+         ThemeHelper.setTheme(this)
+         enableEdgeToEdge()
+ 
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/activities/ConvertActivity.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/activities/ConvertActivity.kt
+@@ -21,6 +21,7 @@
+     private lateinit var binding: ActivityConvertBinding
+ 
+     override fun onCreate(savedInstanceState: Bundle?) {
++        org.calamansi.dolphin.DolphinRuntime.initialize(this)
+         ThemeHelper.setTheme(this)
+         enableEdgeToEdge()
+ 
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/activities/CustomFilePickerActivity.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/activities/CustomFilePickerActivity.kt
+@@ -13,6 +13,7 @@
+     private var extensions: HashSet<String>? = null
+ 
+     override fun onCreate(savedInstanceState: Bundle?) {
++        org.calamansi.dolphin.DolphinRuntime.initialize(this)
+         super.onCreate(savedInstanceState)
+         if (intent != null) {
+             extensions = intent.getSerializableExtra(EXTRA_EXTENSIONS) as HashSet<String>?
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/fragments/CustomFilePickerFragment.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/fragments/CustomFilePickerFragment.kt
+@@ -27,7 +27,7 @@
+     override fun toUri(file: File): Uri {
+         return FileProvider.getUriForFile(
+             requireContext(),
+-            "${requireContext().applicationContext.packageName}.filesprovider",
++            "${requireContext().applicationContext.packageName}.dolphin.filesprovider",
+             file
+         )
+     }
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/utils/TvUtil.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/utils/TvUtil.kt
+@@ -160,7 +160,7 @@
+      * Needed since debug builds append '.debug' to the end of the package
+      */
+     private fun getFileProvider(context: Context): String {
+-        return context.packageName + ".filesprovider"
++        return context.packageName + ".dolphin.filesprovider"
+     }
+ 
+     /**

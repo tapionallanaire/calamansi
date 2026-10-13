@@ -1,0 +1,15 @@
+--- a/Source/Android/jni/MainAndroid.cpp
++++ b/Source/Android/jni/MainAndroid.cpp
+@@ -263,7 +263,11 @@
+ 
+ JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_StopEmulation(JNIEnv*, jclass)
+ {
+-  s_stop_requested.store(true);
++  {
++    // Condition-variable cancellation must use the same lock as the surface predicate.
++    std::lock_guard<std::mutex> guard(s_surface_lock);
++    s_stop_requested.store(true);
++  }
+   s_surface_cv.notify_all();
+   Core::Stop(Core::System::GetInstance());
+ 

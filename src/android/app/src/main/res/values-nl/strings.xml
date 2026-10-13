@@ -39,7 +39,7 @@ Vink deze optie in de toekomst nogmaals aan om te zien of er ondersteuning is to
     <!-- About screen strings -->
     <string name="copied_to_clipboard">Gekopieerd naar klembord</string>
     <string name="contributors">Bijdragers</string>
-    <string name="contributors_description">Bijdragers die Azahar mogelijk hebben gemaakt</string>
+    <string name="contributors_description">Bijdragers aan de oorspronkelijke 3DS-engine</string>
     <string name="licenses_description">Projecten gebruikt door Calamansi voor Android</string>
     <string name="build">Bouw versie</string>
     <string name="licenses">Licenties</string>

@@ -2,3 +2,6 @@ dist/languages/* linguist-vendored
 dist/qt_themes/* linguist-vendored
 externals/* linguist-vendored
 *.h linguist-language=cpp
+
+# Native preparation verifies patch bytes before applying them.
+*.patch text eol=lf

@@ -6,6 +6,7 @@ package org.citra.citra_emu.fragments
 
 import android.annotation.SuppressLint
 import android.app.ActivityManager
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
@@ -55,6 +56,8 @@ import com.google.android.material.slider.Slider
 import java.io.File
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import org.calamansi.engine.EngineSession
+import org.calamansi.engine.NintendoPlatform
 import org.citra.citra_emu.CitraApplication
 import org.citra.citra_emu.EmulationNavigationDirections
 import org.citra.citra_emu.NativeLibrary
@@ -82,6 +85,7 @@ import org.citra.citra_emu.utils.EmulationMenuSettings
 import org.citra.citra_emu.utils.GameHelper
 import org.citra.citra_emu.utils.GameIconUtils
 import org.citra.citra_emu.utils.Log
+import org.citra.citra_emu.utils.NetPlayManager
 import org.citra.citra_emu.utils.ViewUtils
 import org.citra.citra_emu.viewmodel.EmulationViewModel
 
@@ -94,6 +98,11 @@ class EmulationFragment :
 
     private lateinit var emulationState: EmulationState
     private var perfStatsUpdater: Runnable? = null
+    private lateinit var ownerContext: Context
+    private var sessionToken: String? = null
+    internal val ownerToken get() = sessionToken
+    private var stopReceiver: BroadcastReceiver? = null
+    private var ownerCleanupStarted = false
 
     private val emulationActivity: EmulationActivity
         get() = (requireActivity() as EmulationActivity)
@@ -113,12 +122,48 @@ class EmulationFragment :
     private val onPause = Runnable { togglePause() }
     private val onShutdown = Runnable { emulationState.stop() }
 
+    internal fun stopForEngineSwitch() {
+        if (::emulationState.isInitialized) {
+            sessionToken?.let { EngineSession.update(ownerContext, it, "stopping") }
+            emulationState.stopAndJoin()
+        }
+    }
+
+    internal fun finishOwnerAfterActivityDestroyed(restoreGlobals: () -> Unit) {
+        if (!::emulationState.isInitialized || ownerCleanupStarted) return
+        ownerCleanupStarted = true
+        val token = sessionToken
+        val fd = gameFd
+        Thread({
+            try {
+                if (token != null) EngineSession.update(ownerContext, token, "stopping")
+                emulationState.stopAndJoin()
+                NetPlayManager.netPlayLeaveRoom()
+                NativeLibrary.surfaceDestroyed()
+                if (fd != null) ParcelFileDescriptor.adoptFd(fd).close()
+                gameFd = null
+                restoreGlobals()
+                stopReceiver?.let { ownerContext.unregisterReceiver(it) }
+                stopReceiver = null
+                if (token != null) EngineSession.end(ownerContext, token)
+                sessionToken = null
+            } catch (failure: Exception) {
+                if (token != null) EngineSession.update(ownerContext, token, "error")
+                Log.error("3DS shutdown failed; ownership retained: ${failure.message}")
+            }
+        }, "3DSShutdown").start()
+    }
+
     // Only used if a game is passed through intent on google play variant
     private var gameFd: Int? = null
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
         if (context is EmulationActivity) {
+            if (::emulationState.isInitialized && emulationState.isShuttingDown) {
+                context.finish()
+                return
+            }
             NativeLibrary.setEmulationActivity(context)
             if (::game.isInitialized) {
                 context.currentGame = game
@@ -136,6 +181,7 @@ class EmulationFragment :
      */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        ownerContext = requireContext().applicationContext
 
         val intent = requireActivity().intent
         var intentUri: Uri? = intent.data
@@ -182,9 +228,6 @@ class EmulationFragment :
                 }
         }
 
-        val insertedCartridge = preferences.getString("insertedCartridge", "")
-        NativeLibrary.setInsertedCartridge(insertedCartridge ?: "")
-
         try {
             game = args.game ?: intentGame!!
         } catch (e: NullPointerException) {
@@ -198,6 +241,31 @@ class EmulationFragment :
         }
 
         emulationActivity.currentGame = game
+        emulationState = EmulationState(game.path)
+        try {
+            val ownerUri =
+                intent.data ?: oldIntentInfo.first?.let(Uri::parse) ?: Uri.parse(game.path)
+            sessionToken = EngineSession.begin(
+                ownerContext,
+                NintendoPlatform.THREE_DS,
+                ownerUri,
+                game.title,
+                EmulationActivity::class.java
+            )
+            stopReceiver = EngineSession.registerStopHandler(
+                ownerContext,
+                requireNotNull(sessionToken)
+            ) {
+                emulationState.stop()
+                activity?.finish()
+            }
+        } catch (failure: Exception) {
+            Toast.makeText(requireContext(), failure.message, Toast.LENGTH_LONG).show()
+            requireActivity().finish()
+            return
+        }
+        val insertedCartridge = preferences.getString("insertedCartridge", "")
+        NativeLibrary.setInsertedCartridge(insertedCartridge ?: "")
 
         settings.loadSettings(
             if (game.titleId != 0L) String.format("%016X", game.titleId) else ""
@@ -207,7 +275,6 @@ class EmulationFragment :
 
         // So this fragment doesn't restart on configuration changes; i.e. rotation.
         retainInstance = true
-        emulationState = EmulationState(game.path)
         screenAdjustmentUtil =
             ScreenAdjustmentUtil(requireContext(), requireActivity().windowManager, settings)
         EmulationLifecycleUtil.addPauseResumeHook(onPause)
@@ -240,6 +307,7 @@ class EmulationFragment :
         }
 
         binding.surfaceEmulation.holder.addCallback(this)
+        org.calamansi.engine.PictureFilters.attach(binding.surfaceEmulation)
         binding.doneControlConfig.setOnClickListener {
             binding.doneControlConfig.visibility = View.GONE
             binding.surfaceInputOverlay.setIsInEditMode(false)
@@ -591,7 +659,7 @@ class EmulationFragment :
         }
         EmulationLifecycleUtil.removeHook(onPause)
         EmulationLifecycleUtil.removeHook(onShutdown)
-        if (gameFd != null) {
+        if (!::emulationState.isInitialized && gameFd != null) {
             ParcelFileDescriptor.adoptFd(gameFd!!).close()
             gameFd = null
         }
@@ -1694,6 +1762,12 @@ class EmulationFragment :
     private class EmulationState(private val gamePath: String) {
         private var state: State
         private var surface: Surface? = null
+        private var nativeThread: Thread? = null
+        private var shuttingDown = false
+
+        @get:Synchronized
+        val isShuttingDown: Boolean
+            get() = shuttingDown
 
         init {
             // Starting state is stopped.
@@ -1715,12 +1789,25 @@ class EmulationFragment :
 
         @Synchronized
         fun stop() {
+            shuttingDown = true
             if (state != State.STOPPED) {
                 Log.debug("[EmulationFragment] Stopping emulation.")
                 state = State.STOPPED
                 NativeLibrary.stopEmulation()
             } else {
                 Log.warning("[EmulationFragment] Stop called while already stopped.")
+            }
+        }
+
+        fun stopAndJoin() {
+            val thread = synchronized(this) {
+                stop()
+                nativeThread
+            }
+            while (thread?.isAlive == true) {
+                // Native startup can clear an earlier stop request after loading the ROM.
+                NativeLibrary.stopEmulation()
+                thread.join(100)
             }
         }
 
@@ -1802,13 +1889,14 @@ class EmulationFragment :
         }
 
         private fun runWithValidSurface() {
+            if (shuttingDown) return
             NativeLibrary.surfaceChanged(surface!!)
             when (state) {
                 State.STOPPED -> {
-                    Thread({
+                    nativeThread = Thread({
                         Log.debug("[EmulationFragment] Starting emulation thread.")
                         NativeLibrary.run(gamePath)
-                    }, "NativeEmulation").start()
+                    }, "NativeEmulation").also { it.start() }
                 }
 
                 State.PAUSED -> {

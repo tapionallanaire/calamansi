@@ -17,13 +17,67 @@ The first public release is a **preview**: full Thor/device acceptance checks ar
 
 Native builds retain their actual source commit identity and strict savestate version guards. A build from this new repository can reject savestates from earlier builds because the commit identity differs, even when the save/config paths are unchanged. Keep ordinary in-game saves and backups for migration; do not rely on cross-build savestate compatibility.
 
+### 3DS-style HOME
+
+The upper HOME preview slowly rotates the selected game's actual icon in an extruded cartridge with perspective, visible side walls, a moulded back face and front connector contacts. The title stays upright. Rotation uses Android Canvas/ValueAnimator, stops outside the visible resumed HOME preview, and respects disabled system animations; no separate OpenGL scene or model dependency is added. Upper preview/status text uses the bundled [Pixelify Sans](https://github.com/google/fonts/tree/main/ofl/pixelifysans) retro font under SIL OFL 1.1; this is not Nintendo's proprietary font. The lower screen retains its square game grid. A compact label above that grid identifies the selected console, such as 3DS or Nintendo DS, and hides when no game is selected. Ordinary application/editor/menu text uses console names rather than ported-emulator branding; original license attribution, real upstream links and user-authored values remain intact.
+
+The upper HOME Menu/clock/battery strip uses native window focus and status-bar visibility to hide during notification/system-window overlays and restore afterward without removing its layout space. Thor's real notification edge gestures and expansion/collapse pass `tools/verify-home-chrome.py`; cartridge frames and the licensed retro lettering were inspected on the physical displays.
+
+Console-only wording was checked on Thor in HOME, the DS/3DS game indicators and all five settings editors, including the classic-console selector and Wii U advanced notes. Native resource generators check message punctuation/comments/escapes while preserving actual URLs, filenames, format arguments and required attribution. Other consoles' in-game overlays still require owned games for device verification.
+
+### Embedded Nintendo engines
+
+The Android app links melonDS-android (DS), RetroArch (GB/GBC/GBA/NES/SNES), Dolphin (GameCube/Wii) and Cemu-Android (Wii U) into the same Calamansi APK alongside 3DS. Adding a ROM folder retains earlier folders and cached 3DS games. Overlapping folder selections produce one tile per document; unreadable or unsupported cartridges are skipped without dropping other games. Library scans wait while an engine owns native resources and retry after it stops. ROM headers/native title metadata select the engine; launch does not depend on another installed emulator. DS cartridges currently require raw `.nds` files, not ZIP archives.
+
+**Nintendo 3DS settings** and **Nintendo DS settings** are separate entries. DS game properties and the active-session sidebar's **Settings** edit that ROM's overrides; unchanged values inherit DS globals. DS resets do not clear 3DS settings or saves. DS SRAM stays in the app-private `files/engines/nds/saves` directory, separate from `/sdcard/citra-emu`; use the sidebar's **Close Game** for an orderly shutdown.
+
+DS defaults to **3× internal OpenGL rendering**; select **2×** under **Nintendo DS settings → Graphics → Internal resolution**. Picture size is independent of render quality: both 256×192 screens use the largest common integer display scale that fits, centered and vertically aligned. Thor fits **4× display size (1024×768 per screen)**. Lower-screen touch coordinates use the displayed rectangle; smaller panels use a fitting integer scale, or a proportional fit below native size. The OpenGL renderer requires **OpenGL ES 3.2**; unsupported contexts or shader initialization failures show an error without silently changing renderers. Software rendering remains an explicit settings option.
+
+On dual-display handhelds, matching white DS Lite–style shells cover both screens' unused margins: speaker grilles on the upper half and moulded D-pad/button artwork on the lower half. The bottom shortcut/touch-button row is removed; the artwork is decorative, with DS buttons supplied by the handheld's physical controls. The shells follow the existing picture rectangles without cropping or scaling them, and lower-screen stylus coordinates are unchanged. Single-display layouts do not draw these shells.
+
+A single hold-to-blow microphone icon sits at the bottom centre of the lower shell, outside the game picture. Releasing it stops microphone input; explicit pause disables it. The sidebar's **Overlay Options** retains the same hold action for single-display layouts.
+
+Swiping inward from the left edge of the DS top screen opens the same Azahar sidebar styling, game header and shared menu controls. DS actions include pause/resume, **Overlay Options** with hold-to-fast-forward and hold-to-blow-microphone controls, drawer lock, settings and orderly game exit; 3DS-only actions are hidden. Hold controls are disabled during explicit pause and released when the dialog closes. Settings open the active DS cartridge's overrides, and an explicitly paused game stays paused after returning from settings.
+
+DS direct boot uses the core's built-in FreeBIOS and generated firmware; no Nintendo ROMs, BIOS dumps or firmware dumps are bundled. DSi-only games/DSiWare are not supported by this DS integration. Thor checks verified native DS boot, larger aligned pictures, Castlevania movement via injected gamepad keys, stylus signature drawing, isolated Phantom Hourglass SRAM surviving clean shutdown/relaunch, sidebar pause/settings/resume, native-owner release and a deduplicated mixed DS/3DS library. DS global/per-ROM inheritance, overrides and per-game reset were exercised with an isolated cartridge URI; globals were restored and all 306 protected files were unchanged after those DS checks. Later HOME/3DS boot checks changed one CEC mailbox metadata file; all protected config, per-game settings, game saves and savestates remained unchanged. The final rotating-HOME build passed two further DS shutdown/relaunch cycles. Actual hardware-stick input remains unverified.
+
+Each engine uses its own app-private `files/engines/<engine>` settings, saves and caches; 3DS retains its existing user folder. RetroArch also separates its five console profiles. Options expose separate engine settings, while game properties edit the selected game's profile. Switching waits for the previous native owner to stop, flush saves and release its resources; an unsafe shutdown blocks replacement rather than killing the process. Metadata workers and native settings also participate in ownership and do not appear as running games.
+
+RetroArch bundles Gambatte, mGBA, SNES9x and FCEUmm. Dolphin supports original disc/container metadata for GameCube and Wii. Wii U requires **ARM64, Android 12/API 31 or newer, and Vulkan**; Cemu settings can import legally dumped shared fonts (`CafeCn.ttf`, `CafeKr.ttf`, `CafeStd.ttf`, `CafeTw.ttf`) or `shareddata.bin`, and titles may require their corresponding keys/tickets. These dumps and games are not bundled. Cemu is shown as running in the background, not falsely paused. Full engine gameplay, input, save/relaunch and dual-display acceptance still require device verification.
+
+Classic-console engine/core licenses and copyright notices are bundled under the APK's `assets/licenses/` directory. The bundled SNES core permits non-commercial distribution only; commercial use requires permission from its rights holders.
+
+### Unified settings and picture filters
+
+**Options** groups existing actions into **Emulators**, **Library & files**, **Application** and **Tools & support**. Emulator editors use Material categories, readable scope labels and the same category-to-root Back navigation. 3DS camera/network/layout and Dolphin's complete native search/controller/profile editors remain available. RetroArch's **General → Console profile** selects the separate GB, GBC, GBA, NES and SNES defaults; per-game pages do not switch consoles. Cemu distinguishes its global graphics/audio/controls from the actual per-title **Game profile**, including custom native values.
+
+**Application → Picture filter** selects one app-wide **Off**, **CRT scanlines** or **LCD pixel grid** effect. Its before/after preview uses original generated pixel art and the same tiled display mask as gameplay; no game screenshots or ROM data are bundled. This is a display effect, not a resolution upscaler: engine-specific texture/render processing stays separate. Both native screens receive the effect without changing picture rectangles, touch input, shells or controls. RetroArch's native Quick Menu shares its game buffer and also receives the mask; separate Android settings are outside it.
+
+Filter state has a separate, same-UID app-wide owner so the private engine processes observe one value without combining engine configuration or resets. **Off** removes the mask; enabled masks add alpha-composition work but no game-frame readback/copy or emulator shader-cache changes. Thor checks have opened all five emulator editors, selected all five RetroArch console scopes, checked global/per-ROM DS scope, exercised DS large-text configuration changes and restored Cemu's TV-volume preset after a zero-value round trip. Native DS captures verify CRT/LCD composition on both aligned panels, Off restoration, unchanged white shells and preserved explicit pause across filter/settings return; all 306 protected 3DS config/save files remained byte-identical. These checks do not establish other engines' gameplay, filter/input/lifecycle acceptance or complete defaults/override/reset isolation.
+
+
+
 ### Android build and release
 
-Clone with public submodules using `git clone --recurse-submodules https://github.com/tapionallanaire/calamansi.git`. Install Java 17 and the Android SDK with Android 35, build-tools 35.0.0, CMake 3.30.3 and NDK 27.3.13750724. From `src/android`, run:
+Clone and initialize the exact public dependency revisions in two stages. The selected Cemu fork's former ZArchive URL is unavailable; Exzap hosts the same pinned object:
 
 ```sh
-./gradlew assembleVanillaRelease assembleVanillaFatesFix
+git clone https://github.com/tapionallanaire/calamansi.git
+cd calamansi
+git submodule update --init
+git -C externals/nintendo/cemu-android config submodule.dependencies/ZArchive.url https://github.com/Exzap/ZArchive.git
+git submodule update --init --recursive
 ```
+
+Install Java 17, Git, Python 3.12+, PowerShell (`powershell.exe` on Windows or `pwsh` on Linux), and the Android SDK with Android 35, build-tools 35.0.0, CMake 3.31.4 and NDK 27.3.13750724. From `src/android`, run:
+
+```sh
+./gradlew -Pcalamansi.cmakeVersion=3.31.4 assembleVanillaRelease assembleVanillaFatesFix
+```
+
+Windows native builds keep Cemu's vcpkg caches under the repository-local `build/cemu` directory to avoid legacy path-length limits. The build extracts a checksum-pinned official pkgconf executable into that cache without installing the MSI or changing the registry. Pruned MSYS2 build-tool packages are supplied by a pinned, package-manifest-selected [Git-for-Windows SDK checkout](https://github.com/git-for-windows/git-sdk-64/tree/28a6cb0c47a5aa7b63e9d2bca8a8548095350b78), also confined to that cache. RetroArch's NDK recipes use relative source/output paths and response files for the same Windows toolchain limits.
+
+Native patch files always check out with LF line endings so their pinned SHA-256 fingerprints remain valid on Windows as well as Linux.
 
 For a stable local signer, set `ANDROID_KEYSTORE_FILE`, `ANDROID_KEYSTORE_PASS` and `ANDROID_KEY_ALIAS`; both tasks use that signer. Without a configured key both fall back to the local Android debug signer, while remaining nondebuggable. For the same bounded build settings as CI, install `ccache` and run `bash .ci/android.sh` from the repository root.
 

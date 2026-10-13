@@ -60,6 +60,27 @@ kotlinc \
 java -jar game-settings-check.jar
 ```
 
+## Shared picture-filter check
+
+The framework-free check exercises the production mask's Off pass-through, CRT/LCD repeat boundaries, hue preservation and invalid-mode rejection:
+
+```sh
+kotlinc \
+  src/android/engines/common/src/main/java/org/calamansi/engine/PictureFilter.kt \
+  src/android/engines/common/src/test/java/org/calamansi/engine/PictureFilterCheck.kt \
+  -include-runtime -d picture-filter-check.jar
+java -jar picture-filter-check.jar
+```
+
+This does not prove Android composition or input/lifecycle behavior. On a connected handheld inspect the selector's Original/Preview pair, both game screens, Off restoration, controller/stylus input, pause/resume/recreation and orderly shutdown. Cover RetroArch's native-window popup and Dolphin's untouched controller overlays. Recreating a per-game settings category without edits must not create overrides; Cemu custom values must remain visible and preset zero must commit. Compare protected saves and unrelated engine settings before/after.
+
+## Console wording checks
+
+`python src/android/engines/dolphin/prepare_check.py` also checks console-only generated UI text without changing actual link targets, format arguments, hardware identities or license attribution.
+
+`cmd.exe /c "gradlew.bat -Pcalamansi.cmakeVersion=3.31.4 :engine-retroarch:prepareRetroarch"` from `src/android` applies the pinned native patch and exercises the production message rewrite across C comments, sentence punctuation, protected filenames/URLs/format arguments and legal attribution.
+
+
 ## Calamansi dual-screen HOME device check
 
 Games, Search, Options and All Apps occupy the upper screen while the game library
@@ -80,6 +101,22 @@ A game icon tap launches that ROM immediately, or resumes its active session.
 D-pad movement selects without launching; A opens the selected game. Long-press
 selects and opens Properties. Automatic view-focus restoration never selects a
 different game.
+
+`verify-home-chrome.py` is the small notification-strip regression check. Open HOME on an awake Thor with no native game session first:
+
+```sh
+python tools/verify-home-chrome.py --serial d884f526
+```
+
+It observes the real native view's visibility across edge swipes and Android notification expansion/collapse, restores the shade afterward, and never launches/stops games or changes preferences/saves. Native gesture acceptance and visual cartridge/font inspection require working ADB; a build or the script's `--help` output is not a hardware pass.
+
+`verify-home-cartridge.py` checks real upper-cartridge motion across eight frames and a pixel-identical lower game grid. Use an awake, idle Thor on Applications with a selected game, no native guest, enabled Android animations and a completed library scan:
+
+```sh
+python tools/verify-home-cartridge.py --serial d884f526 --evidence /path/to/cartridge-captures
+```
+
+It saves both panels and a cropped animation GIF without launching games or changing settings. Inspect the front, side walls and unmapped back face; motion alone is not proof of correct 3D geometry. Also check All Apps/navigation hides the preview without continuing frame production, and disabled system animations show a still cartridge; restore the prior Android animation setting afterward.
 
 `verify-home-ui.py` uses adb, Pillow and NumPy (also used by the rendering checker).
 Run with Thor charging,
@@ -105,3 +142,35 @@ same-session icon resume; selection fixtures use long-press rather than launch t
 It never rewrites files to conceal a failure. Keep each run's screenshots and
 `home-smoke.json`; partial progress with `"passed": false` is not a full acceptance pass.
 
+
+## Embedded DS shutdown and library check
+
+With the combined APK installed, a legally owned raw DS cartridge available and no
+existing guest running:
+
+```sh
+python tools/verify-nds-stop.py --serial d884f526 \
+  --rom-uri 'file:///storage/EB7E-7C48/Roms/nds/Castlevania%20-%20Dawn%20of%20Sorrow%20%28USA%29.nds' \
+  --library-title 'Castlevania Dawn of Sorrow' \
+  --library-title 'Castlevania: Lords of Shadow Mirror of Fate'
+```
+
+The check boots the real native engine twice, destroys each DS Activity through
+Android task replacement, verifies shutdown without a receiver crash or process
+kill, and relaunches. Optional repeated `--library-title` arguments require those
+visible library tiles exactly once after each teardown, detecting missing games
+and overlapping-folder duplicates. It does not clear app data or verify gameplay,
+stylus input or SRAM persistence.
+
+Add `--drawer` on an awake English-language Thor to exercise the top screen's
+left-edge sidebar, native pause, the active cartridge's DS settings, preservation
+of explicit pause after returning, resume and scrim dismissal before each teardown.
+This option requires Pillow. It observes actual changing/frozen game frames rather
+than treating menu labels alone as proof of native pause/resume.
+
+Add `--shell` on Thor to check that both panels' margins show their white DS shells,
+both native 1024×768 picture apertures remain open, the bottom button row is absent,
+and one accessible microphone icon is centred below the lower picture without
+covering it. This option also requires Pillow and can be combined with `--drawer`
+to check sidebar interaction and microphone disable/enable across pause, settings
+return and resume.

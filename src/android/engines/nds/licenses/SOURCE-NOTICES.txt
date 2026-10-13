@@ -1,0 +1,10 @@
+melonDS-android frontend Kotlin/JNI: rafaelvcaetano/melonDS-android stable 2.0.1, commit 5ec3648.
+Core: melonDS-android-lib 654270ec019d7311366c5efc09bb1359e8c6223e.
+Original package/JNI namespaces and original authors' notices are preserved.
+Calamansi modifications (2026): standalone Android library build, isolated URI/storage/session/settings integration,
+checked native setup errors, EGL presentation pbuffer/fence flushing, orderly queue/render barriers and surface recreation,
+bounded metadata input adaptation, and deterministic audio-open patch.
+Native core and recursively pinned dependencies are built from externals/nintendo/melonds-android.
+No Nintendo BIOS, firmware or NAND dumps are distributed. DS direct boot uses upstream FreeBIOS and generated firmware.
+FAAD2 attribution: This software uses code of FAAD2 that is copyright (c) Nero AG, www.nero.com.
+See bundled licenses and pinned dependency source notices; corresponding source includes this module's build recipe and patches.

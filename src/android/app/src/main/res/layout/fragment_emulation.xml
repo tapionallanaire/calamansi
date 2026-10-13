@@ -134,14 +134,10 @@
 
     <com.google.android.material.navigation.NavigationView
         android:id="@+id/in_game_menu"
+        style="@style/Widget.Azahar.EmulationDrawer"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:layout_gravity="start"
-        android:background="?attr/colorSurface"
-        app:itemIconTint="?attr/colorPrimary"
-        app:itemShapeAppearance="@style/ShapeAppearance.Azahar.Home"
-        app:headerLayout="@layout/header_in_game"
-        app:menu="@menu/menu_in_game"
         tools:visibility="gone" />
 
 </androidx.drawerlayout.widget.DrawerLayout>

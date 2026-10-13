@@ -165,15 +165,47 @@ class SettingsFragmentPresenter(private val fragmentView: SettingsFragmentView) 
             add(
                 SubmenuSetting(
                     R.string.preferences_general,
-                    0,
+                    R.string.settings_general_summary,
                     R.drawable.ic_general_settings,
                     Settings.SECTION_CORE
                 )
             )
             add(
                 SubmenuSetting(
+                    R.string.preferences_graphics,
+                    R.string.settings_graphics_summary,
+                    R.drawable.ic_graphics,
+                    Settings.SECTION_RENDERER
+                )
+            )
+            add(
+                SubmenuSetting(
+                    R.string.preferences_audio,
+                    R.string.settings_audio_summary,
+                    R.drawable.ic_audio,
+                    Settings.SECTION_AUDIO
+                )
+            )
+            add(
+                SubmenuSetting(
+                    R.string.settings_controls,
+                    R.string.settings_controls_summary,
+                    R.drawable.ic_controls_settings,
+                    Settings.SECTION_CONTROLS
+                )
+            )
+            add(
+                SubmenuSetting(
+                    R.string.preferences_layout,
+                    R.string.settings_layout_summary,
+                    R.drawable.ic_fit_screen,
+                    Settings.SECTION_LAYOUT
+                )
+            )
+            add(
+                SubmenuSetting(
                     R.string.preferences_system,
-                    0,
+                    R.string.settings_system_summary,
                     R.drawable.ic_system_settings,
                     Settings.SECTION_SYSTEM
                 )
@@ -181,55 +213,23 @@ class SettingsFragmentPresenter(private val fragmentView: SettingsFragmentView) 
             add(
                 SubmenuSetting(
                     R.string.preferences_camera,
-                    0,
+                    R.string.settings_camera_summary,
                     R.drawable.ic_camera_settings,
                     Settings.SECTION_CAMERA
                 )
             )
             add(
                 SubmenuSetting(
-                    R.string.preferences_controls,
-                    0,
-                    R.drawable.ic_controls_settings,
-                    Settings.SECTION_CONTROLS
-                )
-            )
-            add(
-                SubmenuSetting(
-                    R.string.preferences_graphics,
-                    0,
-                    R.drawable.ic_graphics,
-                    Settings.SECTION_RENDERER
-                )
-            )
-            add(
-                SubmenuSetting(
-                    R.string.preferences_layout,
-                    0,
-                    R.drawable.ic_fit_screen,
-                    Settings.SECTION_LAYOUT
-                )
-            )
-            add(
-                SubmenuSetting(
                     R.string.preferences_network,
-                    0,
+                    R.string.settings_network_summary,
                     R.drawable.ic_network,
                     Settings.SECTION_NETWORK
                 )
             )
             add(
                 SubmenuSetting(
-                    R.string.preferences_audio,
-                    0,
-                    R.drawable.ic_audio,
-                    Settings.SECTION_AUDIO
-                )
-            )
-            add(
-                SubmenuSetting(
-                    R.string.preferences_debug,
-                    0,
+                    R.string.settings_advanced,
+                    R.string.settings_advanced_summary,
                     R.drawable.ic_code,
                     Settings.SECTION_DEBUG
                 )
@@ -375,7 +375,7 @@ class SettingsFragmentPresenter(private val fragmentView: SettingsFragmentView) 
                 override val section = null
                 override val isRuntimeEditable = false
                 override val valueAsString get() = string
-                override val defaultValue = "AZAHAR"
+                override val defaultValue = "Calamansi"
             }
             add(HeaderSetting(R.string.emulation_settings))
             add(
@@ -500,7 +500,7 @@ class SettingsFragmentPresenter(private val fragmentView: SettingsFragmentView) 
                     R.string.username,
                     0,
                     null,
-                    "AZAHAR",
+                    "Calamansi",
                     10
                 )
             )
@@ -860,7 +860,7 @@ class SettingsFragmentPresenter(private val fragmentView: SettingsFragmentView) 
     }
 
     private fun addControlsSettings(sl: ArrayList<SettingsItem>) {
-        settingsActivity.setToolbarTitle(settingsActivity.getString(R.string.preferences_controls))
+        settingsActivity.setToolbarTitle(settingsActivity.getString(R.string.settings_controls))
 
         sl.apply {
             add(
@@ -1933,7 +1933,7 @@ class SettingsFragmentPresenter(private val fragmentView: SettingsFragmentView) 
     }
 
     private fun addDebugSettings(sl: ArrayList<SettingsItem>) {
-        settingsActivity.setToolbarTitle(settingsActivity.getString(R.string.preferences_debug))
+        settingsActivity.setToolbarTitle(settingsActivity.getString(R.string.settings_advanced))
         sl.apply {
             add(HeaderSetting(R.string.debug_warning))
             add(

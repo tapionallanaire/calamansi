@@ -24,6 +24,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import org.calamansi.engine.NintendoPlatform
 import org.citra.citra_emu.CitraApplication
 import org.citra.citra_emu.R
 import org.citra.citra_emu.databinding.DialogMultiplayerConnectBinding
@@ -89,6 +90,7 @@ class NetPlayDialog(context: Context) : BottomSheetDialog(context) {
                     preferredGameList.add(PreferredGame("%none%", -1))
 
                     for (game in GameHelper.cachedGameList) {
+                        if (game.platform != NintendoPlatform.THREE_DS) continue
                         val gameName = game.title
                         val gameId = game.titleId
 

@@ -1,0 +1,10 @@
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/fragments/EmulationFragment.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/fragments/EmulationFragment.kt
+@@ -73,6 +73,7 @@
+     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+         // The new Surface created here will get passed to the native code via onSurfaceChanged.
+         val surfaceView = binding.surfaceEmulation
+         surfaceView.holder.addCallback(this)
++        org.calamansi.engine.PictureFilters.attach(surfaceView)
+ 
+         inputOverlay = binding.surfaceInputOverlay

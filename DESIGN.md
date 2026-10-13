@@ -50,7 +50,7 @@ The frontmatter maps the actual `home_colors.xml` palette. `Theme.Azahar.Home.Cl
 
 ## Typography
 
-Use inherited Material 3 Title, Body and Label text appearances, with Android's system sans-serif face and scalable text. The selected title and active title sit outside icon-only cartridges. Preview metadata wraps naturally; never turn an icon tile into a tall text card.
+Use inherited Material 3 Title, Body and Label sizes with scalable text. Upper HOME status/title/metadata use bundled Pixelify Sans under SIL OFL 1.1; this is a retro interpretation, not Nintendo's proprietary lettering. The lower library and separate settings retain their existing system sans-serif face. Selected and active titles sit outside icon-only grid tiles. Preview metadata wraps naturally; never turn a lower icon tile into a tall text card.
 
 ## Layout
 
@@ -60,9 +60,9 @@ Controls retain at least 48dp targets; cartridges retain at least 72dp bounds. T
 
 ## Elevation & Depth
 
-Cartridges use a white-to-silver gradient, a fine outline and native 2dp elevation; the selected preview uses 3dp. The authored repeating embossed raster is static, not a render loop. Its generation recipe and authorship are embedded in PNG metadata.
+Lower cartridges retain their white-to-silver gradient, fine outline and native 2dp elevation. The upper preview uses an extruded notched cartridge with perspective-projected side walls, a bevelled vector front, connector contacts, recessed real icon, moulded back and a fixed slight roll. A native eight-second Y-axis rotation shows actual thickness rather than mirroring the icon onto the back. LTR artwork geometry keeps the icon inside its label in RTL locales. The repeating embossed ground stays static.
 
-**The Still Surface Rule.** No continuous HOME animation, periodic scanning or simulated 3D console scene.
+**The Still Surface Rule.** Only the upper selected cartridge rotates, while its view is visible and its owning lifecycle is resumed; disabled Android animations keep it still. The lower grid, text and wallpaper never join that animation. No periodic scanning or separate 3D renderer.
 
 ## Shapes
 
@@ -71,12 +71,22 @@ Cartridges are softly beveled squares. Mint brackets mark their four corners, wi
 ## Components
 
 - **Cartridge:** real SMDH icon; hidden duplicate text on HOME only; native ripple, selected semantics and mint focus brackets. Search retains visible titles.
-- **Preview:** one real icon and title, company and translated region; decorative duplicate icons are not accessibility stops.
+- **Preview:** one real icon inside the dimensional upper cartridge, plus unrotated wrapping title, company and region/platform metadata; decorative art is not an accessibility stop.
 - **Utility strip:** Games, Search, Options and All Apps change the upper page while retaining the lower library, with native navigation and accessible names.
 - **Selected-game shelf:** wrapping title plus real Properties and Open actions. Disable actions for an empty library.
+- **Console indicator:** compact selected-console label above the lower grid, rebound with selection and hidden for an empty selection; not another controller focus target. Backend product names are not ordinary UI copy. Preserve required legal attribution, true links and user-authored values.
 - **Active-session shelf:** visible paused-game identity, a directly resumable icon and a labeled gear opening that title's configuration. Game switching requires an unsaved-progress decision.
 - **Android app tile:** real installed launcher icon and wrapping name, sorted alphabetically; normal Android launch intents, no invented utilities.
-- **Status strip:** native date/time and a non-animated horizontal four-segment blue battery. The meter snapshots real capacity on resume; unsupported values are hidden. Protect the strip from cutouts and avoid duplicate Android status chrome.
+- **Status strip:** native date/time and a non-animated horizontal four-segment blue battery. Capacity snapshots on resume; unsupported values are hidden. The whole strip becomes invisible while its HOME window loses focus or Android reports visible status bars, and returns after immersive reentry. Preserve layout space, cutout safety and existing controller/modal ownership.
+
+## Settings
+
+Follow [Impeccable's native Android guidance](https://github.com/pbakaus/impeccable/blob/main/.agents/skills/impeccable/reference/android.md): Material 3 type/controls, semantic grouping, at least 48dp targets, system Back and scalable text. Options is a compact grouped list, not a cartridge grid or logo-led landing page. Use Emulators, Library & files, Application, and Tools & support; label 3DS-only folders/system files/drivers explicitly.
+
+Console editors share category vocabulary—General, Graphics, Audio, Controls, System and Advanced—with console-specific categories retained. A persistent scope identifies global defaults or game overrides; Cemu's global categories must not pretend to be per-game profiles. Derived form rows rebind from their backend, never from duplicate Android widget saved-state IDs. Preserve each engine's native options, ownership, controller capture, imports, theme and reset semantics.
+
+Picture filter is the deliberate app-wide presentation exception: one selector and before/after preview for Off, CRT scanlines and LCD pixel grid. Preview and gameplay use the same static tiled drawable; do not bundle game art, copy framebuffer pixels continuously or mask the Android settings/control chrome. NativeActivity's in-buffer menu is part of that guest picture. Off has no drawing layer. Internal resolution, renderer processing, saves and engine resets remain separate.
+
 
 ## Do's and Don'ts
 

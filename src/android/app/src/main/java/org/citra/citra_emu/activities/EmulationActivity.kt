@@ -13,11 +13,14 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.InputDevice
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.Window
 import android.view.WindowManager
+import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -31,6 +34,11 @@ import androidx.navigation.ActivityNavigator
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.preference.PreferenceManager
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.calamansi.engine.EngineSession
+import org.calamansi.engine.NintendoPlatform
 import org.citra.citra_emu.CitraApplication
 import org.citra.citra_emu.HomeNavigationDirections
 import org.citra.citra_emu.NativeLibrary
@@ -60,6 +68,7 @@ import org.citra.citra_emu.utils.EmulationMenuSettings
 import org.citra.citra_emu.utils.FileBrowserHelper
 import org.citra.citra_emu.utils.Log
 import org.citra.citra_emu.utils.NetPlayManager
+import org.citra.citra_emu.utils.NintendoLauncher
 import org.citra.citra_emu.utils.PermissionsHandler
 import org.citra.citra_emu.utils.RefreshRateUtil
 import org.citra.citra_emu.utils.ThemeUtil
@@ -95,6 +104,7 @@ class EmulationActivity : AppCompatActivity() {
     private var isRotationBlocked: Boolean = true
     private var isEmulationRunning: Boolean = false
     private var isEmulationReady: Boolean = false
+    private var waitingForOwner = false
 
     private var homeRequested = false
 
@@ -123,6 +133,39 @@ class EmulationActivity : AppCompatActivity() {
 
         ThemeUtil.setTheme(this)
 
+        val existingOwner = EngineSession.snapshot(this)
+        val recreatingOwnGame = existingOwner != null &&
+            existingOwner.getString("platform") == NintendoPlatform.THREE_DS.name &&
+            existingOwner.getString("kind") == EngineSession.KIND_GAME &&
+            existingOwner.getString("token") == savedInstanceState?.getString("owned_engine_token")
+        if (existingOwner != null && !recreatingOwnGame) {
+            waitingForOwner = true
+            super.onCreate(null)
+            secondaryDisplayManager = SecondaryDisplay(this)
+            setContentView(ProgressBar(this))
+            MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.emulation_close_game)
+                .setMessage(R.string.engine_switch_to_3ds)
+                .setPositiveButton(android.R.string.ok) { _, _ ->
+                    NintendoLauncher.stopForSwitch(this) {
+                        val restart = Intent(intent).apply {
+                            flags =
+                                flags and
+                                (
+                                    Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or
+                                        Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                                        Intent.FLAG_ACTIVITY_CLEAR_TOP
+                                    ).inv()
+                        }
+                        finish()
+                        startActivity(restart)
+                    }
+                }
+                .setNegativeButton(android.R.string.cancel) { _, _ -> finish() }
+                .setOnCancelListener { finish() }
+                .show()
+            return
+        }
         if (!ensureUserDirectoryReady()) {
             super.onCreate(null) // null: don't restore fragments into an activity we're killing
             secondaryDisplayManager = SecondaryDisplay(this)
@@ -262,6 +305,9 @@ class EmulationActivity : AppCompatActivity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
+        if (!waitingForOwner && isEmulationRunning) {
+            outState.putString("owned_engine_token", emulationFragment.ownerToken)
+        }
         outState.putBoolean("isEmulationRunning", isEmulationRunning)
         outState.putBoolean("isEmulationReady", isEmulationReady)
         outState.putBoolean("isRotationBlocked", isRotationBlocked)
@@ -275,15 +321,30 @@ class EmulationActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        val fragment = (
+            supportFragmentManager.findFragmentById(R.id.fragment_container)
+                as? NavHostFragment
+            )?.childFragmentManager?.fragments
+            ?.firstOrNull { it is EmulationFragment } as? EmulationFragment
+        val globals = if (isFinishing && fragment != null) settingsViewModel.settings else null
         EmulationLifecycleUtil.removeHook(onShutdown)
-        NativeLibrary.playTimeManagerStop()
+        if (!waitingForOwner) NativeLibrary.playTimeManagerStop()
         isEmulationRunning = false
         if (instance === this) instance = null
         secondaryDisplayManager.releaseVD()
 
         super.onDestroy()
-        if (isFinishing && DirectoryInitialization.areCitraDirectoriesReady()) {
-            settingsViewModel.settings.loadSettings("")
+        if (isFinishing && fragment != null) {
+            // Run after ActivityThread has completed window/fragment destruction.
+            Handler(Looper.getMainLooper()).post {
+                fragment.finishOwnerAfterActivityDestroyed {
+                    if (DirectoryInitialization.areCitraDirectoriesReady()) {
+                        globals?.loadSettings(
+                            ""
+                        )
+                    }
+                }
+            }
         }
     }
 
@@ -378,6 +439,7 @@ class EmulationActivity : AppCompatActivity() {
     @Suppress("DEPRECATION")
     @SuppressLint("GestureBackNavigation")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (waitingForOwner) return super.dispatchKeyEvent(event)
         // TODO: Move this check into native code - prevents crash if input pressed before starting emulation
         if (!NativeLibrary.isRunning()) {
             return false
@@ -425,6 +487,7 @@ class EmulationActivity : AppCompatActivity() {
     }
 
     override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {
+        if (waitingForOwner) return super.dispatchGenericMotionEvent(event)
         // TODO: Move this check into native code - prevents crash if input pressed before starting emulation
         if (!NativeLibrary.isRunning() ||
             (event.source and InputDevice.SOURCE_CLASS_JOYSTICK == 0) ||
@@ -673,6 +736,14 @@ class EmulationActivity : AppCompatActivity() {
         private var instance: EmulationActivity? = null
 
         fun isRunning(): Boolean = instance?.isEmulationRunning ?: false
+
+        suspend fun stopForEngineSwitch() {
+            val activity = instance ?: return
+            val fragment = activity.emulationFragment
+            withContext(Dispatchers.IO) { fragment.stopForEngineSwitch() }
+            activity.isEmulationRunning = false
+            activity.finish()
+        }
 
         fun launchGame(controller: NavController, game: Game) {
             controller.navigate(

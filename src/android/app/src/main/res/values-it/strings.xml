@@ -56,7 +56,7 @@
     <!-- About screen strings -->
     <string name="copied_to_clipboard">Copiato negli appunti</string>
     <string name="contributors">Contributori</string>
-    <string name="contributors_description">I contributori che hanno reso Azahar possibile</string>
+    <string name="contributors_description">Contributori al motore 3DS upstream</string>
     <string name="licenses_description">Progetti usati da Calamansi per Android</string>
     <string name="build">Build</string>
     <string name="licenses">Licenze</string>
@@ -95,9 +95,9 @@
     <string name="warning_cancel">Annulla</string>
     <string name="select_citra_user_folder">Seleziona cartella utente</string>
     <string name="select_citra_user_folder_description"><![CDATA[Seleziona la tua cartella <a href=\"https://github.com/azahar-emu/azahar/wiki/Android-User-Data-and-Storage\">utente</a> usando il pulsante qui sotto.]]></string>
-    <string name="select_which_user_directory_to_use">Sembra che tu abbia impostato cartelle utente sia per Lime3DS che per Azahar. Questo è probabilmente dovuto al fatto che hai eseguito l\'aggiornamento ad Azahar e, al momento della richiesta, hai scelto una cartella utente diversa da quella utilizzata per Lime3DS.\n\nQuesto potrebbe averti fatto pensare di aver perso salvataggi o altre impostazioni - ci scusiamo se è successo.\n\nDesideri tornare a utilizzare la tua cartella utente originale di Lime3DS, ripristinando impostazioni e salvataggi da Lime3DS, oppure preferisci mantenere la cartella utente attuale di Calamansi?\n\nNessuna delle cartelle verrà eliminata, indipendentemente dalla tua scelta, e potrai passare liberamente da una all\'altra utilizzando l\'opzione \"Seleziona Cartella Utente\".</string>
+    <string name="select_which_user_directory_to_use">Sono configurate due cartelle utente: la cartella originale dell’app precedente e la cartella attuale di Calamansi. Scegli la cartella da usare per impostazioni e salvataggi.\n\nNessuna cartella verrà eliminata. Puoi cambiare cartella in seguito con Seleziona cartella utente.</string>
     <string name="keep_current_azahar_directory">Mantieni la cartella di Calamansi attuale</string>
-    <string name="use_prior_lime3ds_directory">Usa la cartella precedente di Lime3DS</string>
+    <string name="use_prior_lime3ds_directory">Usa la cartella utente originale</string>
     <string name="select">Seleziona</string>
     <string name="cannot_skip">Non puoi saltare la configurazione della cartella utente</string>
     <string name="cannot_skip_directory_description">Questo passaggio è necessario per consentire ad Calamansi di funzionare. Seleziona una cartella per poter continuare.</string>
@@ -163,10 +163,10 @@
     <string name="setup_system_files">File di sistema</string>
     <string name="setup_system_files_description">Esegui operazioni sui file di sistema come installare file di sistema o avviare il Menu Home</string>
     <string name="setup_tool_connect">Connettiti a Artic Setup Tool </string>
-    <string name="setup_system_files_preamble"><![CDATA[Calamansi necessita di dati unici della console e file firmware provenienti da una console reale per poter utilizzare alcune delle sue funzionalità. Questi file e dati possono essere configurati con <a href=https://github.com/azahar-emu/ArticSetupTool>Azahar Artic Setup Tool</a>.<br>Note: <ul><li><b>Questa operazione installerà dati unici della console su Calamansi, non condividere le tue cartelle utente o NAND dopo aver completato il processo di configurazione!</b></li><li>Durante il processo di configurazione, Calamansi si collegherà alla console che sta eseguendo lo strumento di configurazione. Puoi scollegare la console in seguito dalla scheda \"File di sistema\" nel menu delle opzioni dell\'emulatore.</li><li>Non andare online contemporaneamente con Calamansi e la tua console 3DS dopo aver configurato i file di sistema, poiché ciò potrebbe causare problemi.</li><li>La configurazione del vecchio 3DS è necessaria affinché la configurazione del nuovo 3DS funzioni (si consiglia di configurare entrambi).</li><li>Entrambe le modalità di configurazione funzioneranno indipendentemente dal modello della console che esegue lo strumento di configurazione.</li></ul>]]></string>
+    <string name="setup_system_files_preamble"><![CDATA[Calamansi necessita di dati unici della console e file firmware provenienti da una console reale per poter utilizzare alcune delle sue funzionalità. Questi file e dati possono essere configurati con <a href=https://github.com/azahar-emu/ArticSetupTool>Artic Setup Tool</a>.<br>Note: <ul><li><b>Questa operazione installerà dati unici della console su Calamansi, non condividere le tue cartelle utente o NAND dopo aver completato il processo di configurazione!</b></li><li>Durante il processo di configurazione, Calamansi si collegherà alla console che sta eseguendo lo strumento di configurazione. Puoi scollegare la console in seguito dalla scheda \"File di sistema\" nel menu delle opzioni dell\'emulatore.</li><li>Non andare online contemporaneamente con Calamansi e la tua console 3DS dopo aver configurato i file di sistema, poiché ciò potrebbe causare problemi.</li><li>La configurazione del vecchio 3DS è necessaria affinché la configurazione del nuovo 3DS funzioni (si consiglia di configurare entrambi).</li><li>Entrambe le modalità di configurazione funzioneranno indipendentemente dal modello della console che esegue lo strumento di configurazione.</li></ul>]]></string>
     <string name="setup_system_files_detect">Recupero dello stato attuale dei file di sistema, attendere...</string>
     <string name="delete_system_files">Scollega i dati univoci della console</string>
-    <string name="delete_system_files_description"><![CDATA[Questa azione scollegherà la tua console reale da Azahar, con le seguenti conseguenze:<br><ul><li>il tuo OTP, SecureInfo e LocalFriendCodeSeed verranno rimossi da Azahar.</li><li>La tua lista amici verrà reimpostata e verrai disconnesso dal tuo account NNID/PNID.</li><li>I file di sistema e i titoli eshop ottenuti tramite Azahar diventeranno inaccessibili finché la stessa console non verrà nuovamente collegata tramite lo strumento di configurazione (i dati di salvataggio non andranno persi).</li></ul><br>Continuare?]]></string>
+    <string name="delete_system_files_description"><![CDATA[Questa azione scollegherà la tua console reale da Calamansi, con le seguenti conseguenze:<br><ul><li>il tuo OTP, SecureInfo e LocalFriendCodeSeed verranno rimossi da Calamansi.</li><li>La tua lista amici verrà reimpostata e verrai disconnesso dal tuo account NNID/PNID.</li><li>I file di sistema e i titoli eshop ottenuti tramite Calamansi diventeranno inaccessibili finché la stessa console non verrà nuovamente collegata tramite lo strumento di configurazione (i dati di salvataggio non andranno persi).</li></ul><br>Continuare?]]></string>
     <string name="setup_system_files_o3ds">Setup Old 3DS</string>
     <string name="setup_system_files_n3ds">Setup New 3DS</string>
     <string name="setup_system_files_possible">Il setup è possibile.</string>
@@ -357,7 +357,7 @@
     <string name="renderer_debug">Renderer di debug</string>
     <string name="renderer_debug_description">Registra ulteriori informazioni di debug relative alla grafica. Quando abilitata, le prestazioni del gioco saranno significativamente ridotte.</string>
     <string name="instant_debug_log">Svuota l\'output del log ad ogni messaggio</string>
-    <string name="instant_debug_log_description">Invia immediatamente il log di debug al file. Usalo se Azahar si blocca e l\'output del log viene tagliato.</string>
+    <string name="instant_debug_log_description">Invia immediatamente il log di debug al file. Usalo se Calamansi si blocca e l\'output del log viene tagliato.</string>
     <string name="delay_start_lle_modules">Ritarda l\'avvio con moduli LLE</string>
     <string name="delay_start_lle_modules_description">Ritarda l\'avvio dell\'app quando i moduli LLE sono abilitati.</string>
     <string name="deterministic_async_operations">Operazioni asincrone deterministiche</string>
@@ -573,7 +573,7 @@
     <string name="write_permission_needed">Accesso alla memoria esterna richiesto per il funzionamento dell\'emulatore</string>
     <string name="load_settings">Caricando le Impostazioni...</string>
 
-    <string name="external_storage_not_mounted">La memoria esterna deve essere disponibile per poter utilizzare Azahar</string>
+    <string name="external_storage_not_mounted">La memoria esterna deve essere disponibile per poter utilizzare Calamansi</string>
 
     <string name="select_dir">Seleziona questa cartella</string>
     <string name="empty_gamelist">Non è stato trovato alcun file o non è ancora stata selezionata una cartella di gioco.</string>
@@ -603,11 +603,11 @@
     <!-- Camera -->
     <string name="camera_select_image">Seleziona Immagine</string>
     <string name="camera">Fotocamera</string>
-    <string name="camera_permission_needed">Azahar ha bisogno di accedere alla tua fotocamera per emulare le fotocamere del 3DS.\n\nAlternativamente, puoi anche impostare \"Immagine ferma\" in \"Sorgente Fotocamera\" nelle impostazioni della fotocamera.</string>
+    <string name="camera_permission_needed">Calamansi ha bisogno di accedere alla tua fotocamera per emulare le fotocamere del 3DS.\n\nAlternativamente, puoi anche impostare \"Immagine ferma\" in \"Sorgente Fotocamera\" nelle impostazioni della fotocamera.</string>
 
     <!-- Microphone -->
     <string name="microphone">Microfono</string>
-    <string name="microphone_permission_needed">Azahar ha bisogno di accedere al tuo microfono per emulare il microfono del 3DS.\n\nIn alternativa, puoi modificare l\'opzione \"Dispositivo di input dell\'audio\" nelle impostazioni Audio.</string>
+    <string name="microphone_permission_needed">Calamansi ha bisogno di accedere al tuo microfono per emulare il microfono del 3DS.\n\nIn alternativa, puoi modificare l\'opzione \"Dispositivo di input dell\'audio\" nelle impostazioni Audio.</string>
 
     <!-- Core Errors -->
     <string name="abort_button">Annulla</string>
@@ -1064,9 +1064,9 @@
     <string name="no_preference">Nessuna preferenza</string>
 
     <string name="update_available">Aggiornamento disponibile</string>
-    <string name="update_available_description">È disponibile una versione più recente di Azahar (upstream) (versione %1$s).\nVuoi scaricarla?</string>
+    <string name="update_available_description">È disponibile una versione più recente del motore 3DS upstream (versione %1$s).\nVuoi scaricarla?</string>
     <string name="check_for_updates">Controlla aggiornamenti</string>
-    <string name="check_for_updates_description">Mostra una notifica in-app quando è disponibile un aggiornamento per Azahar (upstream).</string>
+    <string name="check_for_updates_description">Mostra una notifica per gli aggiornamenti del motore 3DS upstream, non per le versioni di Calamansi.</string>
     <string name="update_check_channel">Canale di aggiornamento</string>
     <string name="update_check_channel_description">Quale canale di aggiornamento utilizzare per la ricerca degli aggiornamenti.</string>
     <string name="update_check_channel_stable">Stabile</string>

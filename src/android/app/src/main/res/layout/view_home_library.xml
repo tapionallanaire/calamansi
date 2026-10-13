@@ -8,6 +8,11 @@
         android:background="@color/home_silver" android:elevation="2dp"
         app:menu="@menu/menu_navigation" app:labelVisibilityMode="unlabeled"
         app:itemIconSize="24dp" />
+    <com.google.android.material.textview.MaterialTextView android:id="@+id/home_selected_emulator"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:paddingHorizontal="16dp" android:paddingVertical="4dp"
+        android:textAppearance="?attr/textAppearanceLabelMedium" android:textColor="?attr/colorPrimary"
+        android:visibility="gone" />
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout android:id="@+id/swipe_refresh"
         android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
         <FrameLayout android:layout_width="match_parent" android:layout_height="match_parent">

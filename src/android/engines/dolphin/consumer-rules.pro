@@ -1,0 +1,21 @@
+# Original package names are part of Dolphin's JNI ABI; keep only its native/callback models.
+-keepclasseswithmembers,includedescriptorclasses class org.dolphinemu.dolphinemu.** { native <methods>; }
+-keep @androidx.annotation.Keep class org.dolphinemu.dolphinemu.** { *; }
+-keepclassmembers class org.dolphinemu.dolphinemu.** { @androidx.annotation.Keep <fields>; @androidx.annotation.Keep <methods>; }
+-keep class org.dolphinemu.dolphinemu.NativeLibrary { *; }
+-keep class org.dolphinemu.dolphinemu.DolphinApplication { public static android.content.Context getAppContext(); public static android.app.Activity getAppActivity(); }
+-keep class org.dolphinemu.dolphinemu.utils.ContentHandler { *; }
+-keep class org.dolphinemu.dolphinemu.utils.Analytics { *; }
+-keep class org.dolphinemu.dolphinemu.utils.NetworkHelper { *; }
+-keep class org.dolphinemu.dolphinemu.utils.CompressCallback { *; }
+-keep class org.dolphinemu.dolphinemu.utils.BooleanSupplier { *; }
+-keep class org.dolphinemu.dolphinemu.utils.WiiUpdateCallback { *; }
+-keep class org.dolphinemu.dolphinemu.features.netplay.NetplaySession { *; }
+-keep class org.dolphinemu.dolphinemu.features.netplay.model.Player { *; }
+-keep class org.dolphinemu.dolphinemu.utils.AudioUtils { *; }
+-keep class org.dolphinemu.dolphinemu.utils.PermissionsHandler { *; }
+-keep class org.dolphinemu.dolphinemu.utils.GCAdapter { *; }
+-keep class org.dolphinemu.dolphinemu.utils.WiimoteAdapter { *; }
+-keep class org.dolphinemu.dolphinemu.features.input.model.ControllerInterface { *; }
+-keep class org.dolphinemu.dolphinemu.features.input.model.DolphinSensorEventListener { *; }
+-keep class androidx.core.util.Pair { public <init>(java.lang.Object,java.lang.Object); }

@@ -1,0 +1,188 @@
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/fragments/EmulationFragment.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/fragments/EmulationFragment.kt
+@@ -128,6 +128,6 @@
+     override fun onDetach() {
+-        NativeLibrary.clearEmulationActivity()
++        emulationActivity?.let { NativeLibrary.clearEmulationActivity(it) }
+         super.onDetach()
+     }
+ 
+     fun toggleInputOverlayVisibility(settings: Settings?) {
+@@ -215,5 +215,10 @@
+         runWhenSurfaceIsValid = false
+         if (NativeLibrary.IsUninitialized()) {
++            val gamePaths = gamePaths
++            val riivolution = riivolution
++            val loadPreviousTemporaryState = loadPreviousTemporaryState
++            val launchSystemMenu = launchSystemMenu
++            val temporaryStateFilePath = temporaryStateFilePath
+             org.calamansi.dolphin.DolphinRuntime.startRun {
+                 // Don't load temporary saves when launching Netplay, this path can trigger
+                 // when a game starts due to orientation changes caused by a mismatch in menu
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/NativeLibrary.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/NativeLibrary.kt
+@@ -546,6 +546,7 @@
+-    fun clearEmulationActivity() {
++    fun clearEmulationActivity(activity: EmulationActivity) {
++        if (emulationActivityRef.get() !== activity) return
+         Log.verbose("[NativeLibrary] Unregistering EmulationActivity.")
+         emulationActivityRef.clear()
+     }
+ 
+     @JvmStatic
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/utils/ThreadUtil.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/utils/ThreadUtil.kt
+@@ -21,6 +21,7 @@
++        if (!org.calamansi.dolphin.DolphinRuntime.beginWork()) return
+         val resources = activity.resources
+         val progressDialog = MaterialAlertDialogBuilder(activity)
+             .setTitle(progressTitle)
+             .setView(R.layout.dialog_indeterminate_progress)
+             .setCancelable(false)
+             .create()
+@@ -29,14 +30,18 @@
+         Thread({
+-            val result = f.get()
+-            activity.runOnUiThread {
+-                progressDialog.dismiss()
+-                if (result != null) {
+-                    MaterialAlertDialogBuilder(activity)
+-                        .setMessage(result)
+-                        .setPositiveButton(R.string.ok) { dialog: DialogInterface, _: Int -> dialog.dismiss() }
+-                        .setOnDismissListener(onResultDismiss)
+-                        .show()
++            try {
++                val result = f.get()
++                activity.runOnUiThread {
++                    progressDialog.dismiss()
++                    if (result != null && !activity.isDestroyed && !activity.isFinishing) {
++                        MaterialAlertDialogBuilder(activity)
++                            .setMessage(result)
++                            .setPositiveButton(R.string.ok) { dialog: DialogInterface, _: Int -> dialog.dismiss() }
++                            .setOnDismissListener(onResultDismiss)
++                            .show()
++                    }
+                 }
++            } finally {
++                org.calamansi.dolphin.DolphinRuntime.finishWorkThread()
+             }
+         }, resources.getString(progressTitle)).start()
+     }
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/settings/ui/SettingsFragmentPresenter.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/settings/ui/SettingsFragmentPresenter.kt
+@@ -42,6 +42,7 @@
+ import org.dolphinemu.dolphinemu.features.settings.model.BooleanSetting
+ import org.dolphinemu.dolphinemu.features.settings.model.FloatSetting
+ import org.dolphinemu.dolphinemu.features.settings.model.IntSetting
++import org.dolphinemu.dolphinemu.features.settings.model.NativeConfig
+ import org.dolphinemu.dolphinemu.features.settings.model.PostProcessing
+ import org.dolphinemu.dolphinemu.features.settings.model.ScaledIntSetting
+ import org.dolphinemu.dolphinemu.features.settings.model.Settings
+@@ -2893,11 +2893,12 @@
+         val context = this.context.applicationContext
+-        CoroutineScope(Dispatchers.IO).launch {
++        val host = fragmentView.fragmentActivity
++        org.calamansi.dolphin.DolphinRuntime.launchWork {
+             val stream = context.contentResolver.openInputStream(uri)
+             if (stream == null) {
+                 GpuDriverHelper.uninstallDriver()
+                 withContext(Dispatchers.Main) {
+-                    fragmentView.onDriverInstallDone(GpuDriverInstallResult.FileNotFound)
++                    if (!host.isDestroyed && !host.isFinishing) fragmentView.onDriverInstallDone(GpuDriverInstallResult.FileNotFound)
+                 }
+-                return@launch
++                return@launchWork
+             }
+ 
+@@ -2907,7 +2908,8 @@
+                     this.gpuDriver = GpuDriverHelper.getInstalledDriverMetadata()
+                         ?: GpuDriverHelper.getSystemDriverMetadata(context) ?: return@withContext
+-                    this.libNameSetting.setString(this.settings!!, this.gpuDriver!!.libraryName)
++                    this.libNameSetting.setString(NativeConfig.LAYER_BASE, this.gpuDriver!!.libraryName)
++                    NativeConfig.save(NativeConfig.LAYER_BASE)
+                 }
+-                fragmentView.onDriverInstallDone(result)
++                if (!host.isDestroyed && !host.isFinishing) fragmentView.onDriverInstallDone(result)
+             }
+         }
+@@ -2916,5 +2918,6 @@
+     fun useSystemDriver() {
+-        CoroutineScope(Dispatchers.IO).launch {
++        val host = fragmentView.fragmentActivity
++        org.calamansi.dolphin.DolphinRuntime.launchWork {
+             GpuDriverHelper.uninstallDriver()
+             withContext(Dispatchers.Main) {
+                 with(this@SettingsFragmentPresenter) {
+@@ -2921,7 +2924,8 @@
+                     this.gpuDriver = GpuDriverHelper.getInstalledDriverMetadata()
+                         ?: GpuDriverHelper.getSystemDriverMetadata(context.applicationContext)
+-                    this.libNameSetting.setString(this.settings!!, "")
++                    this.libNameSetting.setString(NativeConfig.LAYER_BASE, "")
++                    NativeConfig.save(NativeConfig.LAYER_BASE)
+                 }
+-                fragmentView.onDriverUninstallDone()
++                if (!host.isDestroyed && !host.isFinishing) fragmentView.onDriverUninstallDone()
+             }
+         }
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/settings/model/AchievementModel.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/settings/model/AchievementModel.kt
+@@ -12,6 +12,11 @@
+     suspend fun asyncLogin(password: String): Boolean {
+-        return withContext(Dispatchers.IO) {
+-            login(password)
++        if (!org.calamansi.dolphin.DolphinRuntime.beginWork()) return false
++        try {
++            return withContext(Dispatchers.IO) {
++                login(password)
++            }
++        } finally {
++            org.calamansi.dolphin.DolphinRuntime.endWork()
+         }
+     }
+ 
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/settings/ui/SettingsActivity.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/settings/ui/SettingsActivity.kt
+@@ -66,3 +66,5 @@
+     override fun onCreate(savedInstanceState: Bundle?) {
++        org.calamansi.dolphin.DolphinRuntime.attachSettings(this,
++            if (intent.getBooleanExtra("is_wii", true)) org.calamansi.engine.NintendoPlatform.WII else org.calamansi.engine.NintendoPlatform.GAMECUBE)
+         org.calamansi.dolphin.DolphinRuntime.initialize(this)
+         setTheme(this)
+--- a/Source/Android/jni/MainAndroid.cpp
++++ b/Source/Android/jni/MainAndroid.cpp
+@@ -530,3 +530,3 @@
+ 
+-  AchievementManager::GetInstance().Init(nullptr);
++  // The owned Java runtime initializes/drains achievement workers, never metadata readers.
+ }
+--- a/Source/Core/Core/AchievementManager.cpp
++++ b/Source/Core/Core/AchievementManager.cpp
+@@ -800,3 +800,4 @@
+     CloseGame();
+     m_queue.Shutdown();
++    m_image_queue.Shutdown();
+     Config::RemoveConfigChangedCallback(m_config_changed_callback_id);
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/activities/EmulationActivity.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/activities/EmulationActivity.kt
+@@ -1124,3 +1124,10 @@
+             launcher.putExtra(EXTRA_SELECTED_GAMES, filePaths)
++            val game = requireNotNull(org.dolphinemu.dolphinemu.model.GameFile.parse(filePaths.first()))
++            require(game.getPlatform() in 0..3) { "Unsupported GameCube/Wii image" }
++            val platform = if (game.getPlatform() >= 2) org.calamansi.engine.NintendoPlatform.WII else org.calamansi.engine.NintendoPlatform.GAMECUBE
++            launcher.putExtra(org.calamansi.engine.EngineFiles.EXTRA_PLATFORM, platform.name)
++            launcher.putExtra(Intent.EXTRA_TITLE, game.getTitle())
++            val path = filePaths.first()
++            launcher.data = if (path.startsWith("content:") || path.startsWith("file:")) android.net.Uri.parse(path) else android.net.Uri.fromFile(java.io.File(path))
+             launcher.putExtra(EXTRA_RIIVOLUTION, riivolution)
+             activity.startActivity(launcher)
+--- a/Source/Android/app/src/main/res/values/strings.xml
++++ b/Source/Android/app/src/main/res/values/strings.xml
+@@ -690,6 +690,6 @@
+     <string name="enabled">Enabled</string>
+     <string name="default_values">Default Values</string>
+-    <string name="slider_setting_value">%.0f%2$s</string>
+-    <string name="slider_setting_float_value">%.2f%2$s</string>
++    <string name="slider_setting_value">%1$.0f%2$s</string>
++    <string name="slider_setting_float_value">%1$.2f%2$s</string>
+     <string name="disc_number">Disc %1$d</string>
+     <string name="replug_gc_adapter">GameCube Adapter couldn\'t be opened. Please re-plug the device.</string>

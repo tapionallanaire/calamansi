@@ -1,0 +1,117 @@
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/activities/EmulationActivity.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/activities/EmulationActivity.kt
+@@ -187,10 +187,13 @@
+         }
+     }
+ 
++    protected open fun prepareLaunch(): Boolean = true
++
+     override fun onCreate(savedInstanceState: Bundle?) {
+         ThemeHelper.setTheme(this)
+ 
+         super.onCreate(savedInstanceState)
++        if (!prepareLaunch()) return
+ 
+ 
+         if (savedInstanceState == null) {
+@@ -254,7 +257,7 @@
+ 
+     override fun onSaveInstanceState(outState: Bundle) {
+         if (!isChangingConfigurations) {
+-            emulationFragment!!.saveTemporaryState()
++            emulationFragment?.saveTemporaryState()
+         }
+ 
+         outState.apply {
+@@ -292,7 +295,7 @@
+     }
+ 
+     override fun onWindowFocusChanged(hasFocus: Boolean) {
+-        if (hasFocus) {
++        if (hasFocus && ::binding.isInitialized) {
+             enableFullscreenImmersive()
+         }
+     }
+@@ -301,6 +304,7 @@
+         ThemeHelper.setCorrectTheme(this)
+ 
+         super.onResume()
++        if (!::binding.isInitialized) return
+ 
+         // If the whole app process was recreated, directory initialization might not be done yet.
+         // If that's the case, we can't read settings, so skip reading the settings for now and do
+@@ -321,7 +325,7 @@
+ 
+     override fun onStop() {
+         super.onStop()
+-        settings.saveSettings()
++        if (::settings.isInitialized) settings.saveSettings()
+     }
+ 
+     fun onTitleChanged() {
+@@ -345,10 +349,11 @@
+ 
+     override fun onDestroy() {
+         super.onDestroy()
+-        settings.close()
++        if (::settings.isInitialized) settings.close()
+     }
+ 
+     override fun onBackPressed() {
++        if (!::binding.isInitialized) { super.onBackPressed(); return }
+         if (!closeSubmenu()) {
+             toggleMenu()
+         }
+@@ -548,6 +553,7 @@
+ 
+     // Gets button presses
+     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
++        if (!::binding.isInitialized) return super.dispatchKeyEvent(event)
+         if (!menuVisible) {
+             if (ControllerInterface.dispatchKeyEvent(event)) {
+                 return true
+@@ -985,6 +991,7 @@
+     }
+ 
+     override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {
++        if (!::binding.isInitialized) return super.dispatchGenericMotionEvent(event)
+         if (!menuVisible) {
+             if (ControllerInterface.dispatchGenericMotionEvent(event)) {
+                 return true
+@@ -1118,7 +1125,7 @@
+             riivolution: Boolean
+         ) {
+             ignoreLaunchRequests = true
+-            val launcher = Intent(activity, EmulationActivity::class.java)
++            val launcher = Intent(activity, org.calamansi.dolphin.DolphinActivity::class.java)
+             launcher.putExtra(EXTRA_SELECTED_GAMES, filePaths)
+             launcher.putExtra(EXTRA_RIIVOLUTION, riivolution)
+             activity.startActivity(launcher)
+@@ -1172,7 +1179,7 @@
+ 
+         private fun launchSystemMenuWithoutChecks(activity: FragmentActivity) {
+             ignoreLaunchRequests = true
+-            val launcher = Intent(activity, EmulationActivity::class.java)
++            val launcher = Intent(activity, org.calamansi.dolphin.DolphinActivity::class.java)
+             launcher.putExtra(EXTRA_SYSTEM_MENU, true)
+             activity.startActivity(launcher)
+         }
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/fragments/EmulationFragment.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/fragments/EmulationFragment.kt
+@@ -214,7 +214,6 @@
+     private fun runWithValidSurface() {
+         runWhenSurfaceIsValid = false
+         if (NativeLibrary.IsUninitialized()) {
+-            NativeLibrary.SetIsBooting()
+             org.calamansi.dolphin.DolphinRuntime.startRun {
+                 // Don't load temporary saves when launching Netplay, this path can trigger
+                 // when a game starts due to orientation changes caused by a mismatch in menu
+@@ -227,7 +226,7 @@
+                     }
+                     NativeLibrary.Run(paths, riivolution, temporaryStateFilePath, true)
+                 }
+-                if (launchSystemMenu) {
++                else if (launchSystemMenu) {
+                     Log.debug("[EmulationFragment] Starting emulation thread for the Wii Menu.")
+                     NativeLibrary.RunSystemMenu()
+                 } else if (netplaySession?.isLaunching == true) {

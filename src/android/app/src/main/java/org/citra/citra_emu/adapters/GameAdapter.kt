@@ -42,9 +42,11 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.calamansi.engine.NintendoPlatform
 import org.citra.citra_emu.CitraApplication
 import org.citra.citra_emu.NativeLibrary
 import org.citra.citra_emu.R
@@ -61,6 +63,7 @@ import org.citra.citra_emu.utils.BuildUtil
 import org.citra.citra_emu.utils.FileUtil
 import org.citra.citra_emu.utils.GameIconUtils
 import org.citra.citra_emu.utils.Log
+import org.citra.citra_emu.utils.NintendoLauncher
 import org.citra.citra_emu.viewmodel.GamesViewModel
 
 class GameAdapter(
@@ -179,10 +182,10 @@ class GameAdapter(
     }
 
     fun launchGame(game: Game) {
-        val active = EmulationActivity.activeGame
-        if (active?.path == game.path) {
+        val active = NintendoLauncher.activeGame(activity)
+        if (active?.path == game.path && active.platform == game.platform) {
             onBeforeNavigate?.invoke()
-            EmulationActivity.resumeGame(activity)
+            NintendoLauncher.resume(activity, game)
             return
         }
         if (active != null) {
@@ -205,7 +208,13 @@ class GameAdapter(
         lastClickTime = now
         preferences.edit().putLong(game.keyLastPlayedTime, System.currentTimeMillis()).apply()
         onBeforeNavigate?.invoke()
-        EmulationActivity.launchGame(navController, game)
+        NintendoLauncher.stopForSwitch(activity) {
+            if (game.platform == NintendoPlatform.THREE_DS) {
+                EmulationActivity.launchGame(navController, game)
+            } else {
+                NintendoLauncher.startBackend(activity, game)
+            }
+        }
     }
 
     override fun onLongClick(view: View): Boolean {
@@ -218,6 +227,29 @@ class GameAdapter(
     fun showGameProperties(game: Game) {
         if (!gameExists(game)) return
         onBeforeModal?.invoke()
+        if (game.platform != NintendoPlatform.THREE_DS) {
+            propertiesDialog = MaterialAlertDialogBuilder(activity)
+                .setTitle(game.title)
+                .setItems(
+                    arrayOf(
+                        activity.getString(R.string.engine_play),
+                        activity.getString(R.string.console_nds_settings)
+                    )
+                ) {
+                        _,
+                        which
+                    ->
+                    if (which == 0) {
+                        launchGame(game)
+                    } else {
+                        onBeforeNavigate?.invoke()
+                        NintendoLauncher.openSettings(activity, game.platform, game)
+                    }
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
+            return
+        }
         if (!game.valid) {
             propertiesDialog = MaterialAlertDialogBuilder(activity)
                 .setTitle(R.string.properties)
@@ -237,7 +269,11 @@ class GameAdapter(
         val path = game.path
         val pathUri = path.toUri()
         var gameExists: Boolean
-        if (BuildUtil.isGooglePlayBuild || FileUtil.isNativePath(path)) {
+        if (game.platform != NintendoPlatform.THREE_DS && pathUri.scheme == "file") {
+            gameExists = pathUri.path?.let { File(it).isFile } == true
+        } else if (game.platform != NintendoPlatform.THREE_DS || BuildUtil.isGooglePlayBuild ||
+            FileUtil.isNativePath(path)
+        ) {
             gameExists =
                 DocumentFile.fromSingleUri(
                     CitraApplication.appContext,

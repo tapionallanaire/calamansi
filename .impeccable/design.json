@@ -12,19 +12,22 @@
     },
     "shadows": [
       { "name": "cartridge", "value": "Android elevation 2dp", "purpose": "Shallow square game tiles." },
-      { "name": "preview", "value": "Android elevation 3dp", "purpose": "Selected icon preview." }
+      { "name": "preview", "value": "Perspective-projected extruded shell and bevelled vector front", "purpose": "Upper selected-game cartridge; native lifecycle-scoped rotation only." }
     ],
     "nativeComponents": [
       { "name": "Cartridge", "kind": "card", "source": "src/android/app/src/main/res/layout/card_game.xml", "description": "Real icon, accessible full title, native ripple and mint corner focus; HOME is square and icon-only." },
-      { "name": "Preview", "kind": "custom", "source": "src/android/app/src/main/res/layout/view_home_preview.xml", "description": "Real selected-game icon, title and wrapping metadata." },
+      { "name": "Preview", "kind": "custom", "source": "src/android/app/src/main/res/layout/view_home_preview.xml", "description": "Actual selected-game icon on the front of a rotating extruded cartridge; moulded back without a mirrored label, upright title/metadata in licensed retro lettering. Stops when hidden or paused and respects disabled system animations." },
       { "name": "Utility strip", "kind": "nav", "source": "src/android/app/src/main/res/layout/view_home_library.xml", "description": "Games, Search, Options and All Apps change the upper page with one persistent lower library." },
       { "name": "Selected-game shelf", "kind": "button", "source": "src/android/app/src/main/res/layout/view_home_library.xml", "description": "Full title, Properties and Open; empty libraries disable launch." },
+      { "name": "Console indicator", "kind": "label", "source": "src/android/app/src/main/res/layout/view_home_library.xml", "description": "Selected console above the unchanged lower grid; no backend branding, hidden for no selection and not a focus target." },
       { "name": "Active-session shelf", "kind": "custom", "source": "src/android/app/src/main/res/layout/view_home_library.xml", "description": "Paused-game identity, directly resumable icon and title-specific configuration gear." },
       { "name": "Android app tile", "kind": "card", "source": "src/android/app/src/main/res/layout/card_app.xml", "description": "Real installed launcher icon and wrapping name; normal Android launch intent." },
-      { "name": "Status strip", "kind": "custom", "source": "src/android/app/src/main/res/layout/view_home_status.xml", "description": "Native clock and non-animated blue battery segments, reflecting real capacity on resume." }
+      { "name": "Status strip", "kind": "custom", "source": "src/android/app/src/main/res/layout/view_home_status.xml", "description": "Retro-lettered native clock and real blue battery; invisible during system focus loss/status-bar reveal, restored after dismissal." }
     ],
     "assets": [
-      { "path": "src/android/app/src/main/res/drawable-mdpi/home_embossed_pattern.png", "origin": "Authored geometric raster", "provenance": "Embedded impeccable:provenance PNG iTXt record contains the complete generation recipe." }
+      { "path": "src/android/app/src/main/res/drawable-mdpi/home_embossed_pattern.png", "origin": "Authored geometric raster", "provenance": "Embedded impeccable:provenance PNG iTXt record contains the complete generation recipe." },
+      { "path": "src/android/app/src/main/res/drawable/home_preview_cartridge.xml", "origin": "Authored static vector", "provenance": "Original generic beveled cartridge; no Nintendo cover art or proprietary assets." },
+      { "path": "src/android/app/src/main/res/font/home_retro.ttf", "origin": "Pixelify Sans from Google Fonts", "provenance": "SIL OFL 1.1; bundled copyright/license at assets/licenses/PixelifySans-OFL.txt. Not Nintendo lettering." }
     ]
   },
   "components": [],

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_disclaimer">Aquest software executarà aplicacions per a la consola de jocs portàtil Nintendo 3DS. No s\'inclouen títols de jocs.\n\nAbans de començar a emular, selecciona una carpeta on emmagatzemar les dades d\'usuari d\'Calamansi.\n\nQuè és això:\n<a href='https://github.com/azahar-emu/azahar/wiki/Android-User-Data-and-Storage'>Wiki - Dades i emmagatzematge d\'usuari d\'Azahar Android</a></string>
+    <string name="app_disclaimer">Aquest software executarà aplicacions per a la consola de jocs portàtil Nintendo 3DS. No s\'inclouen títols de jocs.\n\nAbans de començar a emular, selecciona una carpeta on emmagatzemar les dades d\'usuari d\'Calamansi.\n\nQuè és això:\n<a href='https://github.com/azahar-emu/azahar/wiki/Android-User-Data-and-Storage'>Wiki - Dades i emmagatzematge d\'usuari d\'Calamansi Android</a></string>
     <string name="app_notification_channel_description">Notificacions de l\'emulador 3DS Calamansi</string>
     <string name="app_notification_running">Calamansi s\'està executant</string>
     <string name="app_game_install_description">A continuació, haureu de seleccionar una carpeta d\'aplicacions. Calamansi mostrarà totes les aplicacions de 3DS dins de la carpeta seleccionada a l\'aplicació.\n\nLes aplicacions, actualitzacions i DLC CIA s\'hauran d\'instal·lar per separat fent clic a la icona de la carpeta i seleccionant Instal·la CIA.</string>
@@ -56,7 +56,7 @@
     <!-- About screen strings -->
     <string name="copied_to_clipboard">Copiat al porta-retalls</string>
     <string name="contributors">Contribuïdors</string>
-    <string name="contributors_description">Col·laboradors que van fer possible Azahar</string>
+    <string name="contributors_description">Col·laboradors del motor 3DS d’origen</string>
     <string name="licenses_description">Projectes utilitzats per Calamansi per a Android</string>
     <string name="build">Compilació</string>
     <string name="licenses">Llicències</string>
@@ -95,9 +95,9 @@
     <string name="warning_cancel">Cancel·lar</string>
     <string name="select_citra_user_folder">Seleccionar carpeta d\'usuari.</string>
     <string name="select_citra_user_folder_description"><![CDATA[Selecciona el directori de <a href=\"https://github.com/azahar-emu/azahar/wiki/Android-User-Data-and-Storage\">dades d\'usuari</a>amb el següent botó.]]></string>
-    <string name="select_which_user_directory_to_use">Sembla que tens directoris d\'usuari configurats tant per a Lime3DS com per a Azahar. Probablement es deu al fet que vas actualitzar a Azahar i, quan se\'t va demanar, vas triar un directori d\'usuari diferent del qual usaves per a Lime3DS.\n\nAixó pot haver-te fet pensar que vas perdre partides guardades o altres configuracions; et demanem disculpes si això va ocórrer.\n\nPreferixes tornar a usar el teu directori d\'usuari original de Lime3DS, restaurant la configuració i les partides guardades de Lime3DS, o conservar el teu directori d\'usuari actual d\'Calamansi?\n\nCap dels directoris s\'eliminarà, independentment de la teua elecció, i pots canviar lliurement entre ells usant l\'opció \"Seleccionar carpeta d\'usuari\".</string>
+    <string name="select_which_user_directory_to_use">Hi ha dues carpetes d’usuari configurades: la carpeta original de l’aplicació anterior i la carpeta actual de Calamansi. Tria la carpeta per a la configuració i les partides guardades.\n\nNo s’eliminarà cap carpeta. Pots canviar de carpeta més tard amb Seleccionar carpeta d’usuari.</string>
     <string name="keep_current_azahar_directory">Mantindre el directori Calamansi actual</string>
-    <string name="use_prior_lime3ds_directory">Usar el directori de Lime3DS anterior</string>
+    <string name="use_prior_lime3ds_directory">Usar la carpeta d’usuari original</string>
     <string name="select">Seleccionar</string>
     <string name="cannot_skip">No pots saltar la configuració de la carpeta d\'usuari</string>
     <string name="cannot_skip_directory_description">Aquest pas és necessari perquè Calamansi funcione. Selecciona un directori i després podràs continuar.</string>
@@ -163,10 +163,10 @@
     <string name="setup_system_files">Fitxers del sistema</string>
     <string name="setup_system_files_description">Realitzar operacions de fitxers del sistema, com instal·lar fitxers del sistema o obrir el menú HOME</string>
     <string name="setup_tool_connect">Connectar amb la ferramenta de configuració Artic</string>
-    <string name="setup_system_files_preamble"><![CDATA[Azahar necessita fitxers d\'una consola real per poder utilitzar algunes de les seues funcions. Pots obtindre els fitxers amb la <a href=https://github.com/azahar-emu/ArticSetupTool>ferramenta de configuració Azahar</a>.<br>Notes:<ul><li><b>Aquesta operació instal·larà fitxers únics de la consola a Azahar, no compartisques les teues carpetes d\'usuari o nand després de completar el procés de configuració!</b></li><li>Després de la configuració, Azahar s\'enllaçarà a la consola que ha executat la ferramenta de configuració. Pots desvincular la consola més tard des de la pestanya \"Fitxers de sistema\" del menú d\'opcions de l\'emulador.</li><li>No et connectes en línia amb Azahar i la consola 3DS al mateix temps després de configurar els arxius del sistema, ja que això podria causar problemes.</li><li>La configuració de Old 3DS és necessària perquè funcione la configuració de New 3DS (configurar els dos modes és recomanat).</li><li>Els dos modes de configuració funcionaran independentment del model de la consola que execute la ferramenta de configuració.</li></ul>]]></string>
+    <string name="setup_system_files_preamble"><![CDATA[Calamansi necessita fitxers d\'una consola real per poder utilitzar algunes de les seues funcions. Pots obtindre els fitxers amb la <a href=https://github.com/azahar-emu/ArticSetupTool>ferramenta de configuració Artic</a>.<br>Notes:<ul><li><b>Aquesta operació instal·larà fitxers únics de la consola a Calamansi, no compartisques les teues carpetes d\'usuari o nand després de completar el procés de configuració!</b></li><li>Després de la configuració, Calamansi s\'enllaçarà a la consola que ha executat la ferramenta de configuració. Pots desvincular la consola més tard des de la pestanya \"Fitxers de sistema\" del menú d\'opcions de l\'emulador.</li><li>No et connectes en línia amb Calamansi i la consola 3DS al mateix temps després de configurar els arxius del sistema, ja que això podria causar problemes.</li><li>La configuració de Old 3DS és necessària perquè funcione la configuració de New 3DS (configurar els dos modes és recomanat).</li><li>Els dos modes de configuració funcionaran independentment del model de la consola que execute la ferramenta de configuració.</li></ul>]]></string>
     <string name="setup_system_files_detect">S\'està obtenint l\'estat actual dels fitxers del sistema, per favor espera...</string>
     <string name="delete_system_files">Desvincular Dades Úniques de Consola</string>
-    <string name="delete_system_files_description"><![CDATA[Esta acció desvincularà la teua consola real d\'Azahar, amb les següents conseqüències:<br><ul><li>OTP, SecureInfo i LocalFriendCodeSeed seran eliminats de Azahar.</li><li>La teua llista d\'amics es restablirà i es tancarà la sessió del teu compte NNID/PNID.</li><li>Els fitxers del sistema i els títols de la eshop obtinguts a través d\'Azahar es tornaran inaccessibles fins que la mateixa consola es vincule novament mitjançant la ferramenta de configuració (les dades guardades no es perdran).</li></ul><br>Continuar?]]></string>
+    <string name="delete_system_files_description"><![CDATA[Esta acció desvincularà la teua consola real d\'Calamansi, amb les següents conseqüències:<br><ul><li>OTP, SecureInfo i LocalFriendCodeSeed seran eliminats de Calamansi.</li><li>La teua llista d\'amics es restablirà i es tancarà la sessió del teu compte NNID/PNID.</li><li>Els fitxers del sistema i els títols de la eshop obtinguts a través d\'Calamansi es tornaran inaccessibles fins que la mateixa consola es vincule novament mitjançant la ferramenta de configuració (les dades guardades no es perdran).</li></ul><br>Continuar?]]></string>
     <string name="setup_system_files_o3ds">Configuració Old 3DS</string>
     <string name="setup_system_files_n3ds">Configuració New 3DS</string>
     <string name="setup_system_files_possible">La configuració és possible</string>
@@ -358,7 +358,7 @@ S\'esperen errors gràfics temporals quan estigue activat.</string>
     <string name="renderer_debug">Renderitzador de depuració</string>
     <string name="renderer_debug_description">Arxiva informació addicional gràfica relacionada amb la depuració. Quan està activada, el rendiment dels jocs serà reduït considerablement</string>
     <string name="instant_debug_log">Guardar l\'eixida del registre en cada missatge</string>
-    <string name="instant_debug_log_description">Envia immediatament el registre de depuració a un arxiu. Usa-ho si Azahar falla i es talla l\'eixida del registre.</string>
+    <string name="instant_debug_log_description">Envia immediatament el registre de depuració a un arxiu. Usa-ho si Calamansi falla i es talla l\'eixida del registre.</string>
     <string name="delay_start_lle_modules">Inici diferit amb mòduls LLE</string>
     <string name="delay_start_lle_modules_description">Retarda l\'inici de l\'aplicació quan els mòduls LLE estan habilitats.</string>
     <string name="deterministic_async_operations">Operacions asíncrones deterministes</string>
@@ -574,7 +574,7 @@ S\'esperen errors gràfics temporals quan estigue activat.</string>
     <string name="write_permission_needed">Necessites donar permisos d\'escriptura a l\'emmagatzematge extern perquè funcione l\'emulador.</string>
     <string name="load_settings">Carregant la configuració</string>
 
-    <string name="external_storage_not_mounted">L\'emmagatzematge extern necessita estar disponible per a poder usar Azahar.</string>
+    <string name="external_storage_not_mounted">L\'emmagatzematge extern necessita estar disponible per a poder usar Calamansi.</string>
 
     <string name="select_dir">Selecciona Este Directori</string>
     <string name="empty_gamelist">No s\'han trobat fitxers o encara no s\'ha triat el directori de jocs.</string>
@@ -604,11 +604,11 @@ S\'esperen errors gràfics temporals quan estigue activat.</string>
     <!-- Camera -->
     <string name="camera_select_image">Seleccionar Imatge</string>
     <string name="camera">Càmera</string>
-    <string name="camera_permission_needed">Azahar necessita accedir a la teua càmera per a emular les càmeres de la 3DS.\n\nAlternativament, també pots posar la \"Font de la imatge\" en \"Imatge normal\" en Configuració de Càmera.</string>
+    <string name="camera_permission_needed">Calamansi necessita accedir a la teua càmera per a emular les càmeres de la 3DS.\n\nAlternativament, també pots posar la \"Font de la imatge\" en \"Imatge normal\" en Configuració de Càmera.</string>
 
     <!-- Microphone -->
     <string name="microphone">Micròfon</string>
-    <string name="microphone_permission_needed">Azahar necessita accedir al teu micròfon per a emular el micròfon de la 3DS.\n\nAlternativament, també pots canviar el \"Dispositiu d\'entrada d\'àudio\" en Configuració d\'Àudio.</string>
+    <string name="microphone_permission_needed">Calamansi necessita accedir al teu micròfon per a emular el micròfon de la 3DS.\n\nAlternativament, també pots canviar el \"Dispositiu d\'entrada d\'àudio\" en Configuració d\'Àudio.</string>
 
     <!-- Core Errors -->
     <string name="abort_button">Avortar</string>
@@ -1064,9 +1064,9 @@ S\'esperen errors gràfics temporals quan estigue activat.</string>
     <string name="no_preference">Sense Preferència</string>
 
     <string name="update_available">Actualització disponible</string>
-    <string name="update_available_description">Hi ha una nova versió d\'Azahar (upstream) disponible (versió %1$s).\nVols descarregar-la?</string>
+    <string name="update_available_description">Hi ha una nova versió del motor 3DS d’origen disponible (versió %1$s).\nVols descarregar-la?</string>
     <string name="check_for_updates">Buscar actualitzacions</string>
-    <string name="check_for_updates_description">Mostrar una notificació quan hi haja una actualització disponible per a Azahar (upstream).</string>
+    <string name="check_for_updates_description">Mostrar una notificació per a les actualitzacions del motor 3DS d’origen, no per a les versions de Calamansi.</string>
     <string name="update_check_channel">Canal d\'actualització</string>
     <string name="update_check_channel_description">Canal a usar per a comprovar actualitzacions.</string>
     <string name="update_check_channel_stable">Estable</string>

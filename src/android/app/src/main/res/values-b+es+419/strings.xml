@@ -46,7 +46,7 @@
     <!-- About screen strings -->
     <string name="copied_to_clipboard">Copiado al portapapeles</string>
     <string name="contributors">Colaboradores</string>
-    <string name="contributors_description">Colaboradores que hicieron posible Azahar</string>
+    <string name="contributors_description">Colaboradores del motor 3DS de origen</string>
     <string name="licenses_description">Proyectos utilizados por Calamansi para Android</string>
     <string name="build">Compilación</string>
     <string name="licenses">Licencias</string>
@@ -84,9 +84,9 @@
     <string name="warning_skip">Omitir</string>
     <string name="warning_cancel">Cancelar</string>
     <string name="select_citra_user_folder">Selecciona la carpeta de usuario</string>
-    <string name="select_which_user_directory_to_use">Parece que tienes directorios de usuario configurados tanto para Lime3DS como para Azahar. Probablemente se deba a que actualizaste a Azahar y, cuando se te pidió, elegiste un directorio de usuario diferente al que usabas para Lime3DS.\n\nEsto puede haberte hecho pensar que perdiste partidas guardadas u otras configuraciones; te pedimos disculpas si eso ocurrió.\n\n¿Prefieres volver a usar tu directorio de usuario original de Lime3DS, restaurando la configuración y las partidas guardadas de Lime3DS, o conservar tu directorio de usuario actual de Calamansi?\n\nNinguno de los directorios se eliminará, independientemente de tu elección, y puedes cambiar libremente entre ellos usando la opción \"Selecciona la carpeta de usuario\".</string>
+    <string name="select_which_user_directory_to_use">Hay dos carpetas de usuario configuradas: la carpeta original de la aplicación anterior y la carpeta actual de Calamansi. Elige la carpeta que se usará para los ajustes y las partidas guardadas.\n\nNo se eliminará ninguna carpeta. Puedes cambiar de carpeta más tarde con Seleccionar carpeta de usuario.</string>
     <string name="keep_current_azahar_directory">Mantener el directorio actual de Calamansi</string>
-    <string name="use_prior_lime3ds_directory">Usar el directorio de Lime3DS anterior</string>
+    <string name="use_prior_lime3ds_directory">Usar la carpeta de usuario original</string>
     <string name="select">Seleccionar</string>
     <string name="cannot_skip">No puedes omitir configurar la carpeta de usuario</string>
     <string name="cannot_skip_directory_description">Este paso es necesario para permitir que Calamansi funcione. Por favor, selecciona un directorio y luego puedes continuar.</string>

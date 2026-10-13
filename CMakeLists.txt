@@ -230,7 +230,8 @@ if (CITRA_USE_PRECOMPILED_HEADERS)
     endif()
 endif()
 
-if(NOT EXISTS ${PROJECT_SOURCE_DIR}/.git/hooks/pre-commit)
+if(IS_DIRECTORY "${PROJECT_SOURCE_DIR}/.git" AND
+   NOT EXISTS "${PROJECT_SOURCE_DIR}/.git/hooks/pre-commit")
     message(STATUS "Copying pre-commit hook")
     file(COPY hooks/pre-commit
         DESTINATION ${PROJECT_SOURCE_DIR}/.git/hooks)
@@ -309,7 +310,7 @@ function(check_submodules_present)
         endif()
     endforeach()
 endfunction()
-if (EXISTS "${PROJECT_SOURCE_DIR}/.git/objects")
+if(EXISTS "${PROJECT_SOURCE_DIR}/.git")
     # only check submodules when source is obtained via Git
     check_submodules_present()
 endif()

@@ -224,12 +224,12 @@ class SettingsActivity :
             CitraApplication.documentsTree.setRoot(Uri.parse(DirectoryInitialization.userPath))
             NativeLibrary.createConfigFile()
         } else {
-            throw IllegalStateException("Azahar directory unavailable when accessing config file!")
+            throw IllegalStateException("User directory unavailable when accessing config file!")
         }
 
         // Set default values for system config file
         SystemSaveGame.apply {
-            setUsername("AZAHAR")
+            setUsername("Calamansi")
             setBirthday(11, 7)
             setSystemLanguage(1)
             setSoundOutputMode(1)
@@ -242,11 +242,26 @@ class SettingsActivity :
     }
 
     fun setToolbarTitle(title: String) {
-        binding.toolbarSettingsLayout.title = if (settings.isPerGame) {
-            getString(R.string.game_settings_title, title, intent.getStringExtra(ARG_GAME_ID))
-        } else {
-            title
+        binding.toolbarSettingsLayout.title =
+            if (title == getString(R.string.preferences_settings)) {
+                getString(R.string.console_3ds_settings)
+            } else {
+                title
+            }
+        binding.settingsScope.text = when {
+            intent.getStringExtra(
+                ARG_MENU_TAG
+            ) == Settings.SECTION_THEME -> "Application · Appearance"
+
+            settings.isPerGame -> getString(
+                R.string.settings_game_scope,
+                "Nintendo 3DS",
+                intent.getStringExtra(ARG_GAME_ID).orEmpty()
+            )
+
+            else -> getString(R.string.settings_global_scope, "Nintendo 3DS")
         }
+        binding.settingsScope.visibility = View.VISIBLE
     }
 
     private val settingsFragment: SettingsFragment?

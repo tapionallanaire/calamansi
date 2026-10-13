@@ -1,0 +1,2042 @@
+--- a/src/Cafe/CafeSystem.cpp
++++ b/src/Cafe/CafeSystem.cpp
+@@ -1,3 +1,4 @@
+ #include "Cafe/OS/common/OSCommon.h"
++void LatteShaderCache_StopBootSound();
+ #include "Cafe/OS/libs/gx2/GX2.h"
+ #include "Cafe/GameProfile/GameProfile.h"
+@@ -144,7 +144,7 @@
+ 		{
+ 			cemuLog_log(LogType::Force, "Unable to find RPX executable");
+ 			cemuLog_waitForFlush();
+-			cemu_assert(false);
++			throw std::runtime_error("Unable to find RPX executable");
+ 		}
+ 	}
+ 	// extract and load RPX
+@@ -154,7 +154,7 @@
+ 	{
+ 		cemuLog_log(LogType::Force, "Failed to load \"{}\"", _pathToExecutable);
+ 		cemuLog_waitForFlush();
+-		cemu_assert(false);
++		throw std::runtime_error("Failed to read title executable");
+ 	}
+ 	currentUpdatedApplicationHash = generateHashFromRawRPXData(rpxData, rpxSize);
+ 	// determine if this file is an ELF
+@@ -175,7 +175,8 @@
+ 			cemuLog_log(LogType::Force, "Failed to run this title because the executable is damaged");
+ 			cemuLog_createLogFile(false);
+ 			cemuLog_waitForFlush();
+-			exit(0);
++			free(rpxData);
++			throw std::runtime_error("Title executable is damaged");
+ 		}
+ 		RPLLoader_SetMainModule(applicationRPX);
+ 		SetEntryPoint(RPLLoader_GetModuleEntrypoint(applicationRPX));
+@@ -314,21 +315,25 @@
+ 		{
+ 			// try to read font from MLC first
+ 			auto path = ActiveSettings::GetMlcPath(shareddataDef[i].mlcPath);
+-			FileStream* fontFile = FileStream::openFile2(path);
++			auto fontFile = std::unique_ptr<FileStream>(FileStream::openFile2(path));
+ 			// alternatively fall back to our shared fonts
+ 			if (!fontFile)
+ 			{
+ 				path = ActiveSettings::GetDataPath(shareddataDef[i].resourcePath);
+-				fontFile = FileStream::openFile2(path);
++				fontFile.reset(FileStream::openFile2(path));
+ 			}
+ 			if (!fontFile)
+ 			{
+ 				cemuLog_log(LogType::Force, "Failed to load shared font {}", shareddataDef[i].fileName);
+-				continue;
++				throw std::runtime_error(fmt::format("Missing user-dumped shared font {}", shareddataDef[i].fileName));
+ 			}
+-			uint32 fileSize = fontFile->GetSize();
+-			fontFile->readData(dataWritePtr, fileSize);
+-			delete fontFile;
++			const uint64 size = fontFile->GetSize();
++			const uint64 used = dataWritePtr - reinterpret_cast<uint8*>(shareddataTable);
++			if (size == 0 || size > 0x02000000 || used + ((size + 15) & ~uint64(15)) > 0x02000000)
++				throw std::runtime_error("Invalid Wii U shared font size");
++			const uint32 fileSize = static_cast<uint32>(size);
++			if (fontFile->readData(dataWritePtr, fileSize) != fileSize)
++				throw std::runtime_error("Failed to read Wii U shared font");
+ 			// setup entry
+ 			shareddataTable[i].name = shareddataDef[i].name;
+ 			shareddataTable[i].fileType = shareddataDef[i].fileType;
+@@ -345,14 +350,15 @@
+ 	}
+ 	// alternative method: load RAM dump
+ 	const auto path = ActiveSettings::GetUserDataPath("shareddata.bin");
+-	FileStream* ramDumpFile = FileStream::openFile2(path);
++	auto ramDumpFile = std::unique_ptr<FileStream>(FileStream::openFile2(path));
+ 	if (ramDumpFile)
+ 	{
+-		ramDumpFile->readData(memory_getPointerFromVirtualOffset(0xF8000000), 0x02000000);
+-		delete ramDumpFile;
++		if (ramDumpFile->GetSize() != 0x02000000 ||
++			ramDumpFile->readData(memory_getPointerFromVirtualOffset(0xF8000000), 0x02000000) != 0x02000000)
++			throw std::runtime_error("shareddata.bin must be the complete 32 MiB shared-area dump");
+ 		return (mmuRange_SHARED_AREA.getBase() + 0x02000000);
+ 	}
+-	return mmuRange_SHARED_AREA.getBase() + sizeof(SharedDataEntry) * numEntries;
++	throw std::runtime_error("Missing Wii U shared fonts: CafeCn.ttf, CafeKr.ttf, CafeStd.ttf and CafeTw.ttf, or a complete shareddata.bin");
+ }
+ 
+ void cemu_initForGame()
+@@ -453,6 +459,7 @@
+ 	std::optional<std::vector<std::string>> s_overrideArgs;
+ 
+ 	bool sSystemRunning = false;
++	bool sTitlePrepared = false;
+ 	TitleId sForegroundTitleId = 0;
+ 
+ 	GameInfo2 sGameInfo_ForegroundTitle;
+@@ -624,17 +632,22 @@
+ 
+     void Shutdown()
+     {
+-        cemu_assert_debug(s_initialized);
++		if (!s_initialized)
++			return;
+         // if a title is running, shut it down
+-        if (sSystemRunning)
++        if (sSystemRunning || sTitlePrepared)
+             ShutdownTitle();
+         // shutdown persistent subsystems (deprecated manual shutdown)
+-		iosu::odm::Shutdown();
+-		iosu::act::Stop();
+-        iosu::mcp::Shutdown();
+-        iosu::fsa::Shutdown();
+-		// shutdown IOSU modules
+-		for(auto it = s_iosuModules.rbegin(); it != s_iosuModules.rend(); ++it)
+-			(*it)->SystemExit();
++		static size_t shutdownStage = 0;
++		if (shutdownStage == 0) { iosu::odm::Shutdown(); ++shutdownStage; }
++		if (shutdownStage == 1) { iosu::act::Stop(); ++shutdownStage; }
++		if (shutdownStage == 2) { iosu::mcp::Shutdown(); ++shutdownStage; }
++		if (shutdownStage == 3) { iosu::fsa::Shutdown(); ++shutdownStage; }
++		while (shutdownStage - 4 < s_iosuModules.size())
++		{
++			s_iosuModules[s_iosuModules.size() - 1 - (shutdownStage - 4)]->SystemExit();
++			++shutdownStage;
++		}
+         s_initialized = false;
++		shutdownStage = 0;
+     }
+@@ -806,6 +814,7 @@
+ 		gameProfile_load();
+ 		// setup memory space and PPC recompiler
+         SetupMemorySpace();
++		sTitlePrepared = true;
+         PPCRecompiler_init();
+ 		r = SetupExecutable(); // load RPX
+ 		if (r != PREPARE_STATUS_CODE::SUCCESS)
+@@ -850,6 +859,7 @@
+ 		cemuLog_log(LogType::Force, "Generated placeholder TitleId: {:016x}", sForegroundTitleId);
+ 		// setup memory space and ppc recompiler
+         SetupMemorySpace();
++		sTitlePrepared = true;
+         PPCRecompiler_init();
+         // load executable
+         SetupExecutable();
+@@ -877,8 +887,9 @@
+ 		auto cafeSystemCallbacks = CafeSystem::getCafeSystemCallbacks();
+ 		if (cafeSystemCallbacks)
+ 			cafeSystemCallbacks->notifyGameLoaded();
+-		std::thread t(_LaunchTitleThread);
+-		t.detach();
++		// Host JNI already runs on its backend worker. Completing initialization
++		// here removes the detached-launch race against immediate orderly stop.
++		_LaunchTitleThread();
+ 	}
+ 
+ 	bool IsTitleRunning()
+@@ -1006,10 +1023,21 @@
+ 
+ 	void ShutdownTitle()
+ 	{
+-		if(!sSystemRunning)
++		if(!sSystemRunning && !sTitlePrepared)
+ 			return;
+-        coreinit::OSSchedulerEnd();
+-        Latte_Stop();
++		// A failed flush is retryable without joining already-stopped CPU/GPU twice.
++		static bool workersStopped = false;
++		if (!workersStopped)
++		{
++			coreinit::OSSchedulerEnd();
++			Latte_Stop();
++			workersStopped = true;
++		}
++		LatteShaderCache_StopBootSound();
++		if (!iosu::kernel::DrainIPC())
++			throw std::runtime_error("Cannot stop title: IOSU requests did not drain");
++		if (!iosu::fsa::DrainAndClose())
++			throw std::runtime_error("Cannot stop title: save flush failed");
+         // reset Cafe OS userspace modules
+         snd_core::reset();
+         coreinit::OSAlarm_Shutdown();
+@@ -1027,6 +1048,8 @@
+         UnmountBaseDirectories();
+         DestroyMemorySpace();
+ 		sSystemRunning = false;
++		sTitlePrepared = false;
++		workersStopped = false;
+ 	}
+ 
+ 	/* Virtual mlc storage */
+--- a/src/Cafe/Filesystem/fsc.cpp
++++ b/src/Cafe/Filesystem/fsc.cpp
+@@ -561,19 +561,12 @@
+ }
+ 
+ // set file length
+-void fsc_setFileLength(FSCVirtualFile* fscFile, uint32 newEndOffset)
+-{
+-	fscEnter();
+-	uint32 fileSize = fsc_getFileSize(fscFile);
+-	if (!fsc_isWritable(fscFile))
+-	{
+-		cemuLog_log(LogType::Force, "TruncateFile called on read-only file");
+-	}
+-	else
+-	{
+-		fscFile->fscSetFileLength((uint64)newEndOffset);
+-	}
+-	fscLeave();
++bool fsc_setFileLength(FSCVirtualFile* fscFile, uint32 newEndOffset)
++{
++	fscEnter();
++	const bool result = fsc_isWritable(fscFile) && fscFile->fscSetFileLength(newEndOffset);
++	fscLeave();
++	return result;
+ }
+ 
+ /*
+--- a/src/Cafe/Filesystem/fsc.h
++++ b/src/Cafe/Filesystem/fsc.h
+@@ -124,6 +124,12 @@
+ 		return 0;
+ 	}
+ 
++	// Writable filesystem implementations must provide a real flush.
++	virtual bool fscFlush()
++	{
++		return fscQueryValueU64(FSC_QUERY_WRITEABLE) == 0;
++	}
++
+ 	virtual uint32 fscReadData(void* buffer, uint32 size)
+ 	{
+ 		cemu_assert_unimplemented();
+@@ -141,9 +147,9 @@
+ 		return 0;
+ 	}
+ 
+-	virtual void fscSetFileLength(uint64 endOffset)
+-	{
+-		cemu_assert_unimplemented();
++	virtual bool fscSetFileLength(uint64 endOffset)
++	{
++		return false; // Unsupported/read-only devices must not report a successful truncate.
+ 	}
+ 
+ 	virtual bool fscDirNext(FSCDirEntry* dirEntry)
+@@ -186,7 +192,7 @@
+ uint32 fsc_getFileSize(FSCVirtualFile* fscFile);
+ uint32 fsc_getFileSeek(FSCVirtualFile* fscFile);
+ void fsc_setFileSeek(FSCVirtualFile* fscFile, uint32 newSeek);
+-void fsc_setFileLength(FSCVirtualFile* fscFile, uint32 newEndOffset);
++bool fsc_setFileLength(FSCVirtualFile* fscFile, uint32 newEndOffset);
+ bool fsc_isDirectory(FSCVirtualFile* fscFile);
+ bool fsc_isFile(FSCVirtualFile* fscFile);
+ bool fsc_isWritable(FSCVirtualFile* fscFile);
+--- a/src/Cafe/Filesystem/fscDeviceAndroidSAF.cpp
++++ b/src/Cafe/Filesystem/fscDeviceAndroidSAF.cpp
+@@ -90,17 +90,18 @@
+     return m_seek;
+ }
+ 
+-void FSCVirtualFile_AndroidSAF::fscSetFileLength(uint64 endOffset)
+-{
+-    if (m_type != FSC_TYPE_FILE)
+-        return;
++bool FSCVirtualFile_AndroidSAF::fscSetFileLength(uint64 endOffset)
++{
++    if (m_type != FSC_TYPE_FILE)
++        return false;
+     m_fs->SetPosition(endOffset);
+-    bool r = m_fs->SetEndOfFile();
+-    m_seek = std::min(m_seek, endOffset);
+-    m_fileSize = m_seek;
++    const bool result = m_fs->SetEndOfFile();
++    if (result) {
++        m_seek = std::min(m_seek, endOffset);
++        m_fileSize = endOffset;
++    }
+     m_fs->SetPosition(m_seek);
+-    if (!r)
+-        cemuLog_log(LogType::Force, "fscSetFileLength: Failed to set size to 0x{:x}", endOffset);
++    return result;
+ }
+ 
+ bool FSCVirtualFile_AndroidSAF::fscDirNext(FSCDirEntry* dirEntry)
+--- a/src/Cafe/Filesystem/fscDeviceAndroidSAF.h
++++ b/src/Cafe/Filesystem/fscDeviceAndroidSAF.h
+@@ -17,7 +17,7 @@
+     uint32 fscReadData(void* buffer, uint32 size) override;
+     void fscSetSeek(uint64 seek) override;
+     uint64 fscGetSeek() override;
+-    void fscSetFileLength(uint64 endOffset) override;
++    bool fscSetFileLength(uint64 endOffset) override;
+     bool fscDirNext(FSCDirEntry* dirEntry) override;
+ 
+    private:
+--- a/src/Cafe/Filesystem/fscDeviceHostFS.cpp
++++ b/src/Cafe/Filesystem/fscDeviceHostFS.cpp
+@@ -3,6 +3,10 @@
+ #include "Cafe/Filesystem/fscDeviceHostFS.h"
+ 
+ #include "Common/FileStream.h"
++#if __ANDROID__
++#include <fcntl.h>
++#include <unistd.h>
++#endif
+ 
+ /* FSCVirtualFile implementation for HostFS */
+ 
+@@ -70,6 +74,24 @@
+ 	return (uint32)writtenBytes;
+ }
+ 
++bool FSCVirtualFile_Host::fscFlush()
++{
++	if (m_type == FSC_TYPE_FILE)
++		return !m_isWritable || (m_fs && m_fs->Flush());
++#if __ANDROID__
++	if (m_type == FSC_TYPE_DIRECTORY && m_path)
++	{
++		const int fd = ::open(m_path->c_str(), O_RDONLY | O_DIRECTORY | O_CLOEXEC);
++		if (fd < 0)
++			return false;
++		const bool flushed = ::fsync(fd) == 0;
++		const bool closed = ::close(fd) == 0;
++		return flushed && closed;
++	}
++#endif
++	return false;
++}
++
+ uint32 FSCVirtualFile_Host::fscReadData(void* buffer, uint32 size)
+ {
+ 	if (m_type != FSC_TYPE_FILE)
+@@ -103,17 +125,18 @@
+ 	return m_seek;
+ }
+ 
+-void FSCVirtualFile_Host::fscSetFileLength(uint64 endOffset)
+-{
+-	if (m_type != FSC_TYPE_FILE)
+-		return;
++bool FSCVirtualFile_Host::fscSetFileLength(uint64 endOffset)
++{
++	if (m_type != FSC_TYPE_FILE)
++		return false;
+ 	m_fs->SetPosition(endOffset);
+-	bool r = m_fs->SetEndOfFile();
+-	m_seek = std::min(m_seek, endOffset);
+-	m_fileSize = m_seek;
++	const bool result = m_fs->SetEndOfFile();
++	if (result) {
++		m_seek = std::min(m_seek, endOffset);
++		m_fileSize = endOffset;
++	}
+ 	m_fs->SetPosition(m_seek);
+-	if (!r)
+-		cemuLog_log(LogType::Force, "fscSetFileLength: Failed to set size to 0x{:x}", endOffset);
++	return result;
+ }
+ 
+ bool FSCVirtualFile_Host::fscDirNext(FSCDirEntry* dirEntry)
+--- a/src/Cafe/Filesystem/fscDeviceHostFS.h
++++ b/src/Cafe/Filesystem/fscDeviceHostFS.h
+@@ -12,10 +12,11 @@
+ 
+ 	uint64 fscQueryValueU64(uint32 id) override;
+ 	uint32 fscWriteData(void* buffer, uint32 size) override;
++	bool fscFlush() override;
+ 	uint32 fscReadData(void* buffer, uint32 size) override;
+ 	void fscSetSeek(uint64 seek) override;
+ 	uint64 fscGetSeek() override;
+-	void fscSetFileLength(uint64 endOffset) override;
++	bool fscSetFileLength(uint64 endOffset) override;
+ 	bool fscDirNext(FSCDirEntry* dirEntry) override;
+ 
+ private:
+--- a/src/Cafe/Filesystem/fscDeviceWuhb.cpp
++++ b/src/Cafe/Filesystem/fscDeviceWuhb.cpp
+@@ -60,9 +60,9 @@
+ 			return 0;
+ 		return m_seek;
+ 	}
+-	void fscSetFileLength(uint64 endOffset) override
++	bool fscSetFileLength(uint64 endOffset) override
+ 	{
+-		cemu_assert_error();
++		return false;
+ 	}
+ 	bool fscDirNext(FSCDirEntry* dirEntry) override
+ 	{
+--- a/src/Cafe/GameProfile/GameProfile.cpp
++++ b/src/Cafe/GameProfile/GameProfile.cpp
+@@ -280,11 +280,11 @@
+ 	if (std::error_code ex_ec; !fs::exists(gameProfileDir, ex_ec)) 
+ 		fs::create_directories(gameProfileDir, ex_ec);
+ 	auto gameProfilePath = gameProfileDir / fmt::format("{:016x}.ini", title_id);
+-	FileStream* fs = FileStream::createFile2(gameProfilePath);
++	auto fs = std::unique_ptr<FileStream>(FileStream::createFile2(gameProfilePath));
+ 	if (!fs)
+ 	{
+ 		cemuLog_log(LogType::Force, "Failed to write game profile");
+-		return;
++		throw std::runtime_error("Failed to open game profile for writing");
+ 	}
+ 
+ 	if (m_gameName)
+@@ -324,7 +324,8 @@
+ #undef WRITE_OPTIONAL_ENTRY
+ #undef WRITE_ENTRY
+ 
+-	delete fs;
++	if (!fs->Flush())
++		throw std::runtime_error("Failed to flush game profile");
+ }
+ 
+ void GameProfile::ResetOptional()
+--- a/src/Cafe/HW/Latte/Core/LatteAsyncCommands.cpp
++++ b/src/Cafe/HW/Latte/Core/LatteAsyncCommands.cpp
+@@ -2,6 +2,9 @@
+ #include "Cafe/HW/Latte/Core/LatteAsyncCommands.h"
+ #include "Cafe/HW/Latte/Core/LatteShader.h"
+ #include "Cafe/HW/Latte/Core/LatteTexture.h"
++#if __ANDROID__
++void CalamansiPollSurfaceCommands();
++#endif
+ 
+ void LatteThread_Exit();
+ 
+@@ -98,6 +101,9 @@
+ 	// quick check if queue is empty (requires no lock)
+ 	if (Latte_GetStopSignal())
+ 		LatteThread_Exit();
++#if __ANDROID__
++	CalamansiPollSurfaceCommands();
++#endif
+ 	if (LatteAsyncCommandQueue.empty())
+ 		return;
+ 	swl_gpuAsyncCommands.LockWrite();
+--- a/src/Cafe/HW/Latte/Core/LatteThread.cpp
++++ b/src/Cafe/HW/Latte/Core/LatteThread.cpp
+@@ -18,11 +18,23 @@
+ #include "config/ActiveSettings.h"
+ 
+ #include "Cafe/CafeSystem.h"
++#if __ANDROID__
++void CalamansiPollSurfaceCommands();
++void CalamansiReportNativeError(const char* message);
++std::mutex& CalamansiSurfaceMutex();
++extern std::atomic_bool gCalamansiGpuActive;
++void CalamansiGpuFinished();
++#endif
+ 
+ LatteGPUState_t LatteGPUState = {};
+ 
+ std::atomic_bool sLatteThreadRunning = false;
+ std::atomic_bool sLatteThreadFinishedInit = false;
++std::exception_ptr sLatteThreadFailure;
++std::mutex sLatteFailureMutex;
++std::atomic_bool sLatteCleanupFailed = false;
++bool sLatteCleanupStarted = false;
++void LatteThread_Cleanup();
+ 
+ void LatteThread_Exit();
+ 
+@@ -113,6 +125,9 @@
+ 
+ int Latte_ThreadEntry()
+ {
++#if __ANDROID__
++	CalamansiPollSurfaceCommands();
++#endif
+ 	SetThreadName("LatteThread");
+ 	sint32 w,h;
+ 	GuiSystem::getWindowPhysSize(w,h);
+@@ -161,6 +176,9 @@
+ 	// wait till a game is started
+ 	while( true )
+ 	{
++#if __ANDROID__
++		CalamansiPollSurfaceCommands();
++#endif
+ 		if( CafeSystem::IsTitleRunning() )
+ 			break;
+ 
+@@ -201,6 +219,9 @@
+ 	while (LatteGPUState.gx2InitCalled == 0)
+ 	{
+ 		std::this_thread::yield();
++#if __ANDROID__
++		CalamansiPollSurfaceCommands();
++#endif
+ 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+ 		LatteThread_HandleOSScreen();
+ 		if (Latte_GetStopSignal())
+@@ -221,13 +242,78 @@
+ {
+ 	std::unique_lock _lock(sLatteThreadStateMutex);
+ 	cemu_assert_debug(!sLatteThreadRunning);
++#if __ANDROID__
++	std::unique_lock surfaceStartup(CalamansiSurfaceMutex());
++	gCalamansiGpuActive = true;
++#endif
+ 	sLatteThreadRunning = true;
+ 	sLatteThreadFinishedInit = false;
+-	sLatteThread = std::thread(Latte_ThreadEntry);
++	sLatteThreadFailure = nullptr;
++	sLatteCleanupFailed = false;
++	sLatteCleanupStarted = false;
++	try {
++	sLatteThread = std::thread([] {
++#if __ANDROID__
++		struct GpuLifetime {
++			~GpuLifetime() {
++				CalamansiGpuFinished();
++			}
++		} lifetime;
++#endif
++		try
++		{
++			Latte_ThreadEntry();
++		}
++		catch (const std::exception& error)
++		{
++			{
++				std::lock_guard lock(sLatteFailureMutex);
++				sLatteThreadFailure = std::current_exception();
++			}
++			sLatteThreadFinishedInit = true;
++#if __ANDROID__
++			CalamansiReportNativeError(error.what());
++#endif
++			if (sLatteCleanupStarted)
++				sLatteCleanupFailed = true; // Never double-destroy partially cleaned renderer state.
++			else try
++			{
++				LatteThread_Cleanup();
++			}
++			catch (const std::exception& cleanupError)
++			{
++				sLatteCleanupFailed = true;
++#if __ANDROID__
++				CalamansiReportNativeError(cleanupError.what());
++#endif
++			}
++		}
++	});
++	} catch (...) {
++		sLatteThreadRunning = false;
++#if __ANDROID__
++		gCalamansiGpuActive = false;
++#endif
++		throw;
++	}
++#if __ANDROID__
++	surfaceStartup.unlock();
++#endif
+ 	// wait until initialized
+ 	while (!sLatteThreadFinishedInit)
+ 	{
+ 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
++	}
++	std::exception_ptr initializationFailure;
++	{
++		std::lock_guard lock(sLatteFailureMutex);
++		initializationFailure = sLatteThreadFailure;
++	}
++	if (initializationFailure)
++	{
++		sLatteThreadRunning = false;
++		sLatteThread.join();
++		std::rethrow_exception(initializationFailure);
+ 	}
+ }
+ 
+@@ -246,8 +332,9 @@
+ 	return !sLatteThreadRunning;
+ }
+ 
+-void LatteThread_Exit()
+-{
++void LatteThread_Cleanup()
++{
++	sLatteCleanupStarted = true;
+ 	if (g_renderer)
+ 		g_renderer->Shutdown();
+     // clean up vertex/uniform cache
+@@ -268,6 +355,11 @@
+ 	}
+ 	// reset GPU7 state
+ 	std::memset(&LatteGPUState, 0, sizeof(LatteGPUState));
++}
++
++void LatteThread_Exit()
++{
++	LatteThread_Cleanup();
+ 	#if BOOST_OS_WINDOWS
+ 	ExitThread(0);
+ 	#else
+--- a/src/Cafe/HW/Latte/Renderer/Vulkan/VulkanRenderer.cpp
++++ b/src/Cafe/HW/Latte/Renderer/Vulkan/VulkanRenderer.cpp
+@@ -4,6 +4,10 @@
+ #include "Cafe/HW/Latte/Renderer/Vulkan/RendererShaderVk.h"
+ #include "Cafe/HW/Latte/Renderer/Vulkan/VulkanTextureReadback.h"
+ #include "Cafe/HW/Latte/Renderer/Vulkan/CocoaSurface.h"
++#if __ANDROID__
++#include <android/native_window.h>
++void CalamansiPollSurfaceCommands();
++#endif
+ 
+ #include "Cafe/HW/Latte/Core/LatteBufferCache.h"
+ #include "Cafe/HW/Latte/Core/LattePerformanceMonitor.h"
+@@ -628,15 +632,18 @@
+ 
+ VulkanRenderer::~VulkanRenderer()
+ {
+-	SubmitCommandBuffer();
++	if (m_state.currentCommandBuffer)
++		SubmitCommandBuffer();
+ 	WaitDeviceIdle();
+-	WaitCommandBufferFinished(GetCurrentCommandBufferId());
++	if (m_state.currentCommandBuffer)
++		WaitCommandBufferFinished(GetCurrentCommandBufferId());
+ 	// make sure compilation threads have been shut down
+ 	RendererShaderVk::Shutdown();
+ 	// shut down pipeline save thread
+ 	m_destructionRequested = true;
+ 	m_pipeline_cache_semaphore.notify();
+-	m_pipeline_cache_save_thread.join();
++	if (m_pipeline_cache_save_thread.joinable())
++		m_pipeline_cache_save_thread.join();
+ 
+ 	vkDestroyPipelineCache(m_logicalDevice, m_pipeline_cache, nullptr);
+ 
+@@ -664,7 +668,8 @@
+ 	vkDestroyDescriptorSetLayout(m_logicalDevice, m_swapchainDescriptorSetLayout, nullptr);
+ 
+ 	// shut down imgui
+-	ImGui_ImplVulkan_Shutdown();
++	if (m_imguiInitialized)
++		ImGui_ImplVulkan_Shutdown();
+ 
+ 	// delete null objects
+ 	DeleteNullObjects();
+@@ -767,6 +772,43 @@
+ 		m_padSwapchainInfo->Create();
+ 	}
+ }
++
++#if __ANDROID__
++void VulkanRenderer::AndroidReplaceSurface(void* nativeWindow, const Vector2i& size, bool mainWindow)
++{
++	std::unique_ptr<ANativeWindow, decltype(&ANativeWindow_release)> replacement(
++		static_cast<ANativeWindow*>(nativeWindow), &ANativeWindow_release);
++	auto& info = GuiSystem::getWindowInfo();
++	auto& handle = mainWindow ? info.canvas_main : info.canvas_pad;
++	auto& chain = mainWindow ? m_mainSwapchainInfo : m_padSwapchainInfo;
++	const bool commandBufferStarted = m_state.currentCommandBuffer != nullptr;
++	if (commandBufferStarted)
++	{
++		SubmitCommandBuffer();
++		WaitDeviceIdle();
++	}
++	if (mainWindow && m_imguiInitialized)
++	{
++		ImGui_ImplVulkan_Shutdown();
++		m_imguiInitialized = false;
++	}
++	// VkSurfaceKHR and swapchain die before their ANativeWindow reference.
++	chain.reset();
++	if (handle.surface)
++		ANativeWindow_release(static_cast<ANativeWindow*>(handle.surface));
++	handle.surface = replacement.release();
++	if (!mainWindow)
++		info.pad_open = nativeWindow != nullptr;
++	if (!nativeWindow)
++		return;
++	chain = std::make_unique<SwapchainInfoVk>(mainWindow, size);
++	chain->Create();
++	if (mainWindow && !commandBufferStarted)
++		InitFirstCommandBuffer();
++	if (mainWindow && imguiTVContext)
++		ImguiInit();
++}
++#endif
+ 
+ const std::unique_ptr<SwapchainInfoVk>& VulkanRenderer::GetChainInfoPtr(bool mainWindow) const
+ {
+@@ -1622,9 +1669,10 @@
+ 	nullTex.view = VK_NULL_HANDLE;
+ 	vkDestroyImage(m_logicalDevice, nullTex.image, nullptr);
+ 	nullTex.image = VK_NULL_HANDLE;
+-	memoryManager->imageMemoryFree(nullTex.allocation);
++	if (nullTex.allocation)
++		memoryManager->imageMemoryFree(nullTex.allocation);
+ 	nullTex.allocation = nullptr;
+ }
+ 
+ void VulkanRenderer::DeleteNullObjects()
+ {
+@@ -1634,6 +1675,8 @@
+ 
+ void VulkanRenderer::ImguiInit()
+ {
++	if (!m_mainSwapchainInfo)
++		return; // Background/headless boot; initialize when the TV surface returns.
+ 	if (m_imguiRenderPass == VK_NULL_HANDLE)
+ 	{
+ 		// TODO: renderpass swapchain format may change between srgb and rgb -> need reinit
+@@ -1678,6 +1721,7 @@
+ 	info.ImageCount = info.MinImageCount;
+ 
+ 	ImGui_ImplVulkan_Init(&info, m_imguiRenderPass);
++	m_imguiInitialized = true;
+ }
+ 
+ void VulkanRenderer::Initialize()
+@@ -1691,8 +1735,10 @@
+ void VulkanRenderer::Shutdown()
+ {
+-	DeleteFontTextures();
++	if (m_imguiInitialized)
++		DeleteFontTextures();
+ 	Renderer::Shutdown();
+-	SubmitCommandBuffer();
++	if (m_state.currentCommandBuffer)
++		SubmitCommandBuffer();
+ 	WaitDeviceIdle();
+ 	if (m_imguiRenderPass != VK_NULL_HANDLE)
+ 	{
+@@ -1876,13 +1920,10 @@
+ 
+ bool VulkanRenderer::ImguiBegin(bool mainWindow)
+ {
+-	if (!Renderer::ImguiBegin(mainWindow))
++	if (!AcquireNextSwapchainImage(mainWindow) || !m_imguiInitialized || !Renderer::ImguiBegin(mainWindow))
+ 		return false;
+-
++	// Acquisition may process a queued surface replacement: take references afterward.
+ 	auto& chainInfo = GetChainInfo(mainWindow);
+-
+-	if (!AcquireNextSwapchainImage(mainWindow))
+-		return false;
+ 
+ 	draw_endRenderPass();
+ 	m_state.currentPipeline = VK_NULL_HANDLE;
+@@ -2805,6 +2846,9 @@
+ 
+ bool VulkanRenderer::AcquireNextSwapchainImage(bool mainWindow)
+ {
++#if __ANDROID__
++	CalamansiPollSurfaceCommands();
++#endif
+ 	if(!IsSwapchainInfoValid(mainWindow))
+ 		return false;
+ 
+--- a/src/Cafe/HW/Latte/Renderer/Vulkan/VulkanRenderer.h
++++ b/src/Cafe/HW/Latte/Renderer/Vulkan/VulkanRenderer.h
+@@ -187,6 +187,10 @@
+ 	void GetDeviceFeatures();
+ 	void DetermineVendor();
+ 	void InitializeSurface(const Vector2i& size, bool mainWindow);
++#if __ANDROID__
++	// Called only before Latte_Start or on the Latte thread at an async safe point.
++	void AndroidReplaceSurface(void* nativeWindow, const Vector2i& size, bool mainWindow);
++#endif
+ 
+ 	const std::unique_ptr<SwapchainInfoVk>& GetChainInfoPtr(bool mainWindow) const;
+ 	SwapchainInfoVk& GetChainInfo(bool mainWindow) const;
+@@ -427,6 +431,7 @@
+ 	bool IsSwapchainInfoValid(bool mainWindow) const;
+ 
+ 	VkRenderPass m_imguiRenderPass = VK_NULL_HANDLE;
++	bool m_imguiInitialized = false;
+ 
+ 	VkDescriptorPool m_descriptorPool;
+ 
+--- a/src/Cafe/IOSU/fsa/iosu_fsa.cpp
++++ b/src/Cafe/IOSU/fsa/iosu_fsa.cpp
+@@ -3,6 +3,11 @@
+ #include "Cafe/IOSU/kernel/iosu_kernel.h"
+ #include "Cafe/Filesystem/fsc.h"
+ #include "util/helpers/helpers.h"
++#include <condition_variable>
++#if __ANDROID__
++void CalamansiReportNativeError(const char* message);
++bool CalamansiFlushMlc();
++#endif
+ 
+ #include "Cafe/OS/libs/coreinit/coreinit_FS.h"	 // get rid of this dependency, requires reworking some of the IPC stuff. See locations where we use coreinit::FSCmdBlockBody_t
+ #include "Cafe/HW/Latte/Core/LatteBufferCache.h" // also remove this dependency
+@@ -18,6 +22,11 @@
+ 		IOSMsgQueueId sFSAIoMsgQueue;
+ 		SysAllocator<iosu::kernel::IOSMessage, 352> _m_sFSAIoMsgQueueMsgBuffer;
+ 		std::thread sFSAIoThread;
++		std::mutex sDrainMutex;
++		std::condition_variable sDrainCondition;
++		bool sDrainCompleted = false;
++		bool sDrainSucceeded = false;
++		bool sDrainPending = false;
+ 
+ 		struct FSAClient // IOSU's counterpart to the coreinit FSClient struct
+ 		{
+@@ -227,6 +236,27 @@
+ 				return it.fscFile;
+ 			}
+ 
++			bool FlushAll()
++			{
++				bool success = true;
++				for (auto& it : m_handleTable)
++					if (it.isAllocated && fsc_isWritable(it.fscFile))
++						success = it.fscFile->fscFlush() && success;
++				return success;
++			}
++
++			void CloseAll()
++			{
++				for (auto& it : m_handleTable)
++				{
++					if (!it.isAllocated)
++						continue;
++					fsc_close(it.fscFile);
++					it.fscFile = nullptr;
++					it.isAllocated = false;
++				}
++			}
++
+ 		private:
+ 			uint32 m_currentCounter = 1;
+ 			std::array<_FSAHandleResource, 0x3C0> m_handleTable;
+@@ -336,6 +366,8 @@
+ 				cemuLog_logDebug(LogType::Force, "__FSACloseFile(): Invalid handle (0x{:08x})", fileHandle);
+ 				return FSA_RESULT::INVALID_FILE_HANDLE;
+ 			}
++			if (fsc_isWritable(fscFile) && !fscFile->fscFlush())
++				return FSA_RESULT::FATAL_ERROR; // retain the live handle for retry
+ 			// unregister file
+ 			sFileHandleTable.ReleaseHandle(fileHandle); // todo - use the error code of this
+ 			fsc_close(fscFile);
+@@ -588,7 +620,15 @@
+ 
+ 		FSA_RESULT FSAProcessCmd_flushQuota(FSAClient* client, FSAShimBuffer* shimBuffer)
+ 		{
+-			return FSA_RESULT::OK;
++			sint32 status = FSC_STATUS_UNDEFINED;
++			std::unique_ptr<FSCVirtualFile, decltype(&fsc_close)> directory(
++				__FSAOpenNode(client, reinterpret_cast<const char*>(shimBuffer->request.cmdFlushQuota.path), FSC_ACCESS_FLAG::OPEN_DIR, status), &fsc_close);
++			if (!directory)
++				return FSA_convertFSCtoFSAStatus(status);
++			// Flush data first, then the quota directory entry metadata, while
++			// retaining the real directory handle through both operations.
++			const bool flushed = sFileHandleTable.FlushAll() && directory->fscFlush();
++			return flushed ? FSA_RESULT::OK : FSA_RESULT::FATAL_ERROR;
+ 		}
+ 
+ 		FSA_RESULT FSAProcessCmd_rewindDir(FSAClient* client, FSAShimBuffer* shimBuffer)
+@@ -607,7 +647,10 @@
+ 
+ 		FSA_RESULT FSAProcessCmd_flushFile(FSAClient* client, FSAShimBuffer* shimBuffer)
+ 		{
+-			return FSA_RESULT::OK;
++			auto* file = sFileHandleTable.GetByHandle(shimBuffer->request.cmdFlushFile.fileHandle);
++			if (!file)
++				return FSA_RESULT::INVALID_FILE_HANDLE;
++			return file->fscFlush() ? FSA_RESULT::OK : FSA_RESULT::FATAL_ERROR;
+ 		}
+ 
+ 		FSA_RESULT FSAProcessCmd_appendFile(FSAClient* client, FSAShimBuffer* shimBuffer)
+@@ -627,8 +670,7 @@
+ 			FSCVirtualFile* fscFile = sFileHandleTable.GetByHandle(fileHandle);
+ 			if (!fscFile)
+ 				return FSA_RESULT::INVALID_FILE_HANDLE;
+-			fsc_setFileLength(fscFile, fsc_getFileSeek(fscFile));
+-			return FSA_RESULT::OK;
++			return fsc_setFileLength(fscFile, fsc_getFileSeek(fscFile)) ? FSA_RESULT::OK : FSA_RESULT::FATAL_ERROR;
+ 		}
+ 
+ 		FSA_RESULT FSAProcessCmd_isEof(FSAClient* client, FSAShimBuffer* shimBuffer)
+@@ -840,6 +883,23 @@
+ 				cemu_assert(!IOS_ResultIsError(r));
+ 				if (msg == 0)
+ 					return; // shutdown signaled
++				// Reserved host barrier; guest command pointers are aligned and never 1.
++				if (msg == 1)
++				{
++					std::lock_guard lock(sDrainMutex);
++					sDrainSucceeded = sFileHandleTable.FlushAll();
++#if __ANDROID__
++					sDrainSucceeded = sDrainSucceeded && CalamansiFlushMlc();
++#endif
++					if (sDrainSucceeded)
++					{
++						sFileHandleTable.CloseAll();
++						sDirHandleTable.CloseAll();
++					}
++					sDrainCompleted = true;
++					sDrainCondition.notify_all();
++					continue;
++				}
+ 				IPCCommandBody* cmd = MEMPTR<IPCCommandBody>(msg).GetPtr();
+ 				uint32 clientHandle = (uint32)cmd->devHandle;
+ 				if (cmd->cmdId == IPCCommandId::IOS_OPEN)
+@@ -865,7 +921,14 @@
+ 				{
+ 					cemu_assert(clientHandle < sFSAClientArray.size());
+ 					cemu_assert(sFSAClientArray[clientHandle].isAllocated);
+-					FSAHandleCommandIoctl(sFSAClientArray.data() + clientHandle, cmd, (FSA_CMD_OPERATION_TYPE)cmd->args[0].value(), MEMPTR<void>(cmd->args[1]), MEMPTR<void>(cmd->args[3]));
++					try {
++						FSAHandleCommandIoctl(sFSAClientArray.data() + clientHandle, cmd, (FSA_CMD_OPERATION_TYPE)cmd->args[0].value(), MEMPTR<void>(cmd->args[1]), MEMPTR<void>(cmd->args[3]));
++					} catch (const std::exception& error) {
++						IOS_ResourceReply(cmd, static_cast<IOS_ERROR>(FSA_RESULT::FATAL_ERROR));
++#if __ANDROID__
++						CalamansiReportNativeError(error.what());
++#endif
++					}
+ 				}
+ 				else if (cmd->cmdId == IPCCommandId::IOS_IOCTLV)
+ 				{
+@@ -875,7 +938,14 @@
+ 					uint32 numIn = cmd->args[1];
+ 					uint32 numOut = cmd->args[2];
+ 					IPCIoctlVector* vec = MEMPTR<IPCIoctlVector>{cmd->args[3]}.GetPtr();
+-					FSAHandleCommandIoctlv(sFSAClientArray.data() + clientHandle, cmd, requestId, numIn, numOut, vec);
++					try {
++						FSAHandleCommandIoctlv(sFSAClientArray.data() + clientHandle, cmd, requestId, numIn, numOut, vec);
++					} catch (const std::exception& error) {
++						IOS_ResourceReply(cmd, static_cast<IOS_ERROR>(FSA_RESULT::FATAL_ERROR));
++#if __ANDROID__
++						CalamansiReportNativeError(error.what());
++#endif
++					}
+ 				}
+ 				else
+ 				{
+@@ -897,9 +967,36 @@
+ 			sFSAIoThread = std::thread(FSAIoThread);
+ 		}
+ 
++		bool DrainAndClose()
++		{
++			std::unique_lock lock(sDrainMutex);
++			if (!sFSAIoThread.joinable())
++				return true;
++			// A timed-out barrier must finish before another request can reuse
++			// this acknowledgement; otherwise an old completion could end a new stop.
++			if (sDrainPending && !sDrainCondition.wait_for(lock, std::chrono::seconds(15), [] { return sDrainCompleted; }))
++				return false;
++			sDrainCompleted = false;
++			sDrainPending = true;
++			if (IOS_ResultIsError(IOS_SendMessage(sFSAIoMsgQueue, 1, 0)))
++			{
++				sDrainPending = false;
++				return false;
++			}
++			if (!sDrainCondition.wait_for(lock, std::chrono::seconds(15), [] { return sDrainCompleted; }))
++				return false;
++			sDrainPending = false;
++			return sDrainSucceeded;
++		}
++
+ 		void Shutdown()
+ 		{
+-			IOS_SendMessage(sFSAIoMsgQueue, 0, 0);
++			if (!sFSAIoThread.joinable())
++				return;
++			if (!DrainAndClose())
++				throw std::runtime_error("Failed to flush outstanding FSA save handles");
++			if (IOS_ResultIsError(IOS_SendMessage(sFSAIoMsgQueue, 0, 0)))
++				throw std::runtime_error("Failed to stop FSA worker");
+ 			sFSAIoThread.join();
+ 		}
+ 	} // namespace fsa
+--- a/src/Cafe/IOSU/fsa/iosu_fsa.h
++++ b/src/Cafe/IOSU/fsa/iosu_fsa.h
+@@ -212,6 +212,8 @@
+ 		static_assert(sizeof(FSAShimBuffer) == 0x938); // exact size of this is not known
+ 
+ 		void Initialize();
++		// Caller must first join guest CPU producers. Executes on the FSA worker.
++		bool DrainAndClose();
+ 		void Shutdown();
+ 	} // namespace fsa
+ } // namespace iosu
+--- a/src/Cafe/IOSU/kernel/iosu_kernel.cpp
++++ b/src/Cafe/IOSU/kernel/iosu_kernel.cpp
+@@ -428,6 +428,21 @@
+ 			cmd->isAllocated = false;
+ 			sIPCFreeDispatchableCommands.push(cmd);
+ 			sIPCDispatchableCommandPoolLock.unlock();
++		}
++
++		bool DrainIPC()
++		{
++			const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(15);
++			do
++			{
++				sIPCDispatchableCommandPoolLock.lock();
++				const bool drained = sIPCFreeDispatchableCommands.size() == sIPCDispatchableCommandPool.GetCount();
++				sIPCDispatchableCommandPoolLock.unlock();
++				if (drained)
++					return true;
++				std::this_thread::sleep_for(std::chrono::milliseconds(1));
++			} while (std::chrono::steady_clock::now() < deadline);
++			return false;
+ 		}
+ 
+ 		static constexpr size_t MAX_NUM_ACTIVE_DEV_HANDLES = 96; // per process
+@@ -763,8 +778,22 @@
+ 				sTimerThreadStop = true;
+ 				sTimerCV.notify_one();
+-				m_timerThread.join();
++				if (m_timerThread.joinable())
++					m_timerThread.join();
+-				// reset resources
+-				// todo
++				if (!DrainIPC())
++					throw std::runtime_error("IOSU still owns commands during shutdown");
++				// All IOSU service workers and the timer producer have joined.
++				// Release managers/handles/queues so another title can initialize
++				// this backend without registering stale /dev/fsa or /dev/mcp.
++				for (auto& queue : sMsgQueuePool)
++					if (queue.msgArraySize != 0)
++						if (IOS_DestroyMessageQueue(queue.queueHandle) != IOS_ERROR_OK)
++							throw std::runtime_error("Failed to release IOSU message queue");
++				{
++					std::lock_guard lock(sTimerMutex);
++					sTimerByFireTime.clear();
++					sTimers.clear();
++					sTimersFreeHandles.clear();
++				}
+ 			}
+ 
+ 			std::thread m_timerThread;
+--- a/src/Cafe/IOSU/kernel/iosu_kernel.h
++++ b/src/Cafe/IOSU/kernel/iosu_kernel.h
+@@ -22,6 +22,8 @@
+ 		IOS_ERROR IOS_ResourceReply(IPCCommandBody* cmd, IOS_ERROR result);
+ 
+ 		void IPCSubmitFromCOS(uint32 ppcCoreIndex, IPCCommandBody* cmd);
++		// Call only after guest CPU producers have joined.
++		bool DrainIPC();
+ 
+ 		IOSUModule* GetModule();
+ 	}
+--- a/src/Cafe/TitleList/SaveList.cpp
++++ b/src/Cafe/TitleList/SaveList.cpp
+@@ -20,6 +20,7 @@
+ 
+ // worker thread
+ std::atomic_bool sSLWorkerThreadActive{false};
++std::thread sSLWorkerThread;
+ 
+ 
+ void CafeSaveList::Initialize()
+@@ -39,8 +40,20 @@
+ 	if (sSLWorkerThreadActive)
+ 		return;
+ 	sSLWorkerThreadActive = true;
+-	std::thread t(RefreshThreadWorker);
+-	t.detach();
++	if (sSLWorkerThread.joinable())
++		sSLWorkerThread.join();
++	sSLWorkerThread = std::thread(RefreshThreadWorker);
++}
++
++void CafeSaveList::JoinWorker()
++{
++	std::thread worker;
++	{
++		std::lock_guard lock(sSLMutex);
++		worker = std::move(sSLWorkerThread);
++	}
++	if (worker.joinable())
++		worker.join();
+ }
+ 
+ void CafeSaveList::RefreshThreadWorker()
+--- a/src/Cafe/TitleList/SaveList.h
++++ b/src/Cafe/TitleList/SaveList.h
+@@ -20,6 +20,7 @@
+ 	static void Initialize();
+ 	static void SetMLCPath(fs::path mlcPath);
+ 	static void Refresh();
++	static void JoinWorker();
+ 
+ 	static SaveInfo GetSaveByTitleId(TitleId titleId);
+ 
+--- a/src/Cafe/TitleList/TitleList.cpp
++++ b/src/Cafe/TitleList/TitleList.cpp
+@@ -191,6 +191,17 @@
+ {
+ 	std::unique_lock _lock(sTLMutex);
+ 	return sTLRefreshWorkerActive;
++}
++
++void CafeTitleList::JoinWorker()
++{
++	std::thread worker;
++	{
++		std::lock_guard lock(sTLMutex);
++		worker = std::move(sTLRefreshWorker);
++	}
++	if (worker.joinable())
++		worker.join();
+ }
+ 
+ void CafeTitleList::WaitForMandatoryScan()
+--- a/src/Cafe/TitleList/TitleList.h
++++ b/src/Cafe/TitleList/TitleList.h
+@@ -27,6 +27,7 @@
+ 	static void AddScanPath(fs::path path);
+ 	static void SetMLCPath(fs::path path);
+ 	static void Refresh(); // scan all paths
++	static void JoinWorker();
+ 	static bool IsScanning(); // returns true if async refresh is currently active
+ 	static void WaitForMandatoryScan(); // wait for current scan result if no cached info is available
+ 	static void AddTitleFromPath(fs::path path);
+--- a/src/Common/FileStream.h
++++ b/src/Common/FileStream.h
+@@ -31,6 +31,8 @@
+ 
+     // writing (binary)
+     virtual sint32 writeData(const void* data, sint32 length) = 0;
++    // Read-only streams have nothing to flush; writable backends must override.
++    virtual bool Flush() { return false; }
+     virtual void writeU64(uint64 v) = 0;
+     virtual void writeU32(uint32 v) = 0;
+     virtual void writeU8(uint8 v) = 0;
+--- a/src/Common/unix/FileStream_unix.cpp
++++ b/src/Common/unix/FileStream_unix.cpp
+@@ -1,5 +1,7 @@
+ #include "Common/unix/FileStream_unix.h"
+ #include <cstdarg>
++#include <fcntl.h>
++#include <unistd.h>
+ 
+ fs::path findPathCI(const fs::path& path)
+ {
+@@ -25,6 +27,8 @@
+ void FileStreamUnix::SetPosition(uint64 pos)
+ {
+ 	cemu_assert(m_isValid);
++	if (!m_fileStream.bad() && !(m_prevOperationWasWrite && m_fileStream.fail()))
++		m_fileStream.clear(); // An EOF read must not make the next seek a no-op.
+ 	if (m_prevOperationWasWrite)
+ 		m_fileStream.seekp((std::streampos)pos);
+ 	else
+@@ -44,9 +48,12 @@
+ 
+ bool FileStreamUnix::SetEndOfFile()
+ {
+-	assert_dbg();
+-	return true;
+-	//return ::SetEndOfFile(m_hFile) != 0;
++	if (!m_isValid || !m_isWriteable)
++		return false;
++	const auto position = m_prevOperationWasWrite ? m_fileStream.tellp() : m_fileStream.tellg();
++	if (position < std::streampos(0) || !Flush())
++		return false;
++	return ::ftruncate(m_syncFd, static_cast<off_t>(position)) == 0;
+ }
+ 
+ void FileStreamUnix::extract(std::vector<uint8>& data)
+@@ -99,9 +106,27 @@
+ 
+ sint32 FileStreamUnix::writeData(const void* data, sint32 length)
+ {
++	if (!m_prevOperationWasWrite && m_fileStream.eof() && !m_fileStream.bad())
++		m_fileStream.clear();
+ 	SyncReadWriteSeek(true);
+ 	m_fileStream.write((const char*)data, length);
+-	return length;
++	return m_fileStream ? length : 0;
++}
++
++bool FileStreamUnix::Flush()
++{
++	if (!m_isValid)
++		return false;
++	if (!m_isWriteable)
++		return true;
++	// Preserve genuine write failures; EOF from a preceding read is not one.
++	if (m_fileStream.bad() || (m_prevOperationWasWrite && m_fileStream.fail()))
++		return false;
++	m_fileStream.clear();
++	m_fileStream.flush();
++	if (!m_fileStream)
++		return false;
++	return m_syncFd >= 0 && ::fsync(m_syncFd) == 0;
+ }
+ 
+ void FileStreamUnix::writeU64(uint64 v)
+@@ -145,12 +170,14 @@
+ 	{
+ 		m_fileStream.close();
+ 	}
+-	//	CloseHandle(m_hFile);
++	if (m_syncFd >= 0)
++		::close(m_syncFd);
+ }
+ 
+ FileStreamUnix::FileStreamUnix(const fs::path& path, bool isOpen, bool isWriteable)
+ {
+ 	fs::path CIPath = findPathCI(path);
++	m_isWriteable = !isOpen || isWriteable;
+ 	if (isOpen)
+ 	{
+ 		m_fileStream.open(CIPath, isWriteable ? (std::ios_base::in | std::ios_base::out | std::ios_base::binary) : (std::ios_base::in | std::ios_base::binary));
+@@ -165,6 +192,17 @@
+ 	{
+ 		m_isValid = false;
+ 		m_fileStream.close();
++	}
++	if (m_isValid && m_isWriteable)
++	{
++		// ponytail: std::fstream has no Android native_handle; pin the same inode
++		// for fsync across rename/unlink. Use one POSIX-backed stream if fd pressure matters.
++		m_syncFd = ::open(CIPath.c_str(), O_WRONLY | O_CLOEXEC);
++		if (m_syncFd < 0)
++		{
++			m_isValid = false;
++			m_fileStream.close();
++		}
+ 	}
+ }
+ 
+--- a/src/Common/unix/FileStream_unix.h
++++ b/src/Common/unix/FileStream_unix.h
+@@ -21,6 +21,7 @@
+ 
+     // writing (binary)
+     sint32 writeData(const void* data, sint32 length) override;
++    bool Flush() override;
+     void writeU64(uint64 v) override;
+     void writeU32(uint32 v) override;
+     void writeU8(uint8 v) override;
+@@ -41,4 +42,6 @@
+     bool m_isValid{};
+     std::fstream m_fileStream;
+     bool m_prevOperationWasWrite{false};
++    int m_syncFd = -1;
++    bool m_isWriteable{};
+ };
+--- a/src/android/app/src/main/cpp/AndroidEmulatedController.h
++++ b/src/android/app/src/main/cpp/AndroidEmulatedController.h
+@@ -42,7 +42,8 @@
+ 		if (m_emulatedController && m_emulatedController->type() == type)
+ 			return;
+ 		m_emulatedController = InputManager::instance().set_controller(m_index, type);
+-		InputManager::instance().save(m_index);
++		if (!InputManager::instance().save(m_index))
++			throw std::runtime_error("Failed to save Cemu controller profile");
+ 	}
+ 	void setMapping(uint64 mappingId, ControllerPtr controller, uint64 buttonId)
+ 	{
+@@ -55,7 +56,8 @@
+ 			else
+ 				controller = *controllerIt;
+ 			m_emulatedController->set_mapping(mappingId, controller, buttonId);
+-			InputManager::instance().save(m_index);
++			if (!InputManager::instance().save(m_index))
++				throw std::runtime_error("Failed to save Cemu controller mapping");
+ 		}
+ 	}
+ 	std::optional<std::string> getMapping(uint64 mapping) const
+@@ -119,5 +121,7 @@
+ 		if (!m_emulatedController)
+ 			return;
+ 		m_emulatedController->delete_mapping(mapping);
++		if (!InputManager::instance().save(m_index))
++			throw std::runtime_error("Failed to save cleared Cemu controller mapping");
+ 	}
+ };
+--- a/src/android/app/src/main/cpp/AndroidGameTitleLoadedCallback.h
++++ b/src/android/app/src/main/cpp/AndroidGameTitleLoadedCallback.h
+@@ -27,7 +27,7 @@
+ 
+ 	void onTitleLoaded(const Game& game, const std::shared_ptr<Image>& icon) override
+ 	{
+-		static JNIUtils::ScopedJNIENV env;
++		thread_local JNIUtils::ScopedJNIENV env; // Never share JNIEnv across restarted loader threads.
+ 		jstring name = JNIUtils::toJString(env, game.name);
+ 		jstring path = game.path.has_value() ? JNIUtils::toJString(env, game.path.value()) : nullptr;
+ 		jobject bitmap = nullptr;
+--- a/src/android/app/src/main/cpp/CMakeLists.txt
++++ b/src/android/app/src/main/cpp/CMakeLists.txt
+@@ -27,3 +27,14 @@
+         CemuBin
+         ZArchive::zarchive
+ )
++
++if(NOT CALAMANSI_NATIVE_SOURCE)
++    message(FATAL_ERROR "CALAMANSI_NATIVE_SOURCE must identify the host lifecycle source")
++endif()
++target_sources(CemuAndroid PRIVATE "${CALAMANSI_NATIVE_SOURCE}/CalamansiLifecycle.cpp")
++target_include_directories(CemuAndroid PRIVATE "${CALAMANSI_NATIVE_SOURCE}")
++target_link_options(CemuAndroid PRIVATE "-Wl,-z,max-page-size=16384")
++
++add_executable(CemuSaveFlushCheck EXCLUDE_FROM_ALL "${CALAMANSI_NATIVE_SOURCE}/SaveFlushCheck.cpp")
++target_link_libraries(CemuSaveFlushCheck PRIVATE CemuAndroid CemuCommon)
++target_link_options(CemuSaveFlushCheck PRIVATE "-Wl,-z,max-page-size=16384")
+--- a/src/android/app/src/main/cpp/GameTitleLoader.cpp
++++ b/src/android/app/src/main/cpp/GameTitleLoader.cpp
+@@ -1,4 +1,5 @@
+ #include "GameTitleLoader.h"
++void CalamansiReportNativeError(const char* message);
+ 
+ std::optional<TitleInfo> getFirstTitleInfoByTitleId(TitleId titleId)
+ {
+@@ -10,7 +11,32 @@
+ 
+ GameTitleLoader::GameTitleLoader()
+ {
+-	m_loaderThread = std::thread(&GameTitleLoader::loadGameTitles, this);
++}
++
++void GameTitleLoader::Start()
++{
++	std::lock_guard lock(m_threadMutex);
++	if (m_loaderThread.joinable())
++		return;
++	m_continueLoading = true;
++	m_loaderThread = std::thread(&GameTitleLoader::loadGameTitles, this);
++}
++
++void GameTitleLoader::Stop()
++{
++	if (m_callbackIdTitleList.has_value())
++	{
++		CafeTitleList::UnregisterCallback(m_callbackIdTitleList.value());
++		m_callbackIdTitleList.reset();
++	}
++	{
++		std::lock_guard lock(m_threadMutex);
++		m_continueLoading = false;
++		m_titlesToLoad.clear();
++	}
++	m_condVar.notify_one();
++	if (m_loaderThread.joinable())
++		m_loaderThread.join();
+ }
+ 
+ void GameTitleLoader::queueTitle(TitleId titleId)
+@@ -33,11 +60,11 @@
+ 
+ void GameTitleLoader::reloadGameTitles()
+ {
+-	if (m_callbackIdTitleList.has_value())
+-	{
+-		CafeTitleList::UnregisterCallback(m_callbackIdTitleList.value());
+-	}
++	Stop();
+ 	m_gameInfos.clear();
++	m_iconCache.clear();
++	m_name_cache.clear();
++	Start();
+ 	CafeTitleList::ClearScanPaths();
+ 	for (auto&& gamePath : g_config.data().game_paths)
+ 		CafeTitleList::AddScanPath(gamePath);
+@@ -47,11 +74,7 @@
+ 
+ GameTitleLoader::~GameTitleLoader()
+ {
+-	m_continueLoading = false;
+-	m_condVar.notify_one();
+-	m_loaderThread.join();
+-	if (m_callbackIdTitleList.has_value())
+-		CafeTitleList::UnregisterCallback(m_callbackIdTitleList.value());
++	Stop();
+ }
+ 
+ void GameTitleLoader::titleRefresh(TitleId titleId)
+@@ -95,8 +118,13 @@
+ 			game.lastPlayed = year_month_day(year(playTimeStat.last_played.year), month(playTimeStat.last_played.month + 1), day(playTimeStat.last_played.day));
+ 		}
+ 	}
+-	if (m_gameTitleLoadedCallback)
+-		m_gameTitleLoadedCallback->onTitleLoaded(game, icon);
++	std::shared_ptr<GameTitleLoadedCallback> callback;
++	{
++		std::lock_guard lock(m_threadMutex);
++		callback = m_gameTitleLoadedCallback;
++	}
++	if (callback)
++		callback->onTitleLoaded(game, icon);
+ }
+ 
+ void GameTitleLoader::loadGameTitles()
+@@ -112,7 +140,14 @@
+ 			titleId = m_titlesToLoad.front();
+ 			m_titlesToLoad.pop_front();
+ 		}
+-		titleRefresh(titleId);
++		try
++		{
++			titleRefresh(titleId);
++		}
++		catch (const std::exception& error)
++		{
++			CalamansiReportNativeError(error.what());
++		}
+ 	}
+ }
+ std::string GameTitleLoader::getNameByTitleId(TitleId titleId, const std::optional<TitleInfo>& titleInfo)
+--- a/src/android/app/src/main/cpp/GameTitleLoader.h
++++ b/src/android/app/src/main/cpp/GameTitleLoader.h
+@@ -39,6 +39,8 @@
+ 
+   public:
+ 	GameTitleLoader();
++	void Start();
++	void Stop();
+ 	void queueTitle(TitleId titleId);
+ 	void setOnTitleLoaded(const std::shared_ptr<GameTitleLoadedCallback>& gameTitleLoadedCallback);
+ 	void reloadGameTitles();
+--- a/src/android/app/src/main/cpp/NativeEmulation.cpp
++++ b/src/android/app/src/main/cpp/NativeEmulation.cpp
+@@ -14,6 +14,7 @@
+ #include "input/api/Android/AndroidControllerProvider.h"
+ #include "config/ActiveSettings.h"
+ #include "Cemu/ncrypto/ncrypto.h"
++#include "CalamansiLifecycle.h"
+ 
+ // forward declaration from main.cpp
+ void CemuCommonInit();
+@@ -161,26 +162,49 @@
+ extern "C" [[maybe_unused]] JNIEXPORT void JNICALL
+ Java_info_cemu_cemu_nativeinterface_NativeEmulation_initializeEmulation([[maybe_unused]] JNIEnv* env, [[maybe_unused]] jclass clazz)
+ {
++	JNIUtils::handleNativeException(env, [&]() {
++	CalamansiInitializeCallbacks();
+ 	FilesystemAndroid::setFilesystemCallbacks(std::make_shared<AndroidFilesystemCallbacks>());
+ 	g_config.SetFilename(ActiveSettings::GetConfigPath("settings.xml").generic_wstring());
+ 	NativeEmulation::createCemuDirectories();
+ 	NetworkConfig::LoadOnce();
+ 	ActiveSettings::Init();
+ 	LatteOverlay_init();
+-	CemuCommonInit();
++	static bool commonInitialized = false;
++	if (!commonInitialized)
++	{
++		CemuCommonInit();
++		commonInitialized = true;
++	}
++	else
++		CafeSystem::Initialize();
++	InputManager::instance().StartUpdateThread();
++	});
+ }
+ 
+ extern "C" [[maybe_unused]] JNIEXPORT void JNICALL
+ Java_info_cemu_cemu_nativeinterface_NativeEmulation_initializeRenderer(JNIEnv* env, [[maybe_unused]] jclass clazz, jobject j_testSurface)
+ {
++	JNIUtils::handleNativeException(env, [&]() {
+ 	InitializeGlobalVulkan();
+ 	using ANativewindow_Ptr = std::unique_ptr<ANativeWindow, decltype(&ANativeWindow_release)>;
+-	JNIUtils::handleNativeException(env, [&]() {
++	{
+ 		cemu_assert_debug(j_testSurface != nullptr);
+ 		ANativewindow_Ptr testSurface(ANativeWindow_fromSurface(env, j_testSurface), &ANativeWindow_release);
++		if (!testSurface)
++			throw std::runtime_error("Wii U TV surface is unavailable");
+ 		GuiSystem::getWindowInfo().window_main.surface = testSurface.get();
+-		g_renderer = std::make_unique<VulkanRenderer>();
++		try
++		{
++			g_renderer = std::make_unique<VulkanRenderer>();
++		}
++		catch (...)
++		{
++			GuiSystem::getWindowInfo().window_main.surface = nullptr;
++			throw;
++		}
+ 		GuiSystem::getWindowInfo().window_main.surface = nullptr;
++	}
+ 	});
+ }
+ 
+@@ -194,17 +217,16 @@
+ extern "C" [[maybe_unused]] JNIEXPORT void JNICALL
+ Java_info_cemu_cemu_nativeinterface_NativeEmulation_clearSurface([[maybe_unused]] JNIEnv* env, [[maybe_unused]] jclass clazz, jboolean is_main_canvas)
+ {
+-	if (!is_main_canvas)
+-	{
+-		auto renderer = static_cast<VulkanRenderer*>(g_renderer.get());
+-		if (renderer)
+-			renderer->StopUsingPadAndWait();
+-	}
++	JNIUtils::handleNativeException(env, [&]() {
++		CalamansiSetSurface(nullptr, is_main_canvas);
++	});
+ }
+ extern "C" [[maybe_unused]] JNIEXPORT void JNICALL
+ Java_info_cemu_cemu_nativeinterface_NativeEmulation_recreateRenderSurface([[maybe_unused]] JNIEnv* env, [[maybe_unused]] jclass clazz, jboolean is_main_canvas)
+ {
+-	// TODO
++	JNIUtils::handleNativeException(env, [&]() {
++		CalamansiRecreateSurface(is_main_canvas);
++	});
+ }
+ 
+ extern "C" [[maybe_unused]] JNIEXPORT jboolean JNICALL
+@@ -217,20 +239,9 @@
+ Java_info_cemu_cemu_nativeinterface_NativeEmulation_setSurface(JNIEnv* env, [[maybe_unused]] jclass clazz, jobject surface, jboolean is_main_canvas)
+ {
+ 	JNIUtils::handleNativeException(env, [&]() {
+-		cemu_assert_debug(surface != nullptr);
+-		auto& windowHandleInfo = is_main_canvas ? GuiSystem::getWindowInfo().canvas_main : GuiSystem::getWindowInfo().canvas_pad;
+-		if (windowHandleInfo.surface)
+-		{
+-			ANativeWindow_release(static_cast<ANativeWindow*>(windowHandleInfo.surface));
+-			windowHandleInfo.surface = nullptr;
+-		}
+-		windowHandleInfo.surface = ANativeWindow_fromSurface(env, surface);
+-		int width, height;
+-		if (is_main_canvas)
+-			GuiSystem::getWindowPhysSize(width, height);
+-		else
+-			GuiSystem::getPadWindowPhysSize(width, height);
+-		VulkanRenderer::GetInstance()->InitializeSurface({width, height}, is_main_canvas);
++		if (!surface)
++			throw std::runtime_error("Missing Android rendering surface");
++		CalamansiSetSurface(ANativeWindow_fromSurface(env, surface), is_main_canvas);
+ 	});
+ }
+ 
+@@ -253,7 +264,11 @@
+ extern "C" [[maybe_unused]] JNIEXPORT jint JNICALL
+ Java_info_cemu_cemu_nativeinterface_NativeEmulation_startGame([[maybe_unused]] JNIEnv* env, [[maybe_unused]] jclass clazz, jstring launchPath)
+ {
+-	GuiSystem::getWindowInfo().set_keystates_up();
+-	NativeEmulation::initializeAudioDevices();
+-	return NativeEmulation::startGame(JNIUtils::toString(env, launchPath));
+-}
++	jint result = NativeEmulation::ERROR_UNKNOWN;
++	JNIUtils::handleNativeException(env, [&]() {
++		GuiSystem::getWindowInfo().set_keystates_up();
++		NativeEmulation::initializeAudioDevices();
++		result = NativeEmulation::startGame(JNIUtils::toString(env, launchPath));
++	});
++	return result;
++}
+--- a/src/android/app/src/main/cpp/NativeGameTitles.cpp
++++ b/src/android/app/src/main/cpp/NativeGameTitles.cpp
+@@ -51,9 +51,11 @@
+ extern "C" [[maybe_unused]] JNIEXPORT void JNICALL
+ Java_info_cemu_cemu_nativeinterface_NativeGameTitles_setLoadingSharedLibrariesForTitleEnabled([[maybe_unused]] JNIEnv* env, [[maybe_unused]] jclass clazz, jlong game_title_id, jboolean enabled)
+ {
++	JNIUtils::handleNativeException(env, [&]() {
+ 	NativeGameTitles::LoadGameProfile(game_title_id);
+ 	NativeGameTitles::s_currentGameProfile.SetShouldLoadSharedLibraries(enabled);
+ 	NativeGameTitles::s_currentGameProfile.Save(game_title_id);
++	});
+ }
+ 
+ extern "C" [[maybe_unused]] JNIEXPORT jint JNICALL
+@@ -66,9 +68,11 @@
+ extern "C" [[maybe_unused]] JNIEXPORT void JNICALL
+ Java_info_cemu_cemu_nativeinterface_NativeGameTitles_setCpuModeForTitle([[maybe_unused]] JNIEnv* env, [[maybe_unused]] jclass clazz, jlong game_title_id, jint cpu_mode)
+ {
++	JNIUtils::handleNativeException(env, [&]() {
+ 	NativeGameTitles::LoadGameProfile(game_title_id);
+ 	NativeGameTitles::s_currentGameProfile.SetCPUMode(static_cast<CPUMode>(cpu_mode));
+ 	NativeGameTitles::s_currentGameProfile.Save(game_title_id);
++	});
+ }
+ 
+ extern "C" [[maybe_unused]] JNIEXPORT jint JNICALL
+@@ -81,9 +85,11 @@
+ extern "C" [[maybe_unused]] JNIEXPORT void JNICALL
+ Java_info_cemu_cemu_nativeinterface_NativeGameTitles_setThreadQuantumForTitle([[maybe_unused]] JNIEnv* env, [[maybe_unused]] jclass clazz, jlong game_title_id, jint thread_quantum)
+ {
++	JNIUtils::handleNativeException(env, [&]() {
+ 	NativeGameTitles::LoadGameProfile(game_title_id);
+ 	NativeGameTitles::s_currentGameProfile.SetThreadQuantum(std::clamp(thread_quantum, 5000, 536870912));
+ 	NativeGameTitles::s_currentGameProfile.Save(game_title_id);
++	});
+ }
+ 
+ extern "C" [[maybe_unused]] JNIEXPORT jboolean JNICALL
+@@ -96,9 +102,11 @@
+ extern "C" [[maybe_unused]] JNIEXPORT void JNICALL
+ Java_info_cemu_cemu_nativeinterface_NativeGameTitles_setShaderMultiplicationAccuracyForTitleEnabled([[maybe_unused]] JNIEnv* env, [[maybe_unused]] jclass clazz, jlong game_title_id, jboolean enabled)
+ {
++	JNIUtils::handleNativeException(env, [&]() {
+ 	NativeGameTitles::LoadGameProfile(game_title_id);
+ 	NativeGameTitles::s_currentGameProfile.SetAccurateShaderMul(enabled ? AccurateShaderMulOption::True : AccurateShaderMulOption::False);
+ 	NativeGameTitles::s_currentGameProfile.Save(game_title_id);
++	});
+ }
+ 
+ extern "C" [[maybe_unused]] JNIEXPORT jboolean JNICALL
+@@ -138,7 +146,7 @@
+ extern "C" [[maybe_unused]] JNIEXPORT void JNICALL
+ Java_info_cemu_cemu_nativeinterface_NativeGameTitles_reloadGameTitles([[maybe_unused]] JNIEnv* env, [[maybe_unused]] jclass clazz)
+ {
+-	NativeGameTitles::s_gameTitleLoader.reloadGameTitles();
++	JNIUtils::handleNativeException(env, [] { NativeGameTitles::s_gameTitleLoader.reloadGameTitles(); });
+ }
+ 
+ extern "C" [[maybe_unused]] JNIEXPORT jobject JNICALL
+@@ -400,7 +408,7 @@
+ extern "C" [[maybe_unused]] JNIEXPORT void JNICALL
+ Java_info_cemu_cemu_nativeinterface_NativeGameTitles_addTitleFromPath(JNIEnv* env, [[maybe_unused]] jclass clazz, jstring path)
+ {
+-	CafeTitleList::AddTitleFromPath(fs::path(JNIUtils::toString(env, path)));
++	JNIUtils::handleNativeException(env, [&]() { CafeTitleList::AddTitleFromPath(fs::path(JNIUtils::toString(env, path))); });
+ }
+ 
+ struct Title
+--- a/src/android/app/src/main/cpp/NativeInput.cpp
++++ b/src/android/app/src/main/cpp/NativeInput.cpp
+@@ -44,21 +44,27 @@
+ extern "C" [[maybe_unused]] JNIEXPORT void JNICALL
+ Java_info_cemu_cemu_nativeinterface_NativeInput_setControllerType([[maybe_unused]] JNIEnv* env, [[maybe_unused]] jclass clazz, jint index, jint emulated_controller_type)
+ {
++	JNIUtils::handleNativeException(env, [&] {
+ 	auto type = static_cast<EmulatedController::Type>(emulated_controller_type);
+ 	auto& androidEmulatedController = AndroidEmulatedController::getAndroidEmulatedController(index);
+ 	if (EmulatedController::Type::VPAD <= type && type < EmulatedController::Type::MAX)
+ 		androidEmulatedController.setType(type);
+ 	else
+ 		androidEmulatedController.setDisabled();
++	});
+ }
+ 
+ extern "C" [[maybe_unused]] JNIEXPORT jint JNICALL
+ Java_info_cemu_cemu_nativeinterface_NativeInput_getControllerType([[maybe_unused]] JNIEnv* env, [[maybe_unused]] jclass clazz, jint index)
+ {
+-	auto emulatedController = AndroidEmulatedController::getAndroidEmulatedController(index).getEmulatedController();
+-	if (emulatedController)
+-		return emulatedController->type();
+-	throw std::runtime_error(fmt::format("can't get type for emulated controller {}", index));
++	jint result = 0;
++	JNIUtils::handleNativeException(env, [&] {
++		auto controller = AndroidEmulatedController::getAndroidEmulatedController(index).getEmulatedController();
++		if (!controller)
++			throw std::runtime_error(fmt::format("No emulated controller {}", index));
++		result = controller->type();
++	});
++	return result; // A pending NativeException takes precedence over this JNI value.
+ }
+ 
+ extern "C" [[maybe_unused]] JNIEXPORT jint JNICALL
+@@ -94,19 +100,25 @@
+ extern "C" [[maybe_unused]] JNIEXPORT void JNICALL
+ Java_info_cemu_cemu_nativeinterface_NativeInput_setVPADScreenToggle([[maybe_unused]] JNIEnv* env, [[maybe_unused]] jclass clazz, jint index, jboolean enabled)
+ {
++	JNIUtils::handleNativeException(env, [&] {
+ 	auto emulatedController = AndroidEmulatedController::getAndroidEmulatedController(index).getEmulatedController();
+ 	if (emulatedController == nullptr || emulatedController->type() != EmulatedController::Type::VPAD)
+ 		throw std::runtime_error(fmt::format("Invalid controller type for controller {}, expected VPAD", index));
+ 	static_cast<VPADController*>(emulatedController.get())->set_screen_toggle(enabled);
++	});
+ }
+ 
+ extern "C" [[maybe_unused]] JNIEXPORT jboolean JNICALL
+ Java_info_cemu_cemu_nativeinterface_NativeInput_getVPADScreenToggle([[maybe_unused]] JNIEnv* env, [[maybe_unused]] jclass clazz, jint index)
+ {
+-	auto emulatedController = AndroidEmulatedController::getAndroidEmulatedController(index).getEmulatedController();
+-	if (emulatedController == nullptr || emulatedController->type() != EmulatedController::Type::VPAD)
+-		throw std::runtime_error(fmt::format("Invalid controller type for controller {}, expected VPAD", index));
+-	return static_cast<VPADController*>(emulatedController.get())->is_screen_active_toggle();
++	jboolean result = false;
++	JNIUtils::handleNativeException(env, [&] {
++		auto controller = AndroidEmulatedController::getAndroidEmulatedController(index).getEmulatedController();
++		if (!controller || controller->type() != EmulatedController::Type::VPAD)
++			throw std::runtime_error(fmt::format("Invalid VPAD controller {}", index));
++		result = static_cast<VPADController*>(controller.get())->is_screen_active_toggle();
++	});
++	return result;
+ }
+ 
+ extern "C" [[maybe_unused]] JNIEXPORT jboolean JNICALL
+@@ -118,11 +130,12 @@
+ extern "C" [[maybe_unused]] JNIEXPORT void JNICALL
+ Java_info_cemu_cemu_nativeinterface_NativeInput_setControllerMapping(JNIEnv* env, [[maybe_unused]] jclass clazz, jstring device_descriptor, jstring device_name, jint index, jint mapping_id, jint button_id)
+ {
++	JNIUtils::handleNativeException(env, [&] {
+ 	auto deviceName = JNIUtils::toString(env, device_name);
+ 	auto deviceDescriptor = JNIUtils::toString(env, device_descriptor);
+-	auto apiProvider = InputManager::instance().get_api_provider(InputAPI::Android);
+ 	auto controller = ControllerFactory::CreateController(InputAPI::Android, deviceDescriptor, deviceName);
+ 	AndroidEmulatedController::getAndroidEmulatedController(index).setMapping(mapping_id, controller, button_id);
++	});
+ }
+ 
+ extern "C" [[maybe_unused]] JNIEXPORT jstring JNICALL
+@@ -135,7 +148,9 @@
+ extern "C" [[maybe_unused]] JNIEXPORT void JNICALL
+ Java_info_cemu_cemu_nativeinterface_NativeInput_clearControllerMapping([[maybe_unused]] JNIEnv* env, [[maybe_unused]] jclass clazz, jint index, jint mapping_id)
+ {
+-	AndroidEmulatedController::getAndroidEmulatedController(index).clearMapping(mapping_id);
++	JNIUtils::handleNativeException(env, [&] {
++		AndroidEmulatedController::getAndroidEmulatedController(index).clearMapping(mapping_id);
++	});
+ }
+ 
+ extern "C" [[maybe_unused]] JNIEXPORT jobject JNICALL
+@@ -179,7 +194,8 @@
+ extern "C" [[maybe_unused]] JNIEXPORT void JNICALL
+ Java_info_cemu_cemu_nativeinterface_NativeInput_onMotion([[maybe_unused]] JNIEnv* env, [[maybe_unused]] jclass clazz, jlong timestamp, jfloat gyroX, jfloat gyroY, jfloat gyroZ, jfloat accelX, jfloat accelY, jfloat accelZ)
+ {
+-	float deltaTime = (timestamp - NativeInput::s_lastMotionTimestamp) * 1e-9f;
++	float deltaTime = NativeInput::s_lastMotionTimestamp > 0 && timestamp > NativeInput::s_lastMotionTimestamp
++		? (timestamp - NativeInput::s_lastMotionTimestamp) * 1e-9f : 0.0f;
+ 	NativeInput::s_wiiUMotionHandler.processMotionSample(deltaTime, gyroX, gyroY, gyroZ, accelX * 0.098066f, -accelY * 0.098066f, -accelZ * 0.098066f);
+ 	NativeInput::s_lastMotionTimestamp = timestamp;
+ 	auto& deviceMotion = InputManager::instance().m_device_motion;
+@@ -193,6 +209,8 @@
+ 	auto& deviceMotion = InputManager::instance().m_device_motion;
+ 	std::scoped_lock lock{deviceMotion.m_mutex};
+ 	deviceMotion.m_device_motion_enabled = motionEnabled;
++	if (!motionEnabled)
++		NativeInput::s_lastMotionTimestamp = 0; // Never integrate a background/sensor-off gap.
+ }
+ 
+ extern "C" [[maybe_unused]] JNIEXPORT void JNICALL
+@@ -205,4 +223,18 @@
+ Java_info_cemu_cemu_nativeinterface_NativeInput_onOverlayAxis([[maybe_unused]] JNIEnv* env, [[maybe_unused]] jclass clazz, jint controllerIndex, jint mappingId, jfloat value)
+ {
+ 	AndroidEmulatedController::getAndroidEmulatedController(controllerIndex).setAxisValue(mappingId, value);
++}
++
++extern "C" JNIEXPORT void JNICALL
++Java_info_cemu_cemu_nativeinterface_NativeInput_releaseInputs(JNIEnv* env, jclass)
++{
++	JNIUtils::handleNativeException(env, [] {
++		auto provider = InputManager::instance().get_api_provider(InputAPI::Android);
++		auto* androidProvider = dynamic_cast<AndroidControllerProvider*>(provider.get());
++		if (!androidProvider)
++			throw std::runtime_error("Cemu Android input provider is unavailable");
++		androidProvider->release_all_inputs();
++		NativeInput::onTouchEvent(0, 0, true, false);
++		NativeInput::onTouchEvent(0, 0, false, false);
++	});
+ }
+\ No newline at end of file
+--- a/src/android/app/src/main/cpp/NativeSettings.cpp
++++ b/src/android/app/src/main/cpp/NativeSettings.cpp
+@@ -355,5 +355,8 @@
+ extern "C" [[maybe_unused]] JNIEXPORT void JNICALL
+ Java_info_cemu_cemu_nativeinterface_NativeSettings_saveSettings([[maybe_unused]] JNIEnv* env, [[maybe_unused]] jclass clazz)
+ {
+-	g_config.Save();
++	JNIUtils::handleNativeException(env, [] {
++		if (!g_config.Save())
++			throw std::runtime_error("Failed to persist Cemu settings");
++	});
+ }
+\ No newline at end of file
+--- a/src/input/api/Android/AndroidControllerProvider.cpp
++++ b/src/input/api/Android/AndroidControllerProvider.cpp
+@@ -7,23 +7,39 @@
+ #include "input/api/Android/AndroidController.h"
+ #include "input/api/Controller.h"
+ 
+-ControllerState& AndroidControllerProvider::get_controller_state(const std::string& deviceDescriptor)
++ControllerState AndroidControllerProvider::get_controller_state(const std::string& deviceDescriptor)
+ {
++	std::lock_guard lock(m_controllersMutex);
+ 	if (auto it = m_controllersState.find(deviceDescriptor); it != m_controllersState.end())
+ 		return it->second;
+-	m_controllersState[deviceDescriptor] = {};
+-	return m_controllersState[deviceDescriptor];
++	return {}; // No physical event means a genuinely neutral controller.
++}
++
++void AndroidControllerProvider::release_all_inputs()
++{
++	std::lock_guard lock(m_controllersMutex);
++	for (auto& entry : m_controllersState)
++	{
++		auto& state = entry.second;
++		state.axis = {};
++		state.rotation = {};
++		state.trigger = {};
++		state.buttons.Clear();
++		state.last_state = 0;
++	}
+ }
+ 
+ void AndroidControllerProvider::on_key_event(const std::string& deviceDescriptor, [[maybe_unused]] const std::string& deviceName, int nativeKeyCode, bool isPressed)
+ {
+-	auto& controllerState = get_controller_state(deviceDescriptor);
++	std::lock_guard lock(m_controllersMutex);
++	auto& controllerState = m_controllersState[deviceDescriptor];
+ 	controllerState.buttons.SetButtonState(nativeKeyCode, isPressed);
+ }
+ 
+ void AndroidControllerProvider::on_axis_event(const std::string& deviceDescriptor, [[maybe_unused]] const std::string& deviceName, int nativeAxisCode, float value)
+ {
+-	auto& controllerState = get_controller_state(deviceDescriptor);
++	std::lock_guard lock(m_controllersMutex);
++	auto& controllerState = m_controllersState[deviceDescriptor];
+ 	switch (nativeAxisCode)
+ 	{
+ 	case AMOTION_EVENT_AXIS_X:
+--- a/src/input/api/Android/AndroidControllerProvider.h
++++ b/src/input/api/Android/AndroidControllerProvider.h
+@@ -13,9 +13,10 @@
+     std::vector<std::shared_ptr<ControllerBase>> get_controllers() override { return {}; }
+     void on_key_event(const std::string& deviceDescriptor, const std::string& deviceName, int nativeKeyCode, bool isPressed);
+     void on_axis_event(const std::string& deviceDescriptor, const std::string& deviceName, int nativeAxisCode, float value);
++    void release_all_inputs();
+ 
+    private:
+-    ControllerState& get_controller_state(const std::string& deviceDescriptor);
++    ControllerState get_controller_state(const std::string& deviceDescriptor);
+     std::mutex m_controllersMutex;
+     std::unordered_map<std::string, ControllerState> m_controllersState;
+ };
+--- a/src/input/api/ControllerState.h
++++ b/src/input/api/ControllerState.h
+@@ -113,6 +113,12 @@
+ 		return *this;
+ 	}
+ 
++	void Clear()
++	{
++		std::lock_guard lock(m_spinlock);
++		m_pressedButtons.clear(); // Retain storage for the next physical input event.
++	}
++
+ private:
+ 	std::vector<uint32> m_pressedButtons; // since only very few buttons are pressed at a time, using a vector with linear scan is more efficient than a set/map
+ 	mutable FSpinlock m_spinlock;
+--- a/vcpkg.json
++++ b/vcpkg.json
+@@ -17,6 +17,7 @@
+     },
+     "boost-tokenizer",
+     "boost-container",
++    "boost-context",
+     "boost-program-options",
+     "boost-nowide",
+     "boost-algorithm",
+--- a/src/input/InputManager.cpp
++++ b/src/input/InputManager.cpp
+@@ -50,15 +50,28 @@
+ 	create_provider<AndroidControllerProvider>();
+ #endif
+ 
+-	m_update_thread_shutdown.store(false);
+-	m_update_thread = std::thread(&InputManager::update_thread, this);
++	StartUpdateThread();
+ }
+ 
+ InputManager::~InputManager()
+ {
++	StopUpdateThread();
++}
++
++void InputManager::StartUpdateThread()
++{
++	if (m_update_thread.joinable())
++		return;
++	m_update_thread_shutdown.store(false);
++	m_update_thread = std::thread(&InputManager::update_thread, this);
++}
++
++void InputManager::StopUpdateThread()
++{
+ 	m_update_thread_shutdown.store(true);
+-	m_update_thread.join();
++	if (m_update_thread.joinable())
++		m_update_thread.join();
+ }
+ 
+ bool s_input_config_window_has_focus = false;
+ 
+--- a/src/input/InputManager.h
++++ b/src/input/InputManager.h
+@@ -43,6 +43,8 @@
+ 	static bool input_config_window_has_focus();
+ 	static void set_input_config_window_focus(bool has_focus);
+ 
++	void StartUpdateThread();
++	void StopUpdateThread();
+ 	void load() noexcept;
+ 	bool load(size_t player_index, std::string_view filename = {});
+ 
+--- a/src/Cafe/HW/Espresso/PPCTimer.cpp
++++ b/src/Cafe/HW/Espresso/PPCTimer.cpp
+@@ -78,9 +78,8 @@
+ 
+ void PPCTimer_init()
+ {
+-	std::thread t(PPCTimer_initThread);
+-	t.detach();
++	PPCTimer_initThread(); // Host bootstrap completes before ownership can be released.
+ 	_rdtscLastMeasure = __rdtsc();
+ }
+ 
+ uint64 _tickSummary = 0;
+--- a/src/Cafe/OS/libs/coreinit/coreinit_Misc.cpp
++++ b/src/Cafe/OS/libs/coreinit/coreinit_Misc.cpp
+@@ -4,6 +4,9 @@
+ #include "Cafe/CafeSystem.h"
+ #include "Cafe/Filesystem/fsc.h"
+ #include <pugixml.hpp>
++#if __ANDROID__
++void CalamansiRequestRelaunch(uint64 titleId);
++#endif
+ 
+ namespace coreinit
+ {
+@@ -393,9 +396,11 @@
++#if !__ANDROID__
+ 	// move this to CafeSystem.cpp?
+ 	void OSLauncherThread(uint64 titleId)
+ 	{
+ 		CafeSystem::ShutdownTitle();
+ 		CafeSystem::PrepareForegroundTitle(titleId);
+ 		CafeSystem::RequestRecreateCanvas();
+ 		CafeSystem::LaunchForegroundTitle();
+ 	}
++#endif
+ 
+@@ -429,9 +432,13 @@
+ 		for(uint32 i=0; i<argc; i++)
+ 			argArray.emplace_back(argv[i]);
+ 		CafeSystem::SetOverrideArgs(argArray);
++#if __ANDROID__
++		CalamansiRequestRelaunch(titleId); // Existing owned host worker joins this guest producer.
++#else
+ 		// spawn launcher thread (this current thread will be destroyed during relaunch)
+ 		std::thread launcherThread(OSLauncherThread, titleId);
+ 		launcherThread.detach();
++#endif
+ 		// suspend this thread
+ 		coreinit::OSSuspendThread(coreinit::OSGetCurrentThread());
+ 		return 0;
+--- a/src/Cafe/HW/Latte/Core/LatteShaderCache.cpp
++++ b/src/Cafe/HW/Latte/Core/LatteShaderCache.cpp
+@@ -26,6 +26,9 @@
+ #include <audio/IAudioAPI.h>
+ #include <util/bootSound/BootSoundReader.h>
+ #include <thread>
++#if __ANDROID__
++void CalamansiReportNativeError(const char* message);
++#endif
+ 
+ #if BOOST_OS_WINDOWS
+ #include <psapi.h>
+@@ -158,23 +161,39 @@
+ {
+   public:
+ 	BootSoundPlayer() = default;
+ 	~BootSoundPlayer()
+ 	{
+-		m_stopRequested = true;
++		StopSound();
+ 	}
+ 
++	void StopSound()
++	{
++		m_stopRequested = true;
++		if (m_bootSndPlayThread.joinable())
++			m_bootSndPlayThread.join();
++	}
++
+ 	void StartSound()
+ 	{
+-		if (!m_bootSndPlayThread.joinable())
+-		{
+-			m_fadeOutRequested = false;
+-			m_stopRequested = false;
+-			m_bootSndPlayThread = std::thread{[this]() {
+-				StreamBootSound();
+-			}};
+-		}
++		StopSound();
++		m_fadeOutRequested = false;
++		m_stopRequested = false;
++		m_bootSndPlayThread = std::thread{[this]() {
++			try
++			{
++				StreamBootSound();
++			}
++			catch (const std::exception& error)
++			{
++#if __ANDROID__
++				CalamansiReportNativeError(error.what());
++#else
++				cemuLog_log(LogType::Force, "Boot sound failed: {}", error.what());
++#endif
++			}
++		}};
+ 	}
+ 
+ 	void FadeOutSound()
+ 	{
+ 		m_fadeOutRequested = true;
+@@ -223,15 +242,16 @@
+ 		if(!fsc_doesFileExist(sndPath.c_str()))
+ 			return;
+ 
+-		FSCVirtualFile* bootSndFileHandle = fsc_open(sndPath.c_str(), FSC_ACCESS_FLAG::OPEN_FILE | FSC_ACCESS_FLAG::READ_PERMISSION, &fscStatus);
++		std::unique_ptr<FSCVirtualFile, decltype(&fsc_close)> bootSndFileHandle(
++			fsc_open(sndPath.c_str(), FSC_ACCESS_FLAG::OPEN_FILE | FSC_ACCESS_FLAG::READ_PERMISSION, &fscStatus), &fsc_close);
+ 		if(!bootSndFileHandle)
+ 		{
+ 			cemuLog_log(LogType::Force, "failed to open bootSound.btsnd");
+ 			return;
+ 		}
+ 
+ 		constexpr sint32 audioBlockSize = samplesPerBlock * (bitsPerSample/8) * nChannels;
+-		BootSoundReader bootSndFileReader(bootSndFileHandle, audioBlockSize);
++		BootSoundReader bootSndFileReader(bootSndFileHandle.get(), audioBlockSize);
+ 
+ 		uint64 fadeOutSample = 0; // track how far into the fadeout
+ 		constexpr uint64 fadeOutDuration = sampleRate * 2; // fadeout should last 2 seconds
+@@ -238,6 +261,6 @@
+ 		while(fadeOutSample < fadeOutDuration && !m_stopRequested)
+ 		{
+-			while (bootSndAudioDev->NeedAdditionalBlocks())
++			while (!m_stopRequested && bootSndAudioDev->NeedAdditionalBlocks())
+ 			{
+ 				sint16* data = bootSndFileReader.getSamples();
+ 				if(data == nullptr)
+@@ -255,8 +275,6 @@
+ 			std::this_thread::sleep_for(std::chrono::milliseconds(samplesPerBlock / (sampleRate/ 1'000)));
+ 		}
+ 
+-		if(bootSndFileHandle)
+-			fsc_close(bootSndFileHandle);
+ 	}
+ 
+   private:
+@@ -267,6 +288,11 @@
+ static BootSoundPlayer g_bootSndPlayer;
+ 
++void LatteShaderCache_StopBootSound()
++{
++	g_bootSndPlayer.StopSound();
++}
++
+ void LatteShaderCache_finish()
+ {
+ 	if (g_renderer->GetType() == RendererAPI::Vulkan)
+ 		RendererShaderVk::ShaderCacheLoading_end();

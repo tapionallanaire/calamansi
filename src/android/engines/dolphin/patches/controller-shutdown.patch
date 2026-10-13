@@ -1,0 +1,376 @@
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/input/model/ControllerInterface.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/input/model/ControllerInterface.kt
+@@ -29,6 +29,9 @@
+ object ControllerInterface {
+     private var inputDeviceListener: InputDeviceListener? = null
+     private var handlerThread: HandlerThread? = null
++    private val notifications = Handler(Looper.getMainLooper())
++    private val notificationsGate = Any()
++    private var callbacksEnabled = false
+ 
+     private val inputStateUpdatePending = AtomicBoolean(false)
+     private val inputStateVersion = MutableLiveData(0)
+@@ -105,10 +108,15 @@
+         // When a single SensorEvent is dispatched, this method is likely to get called many times.
+         // For the sake of performance, let's batch input state updates so that observers only have
+         // to process one update.
+-        if (!inputStateUpdatePending.getAndSet(true)) {
+-            Handler(Looper.getMainLooper()).post {
+-                if (inputStateUpdatePending.getAndSet(false)) {
+-                    inputStateVersion.value = inputStateVersion.value?.plus(1)
++        synchronized(notificationsGate) {
++            if (!callbacksEnabled) return
++            if (!inputStateUpdatePending.getAndSet(true)) {
++                notifications.post {
++                    synchronized(notificationsGate) {
++                        if (callbacksEnabled && inputStateUpdatePending.getAndSet(false)) {
++                            inputStateVersion.value = inputStateVersion.value?.plus(1)
++                        }
++                    }
+                 }
+             }
+         }
+@@ -117,15 +125,22 @@
+     @Keep
+     @JvmStatic
+     private fun onDevicesChanged() {
+-        Handler(Looper.getMainLooper()).post {
+-            devicesVersion.value = devicesVersion.value?.plus(1)
+-        }
+-    }
+-
+-    @Keep
+-    @JvmStatic
++        synchronized(notificationsGate) {
++            if (!callbacksEnabled) return
++            notifications.post {
++                synchronized(notificationsGate) {
++                    if (callbacksEnabled) devicesVersion.value = devicesVersion.value?.plus(1)
++                }
++            }
++        }
++    }
++
++    @Keep
++    @JvmStatic
++    @Synchronized
+     private fun registerInputDeviceListener() {
+         if (inputDeviceListener == null) {
++            synchronized(notificationsGate) { callbacksEnabled = true }
+             handlerThread = HandlerThread("Hotplug thread").apply { start() }
+             val thread = requireNotNull(handlerThread) { "HandlerThread is not available" }
+ 
+@@ -142,16 +157,31 @@
+ 
+     @Keep
+     @JvmStatic
++    @Synchronized
+     private fun unregisterInputDeviceListener() {
+-        if (inputDeviceListener != null) {
++        synchronized(notificationsGate) { callbacksEnabled = false }
++        inputDeviceListener?.let { listener ->
+             val im = DolphinApplication.getAppContext()
+                 .getSystemService(Context.INPUT_SERVICE) as InputManager
+-
+-            im.unregisterInputDeviceListener(inputDeviceListener)
++            im.unregisterInputDeviceListener(listener)
+             inputDeviceListener = null
+-            handlerThread?.quitSafely()
++        }
++        handlerThread?.let { thread ->
++            check(Thread.currentThread() !== thread) { "Cannot join the hotplug thread from itself" }
++            thread.quitSafely()
++            thread.join()
+             handlerThread = null
+         }
++        synchronized(notificationsGate) {
++            notifications.removeCallbacksAndMessages(null)
++            inputStateUpdatePending.set(false)
++        }
++    }
++
++    // Called before native shutdown takes controller/device locks, never from the main thread.
++    fun stopCallbacks() {
++        unregisterInputDeviceListener()
++        DolphinSensorEventListener.shutdownAll()
+     }
+ 
+     @Keep
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/input/model/DolphinSensorEventListener.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/features/input/model/DolphinSensorEventListener.kt
+@@ -45,6 +45,7 @@
+     private var unsuspendedSensors = 0
+ 
+     private var deviceQualifier = ""
++    private var closed = false
+ 
+     @Keep
+     constructor() {
+@@ -54,6 +55,7 @@
+         canSuspendSensorsIndividually = true
+         addSensors()
+         sortSensorDetails()
++        synchronized(liveListeners) { liveListeners.add(this) }
+     }
+ 
+     @Keep
+@@ -67,6 +69,7 @@
+             sensorManager = null
+         }
+         sortSensorDetails()
++        synchronized(liveListeners) { liveListeners.add(this) }
+     }
+ 
+     private fun addSensors() {
+@@ -274,7 +277,9 @@
+         )
+     }
+ 
++    @Synchronized
+     override fun onSensorChanged(sensorEvent: SensorEvent) {
++        if (closed) return
+         val sensorDetails = sensorDetails.first{s -> sensorsAreEqual(s.sensor, sensorEvent.sensor)}
+ 
+         val values = sensorEvent.values
+@@ -396,7 +401,9 @@
+      * @param axisName The name of any of the sensor's axes.
+      */
+     @Keep
++    @Synchronized
+     fun requestUnsuspendSensor(axisName: String) {
++        if (closed) return
+         for (sd in sensorDetails) {
+             if (listOf(*sd.axisNames).contains(axisName)) {
+                 setSensorSuspended(sd, false)
+@@ -468,6 +475,15 @@
+     }
+ 
+     @Keep
++    @Synchronized
++    fun shutdown() {
++        if (closed) return
++        closed = true
++        sensorManager?.unregisterListener(this)
++        synchronized(liveListeners) { liveListeners.remove(this) }
++    }
++
++    @Keep
+     fun getAxisNames(): Array<String> {
+         val axisNames = ArrayList<String>()
+         for (sensorDetails in sensorDetails) {
+@@ -516,6 +532,13 @@
+     }
+ 
+     companion object {
++        private val liveListeners = HashSet<DolphinSensorEventListener>()
++
++        fun shutdownAll() {
++            val listeners = synchronized(liveListeners) { liveListeners.toList() }
++            listeners.forEach { it.shutdown() }
++        }
++
+         // Set of three axes. Creates a negative companion to each axis, and corrects for device rotation.
+         private const val AXIS_SET_TYPE_DEVICE_COORDINATES = 0
+ 
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/utils/GCAdapter.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/utils/GCAdapter.kt
+@@ -206,6 +206,7 @@
+     @JvmStatic
+     fun onUsbDevicesChanged() {
+         synchronized(hotplugCallbackLock) {
++            if (!hotplugCallbackEnabled) return
+             if (adapterDevice != null) {
+                 val adapterStillConnected = manager.deviceList.values.any {
+                     it.deviceId == adapterDevice!!.deviceId
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/NativeLibrary.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/NativeLibrary.kt
+@@ -309,6 +309,9 @@
+     @JvmStatic
+     external fun Initialize()
+ 
++    @JvmStatic
++    external fun Shutdown()
++
+     /**
+      * Tells analytics that Dolphin has been started.
+      *
+--- a/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/utils/DirectoryInitialization.kt
++++ b/Source/Android/app/src/main/java/org/dolphinemu/dolphinemu/utils/DirectoryInitialization.kt
+@@ -58,10 +58,16 @@
+         thread { ensureReady(context) }
+     }
+ 
++    @JvmStatic
++    @Synchronized
++    fun shutdownNative() {
++        NativeLibrary.Shutdown()
++        areDirectoriesAvailable = false
++        directoryState.postValue(DirectoryInitializationState.NOT_YET_INITIALIZED)
++    }
++
+     private fun init(context: Context) {
+-        if (directoryState.value == DirectoryInitializationState.DOLPHIN_DIRECTORIES_INITIALIZED) {
+-            return
+-        }
++        if (areDirectoriesAvailable) return
+ 
+         setDolphinUserDirectory(context)
+ 
+--- a/Source/Android/jni/MainAndroid.cpp
++++ b/Source/Android/jni/MainAndroid.cpp
+@@ -529,17 +529,31 @@
+   UICommon::SetUserDirectory(File::GetUserPath(D_USER_IDX));
+ }
+ 
++static bool s_native_initialized = false;
++
+ JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_Initialize(JNIEnv*, jclass)
+ {
++  if (s_native_initialized) return;
+   UICommon::CreateDirectories();
+   Common::RegisterMsgAlertHandler(&MsgAlert);
+   DolphinAnalytics::AndroidSetGetValFunc(&GetAnalyticValue);
+ 
+   WiimoteReal::InitAdapterClass();
+   UICommon::Init();
++  s_native_initialized = true;
+   UICommon::InitControllers(WindowSystemInfo(WindowSystemType::Android, nullptr, nullptr, nullptr));
+ 
+   // The owned Java runtime initializes/drains achievement workers, never metadata readers.
++}
++
++JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_Shutdown(JNIEnv* env, jclass)
++{
++  if (!s_native_initialized) return;
++  UICommon::ShutdownControllers();
++  if (env->ExceptionCheck()) return;
++  UICommon::Shutdown();
++  if (env->ExceptionCheck()) return;
++  s_native_initialized = false;
+ }
+ 
+ JNIEXPORT void JNICALL Java_org_dolphinemu_dolphinemu_NativeLibrary_ReportStartToAnalytics(JNIEnv*,
+--- a/Source/Core/InputCommon/ControllerInterface/Android/Android.cpp
++++ b/Source/Core/InputCommon/ControllerInterface/Android/Android.cpp
+@@ -78,6 +78,7 @@
+ jmethodID s_sensor_event_listener_request_unsuspend_sensor;
+ jmethodID s_sensor_event_listener_get_axis_names;
+ jmethodID s_sensor_event_listener_get_negative_axes;
++jmethodID s_sensor_event_listener_shutdown;
+ 
+ jclass s_dolphin_vibrator_manager_class;
+ jmethodID s_dolphin_vibrator_manager_get_vibrator;
+@@ -445,22 +446,14 @@
+   return device;
+ }
+ 
+-void RegisterDevicesChangedCallbackIfNeeded(JNIEnv* env, jclass controller_interface_class)
+-{
+-  static bool registered = false;
+-  if (registered)
+-    return;
+-  registered = true;
+-
+-  const jclass global_controller_interface_class =
+-      reinterpret_cast<jclass>(env->NewGlobalRef(controller_interface_class));
++Common::EventHook RegisterDevicesChangedCallback(JNIEnv* env, jclass controller_interface_class)
++{
+   const jmethodID controller_interface_on_devices_changed =
+-      env->GetStaticMethodID(global_controller_interface_class, "onDevicesChanged", "()V");
+-
+-  static Common::EventHook event_hook = g_controller_interface.RegisterDevicesChangedCallback(
+-      [global_controller_interface_class, controller_interface_on_devices_changed] {
+-        IDCache::GetEnvForThread()->CallStaticVoidMethod(global_controller_interface_class,
+-                                                         controller_interface_on_devices_changed);
++      env->GetStaticMethodID(controller_interface_class, "onDevicesChanged", "()V");
++  return g_controller_interface.RegisterDevicesChangedCallback(
++      [controller_interface_class, controller_interface_on_devices_changed] {
++        IDCache::GetEnvForThread()->CallStaticVoidMethod(controller_interface_class,
++                                                       controller_interface_on_devices_changed);
+       });
+ }
+ 
+@@ -478,6 +471,9 @@
+   static void AddDevice(JNIEnv* env, int device_id);
+   static void AddSensorDevice(JNIEnv* env);
+   static void RemoveDevice(int device_id);
++
++private:
++  Common::EventHook m_devices_changed_hook;
+ };
+ 
+ std::unique_ptr<ciface::InputBackend> CreateInputBackend(ControllerInterface* controller_interface)
+@@ -648,7 +644,11 @@
+   ~AndroidDevice()
+   {
+     if (m_sensor_event_listener)
+-      IDCache::GetEnvForThread()->DeleteGlobalRef(m_sensor_event_listener);
++    {
++      JNIEnv* env = IDCache::GetEnvForThread();
++      env->CallVoidMethod(m_sensor_event_listener, s_sensor_event_listener_shutdown);
++      env->DeleteGlobalRef(m_sensor_event_listener);
++    }
+   }
+ 
+   std::string GetName() const override { return m_name; }
+@@ -918,6 +918,8 @@
+       env->GetMethodID(s_sensor_event_listener_class, "getAxisNames", "()[Ljava/lang/String;");
+   s_sensor_event_listener_get_negative_axes =
+       env->GetMethodID(s_sensor_event_listener_class, "getNegativeAxes", "()[Z");
++  s_sensor_event_listener_shutdown =
++      env->GetMethodID(s_sensor_event_listener_class, "shutdown", "()V");
+   env->DeleteLocalRef(sensor_event_listener_class);
+ 
+   const jclass dolphin_vibrator_manager_class =
+@@ -937,16 +939,19 @@
+   env->CallStaticVoidMethod(s_controller_interface_class,
+                             s_controller_interface_register_input_device_listener);
+ 
+-  RegisterDevicesChangedCallbackIfNeeded(env, s_controller_interface_class);
++  m_devices_changed_hook = RegisterDevicesChangedCallback(env, s_controller_interface_class);
+ }
+ 
+ InputBackend::~InputBackend()
+ {
+   JNIEnv* env = IDCache::GetEnvForThread();
++  m_devices_changed_hook.reset();
+ 
+   env->CallStaticVoidMethod(s_controller_interface_class,
+                             s_controller_interface_unregister_input_device_listener);
+ 
++  s_device_id_to_device_qualifier.clear();
++  env->DeleteGlobalRef(s_list_class);
+   env->DeleteGlobalRef(s_input_device_class);
+   env->DeleteGlobalRef(s_motion_range_class);
+   env->DeleteGlobalRef(s_input_event_class);
+@@ -1020,6 +1025,19 @@
+ 
+ void InputBackend::RemoveDevice(jint device_id)
+ {
++  // Quiesce Java sensors before RemoveDevice takes native device/population locks.
++  std::shared_ptr<Core::Device> existing;
++  if (const auto it = s_device_id_to_device_qualifier.find(device_id);
++      it != s_device_id_to_device_qualifier.end())
++  {
++    existing = g_controller_interface.FindDevice(it->second);
++    if (existing)
++    {
++      jobject listener = static_cast<AndroidDevice*>(existing.get())->GetSensorEventListener();
++      if (listener)
++        IDCache::GetEnvForThread()->CallVoidMethod(listener, s_sensor_event_listener_shutdown);
++    }
++  }
+   g_controller_interface.RemoveDevice([device_id](const ciface::Core::Device* device) {
+     return device->GetSource() == SOURCE &&
+            static_cast<const AndroidDevice*>(device)->GetDeviceID() == device_id;
+--- a/Source/Core/Core/HW/WiimoteReal/IOAndroid.cpp
++++ b/Source/Core/Core/HW/WiimoteReal/IOAndroid.cpp
+@@ -153,6 +153,8 @@
+ }
+ 
+ void InitAdapterClass()
+ {
++  if (s_adapter_class)
++    return;
+   JNIEnv* env = IDCache::GetEnvForThread();
+   jclass adapter_class = env->FindClass("org/dolphinemu/dolphinemu/utils/WiimoteAdapter");

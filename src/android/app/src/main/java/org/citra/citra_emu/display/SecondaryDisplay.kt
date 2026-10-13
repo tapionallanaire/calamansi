@@ -145,6 +145,7 @@ class SecondaryDisplayPresentation(
 
         // Initialize SurfaceView
         surfaceView = SurfaceView(context)
+        org.calamansi.engine.PictureFilters.attach(surfaceView)
         surfaceView.holder.addCallback(object : SurfaceHolder.Callback {
             override fun surfaceCreated(holder: SurfaceHolder) {
                 Log.debug("SecondaryDisplay Surface created")
